@@ -1,5 +1,5 @@
 import { createAuthClient } from "better-auth/react";
-import { usernameClient, adminClient, magicLinkClient, emailOTPClient } from "better-auth/client/plugins";
+import { usernameClient, adminClient } from "better-auth/client/plugins";
 import { nextCookies } from "better-auth/next-js";
 
 export const authClient = createAuthClient({
@@ -7,7 +7,7 @@ export const authClient = createAuthClient({
   emailAndPassword: {
     enabled: true,
   },
-  plugins: [usernameClient(), adminClient(), magicLinkClient(), emailOTPClient(), nextCookies()],
+  plugins: [usernameClient(), adminClient(), nextCookies()],
 });
 
 export const { signIn, signUp, signOut, useSession, getSession } = authClient;

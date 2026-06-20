@@ -131,6 +131,96 @@ export const projects: Project[] = [
 
 // ─── Legacy Content ───────────────────────────────────────────────────────────
 
+// ─── Members ───────────────────────────────────────────────────────────────────
+
+export interface Member {
+  id: string;
+  name: string;
+  image: string;
+  batch: string;
+  role: string;
+  socials: {
+    instagram?: string;
+    facebook?: string;
+    github?: string;
+    linkedin?: string;
+    website?: string;
+  };
+}
+
+export const legacyMembers: Member[] = [
+  {
+    id: "legacy-tariq",
+    name: "Tariq Ziad Mahmud",
+    image: "",
+    batch: "2024–2025",
+    role: "Club President",
+    socials: {
+      instagram: "https://instagram.com/tariqziad",
+      facebook: "https://facebook.com/tariqziad",
+      github: "https://github.com/tariqziad",
+    },
+  },
+  {
+    id: "legacy-nadia",
+    name: "Nadia Rahman",
+    image: "",
+    batch: "2024–2025",
+    role: "Vice President — Robotics",
+    socials: {
+      instagram: "https://instagram.com/nadiarahman",
+      linkedin: "https://linkedin.com/in/nadiarahman",
+    },
+  },
+  {
+    id: "legacy-khalid",
+    name: "Khalid Hassan",
+    image: "",
+    batch: "2024–2025",
+    role: "Vice President — Research",
+    socials: {
+      facebook: "https://facebook.com/khalidhassan",
+      github: "https://github.com/khalidhassan",
+    },
+  },
+  {
+    id: "legacy-samia",
+    name: "Samia Begum",
+    image: "",
+    batch: "2024–2025",
+    role: "Vice President — Biology",
+    socials: {
+      instagram: "https://instagram.com/samiabegum",
+      linkedin: "https://linkedin.com/in/samiabegum",
+    },
+  },
+  {
+    id: "legacy-farhan",
+    name: "Farhan Ahmed",
+    image: "",
+    batch: "2024–2025",
+    role: "Vice President — Chemistry",
+    socials: {
+      facebook: "https://facebook.com/farhanahmed",
+      github: "https://github.com/farhanahmed",
+    },
+  },
+];
+
+export const currentMembers: Member[] = [
+  {
+    id: "current-1",
+    name: "Member Name",
+    image: "",
+    batch: "2025–2026",
+    role: "Position",
+    socials: {},
+  },
+];
+
+// Boilerplate for 2026–2027 edition
+export const nextGenMembers: Member[] = [];
+
 export const legacyContent = `## Our Beginning
 
 Manarat Science Club was founded in 2019 by a small group of students and two faculty members who believed that science should not be confined to textbooks and examination halls. In our first year, MSC operated with 12 founding members, one chemistry demonstration event, and a four-page newsletter printed on the school copier.
