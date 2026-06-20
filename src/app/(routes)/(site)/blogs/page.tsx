@@ -8,13 +8,16 @@ export const metadata = {
     "Explore scientific research, articles, and publications from Manarat Science Club members.",
 };
 
+// Reuse formatter instance to improve performance
+const postDateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
+
 function formatDate(date: Date | null): string {
   if (!date) return "";
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(date));
+  return postDateFormatter.format(new Date(date));
 }
 
 function truncateExcerpt(text: string | null, maxLength = 120): string {
