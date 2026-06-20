@@ -10,7 +10,7 @@ import {
 import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "@/lib/auth/client";
+import { signIn, authClient } from "@/lib/auth/client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,9 +98,65 @@ export default function SignInForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isPending} className="mt-5 w-full">
-          Sign In
+        <Button type="submit" disabled={isPending} className="mt-5 w-full bg-manara-teal hover:bg-manara-teal/90">
+          Sign In with Username
         </Button>
+        
+        <div className="relative my-2 flex items-center">
+          <div className="flex-grow border-t border-border"></div>
+          <span className="flex-shrink-0 px-2 text-xs text-muted-foreground uppercase">Or</span>
+          <div className="flex-grow border-t border-border"></div>
+        </div>
+
+        <Button 
+          type="button" 
+          variant="outline" 
+          disabled={isPending} 
+          onClick={() => authClient.signIn.social({ provider: "google" })}
+          className="w-full"
+        >
+          Sign In with Google
+        </Button>
+        
+        <div className="flex gap-2">
+          <Button 
+            type="button" 
+            variant="outline" 
+            disabled={isPending} 
+            onClick={async () => {
+              const email = prompt("Enter your email for Magic Link:");
+              if (!email) return;
+              const res = await authClient.signIn.magicLink({ email });
+              if (res.error) toast.error(res.error.message);
+              else toast.success("Magic link sent!");
+            }}
+            className="w-full text-xs"
+          >
+            Magic Link
+          </Button>
+          <Button 
+            type="button" 
+            variant="outline" 
+            disabled={isPending} 
+            onClick={async () => {
+              const email = prompt("Enter your email for OTP:");
+              if (!email) return;
+              const res = await authClient.emailOtp.sendVerificationOtp({ email, type: "sign-in" });
+              if (res.error) toast.error(res.error.message);
+              else {
+                const otp = prompt("Enter the OTP sent to your email:");
+                if (otp) {
+                  const verifyRes = await authClient.signIn.emailOtp({ email, otp });
+                  if (verifyRes.error) toast.error(verifyRes.error.message);
+                  else router.push("/");
+                }
+              }
+            }}
+            className="w-full text-xs"
+          >
+            Email OTP
+          </Button>
+        </div>
       </form>
     </Form>
   );

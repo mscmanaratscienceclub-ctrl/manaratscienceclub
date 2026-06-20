@@ -10,6 +10,10 @@ export const user = pgTable("user", {
   image: text("image"),
   role: text("role").default("member").notNull(),
   gender: boolean("gender").notNull(),
+  description: text("description"),
+  banned: boolean("banned"),
+  banReason: text("ban_reason"),
+  banExpires: timestamp("ban_expires"),
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt")
     .defaultNow()

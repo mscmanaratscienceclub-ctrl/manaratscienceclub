@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Shield, PenSquare, User } from "lucide-react";
-import { updateUserRole } from "@/lib/actions/users";
+import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 
 interface UserRow {
@@ -58,7 +58,8 @@ export default function UsersTable({ users }: UsersTableProps) {
     setPendingUserId(userId);
     startTransition(async () => {
       try {
-        await updateUserRole(userId, newRole);
+        const res = await authClient.admin.setRole({ userId, role: newRole as any });
+        if (res.error) throw new Error(res.error.message);
         toast.success("Role updated successfully");
         router.refresh();
       } catch (error) {
