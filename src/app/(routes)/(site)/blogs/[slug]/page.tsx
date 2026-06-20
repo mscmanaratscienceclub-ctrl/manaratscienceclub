@@ -7,14 +7,17 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+// Reuse formatter instance to improve performance
+const postDateFormatter = new Intl.DateTimeFormat("en-US", {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
+
 function formatDate(date: Date | null): string {
   if (!date) return "";
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(date));
+  return postDateFormatter.format(new Date(date));
 }
 
 function estimateReadingTime(html: string): number {

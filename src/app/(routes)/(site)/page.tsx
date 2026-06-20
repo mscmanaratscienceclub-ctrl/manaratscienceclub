@@ -4,8 +4,7 @@ import { ArrowRight, BookOpen, Atom, Users, Trophy, GraduationCap, ArrowUpRight,
 import { getPublishedPosts } from "@/lib/actions/posts";
 
 export default async function HomePage() {
-  const posts = await getPublishedPosts();
-  const recentPosts = posts.slice(0, 4);
+  const recentPosts = await getPublishedPosts(4);
 
   return (
     <div className="relative">
