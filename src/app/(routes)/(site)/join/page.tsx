@@ -1,16 +1,62 @@
 "use client";
 
-import { Send, CheckCircle2 } from "lucide-react";
+import { Send, CheckCircle2, LogIn, UserPlus } from "lucide-react";
 import { useState } from "react";
+import { useSession } from "@/lib/auth/client";
+import Link from "next/link";
 
 export default function JoinPage() {
+  const { data: session, isPending } = useSession();
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would send this data to an API
     setSubmitted(true);
   };
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-cream py-16 flex items-center justify-center">
+        <div className="animate-pulse text-manara-teal font-display text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-cream py-16">
+        <div className="mx-auto max-w-lg px-4 sm:px-6 lg:px-8">
+          <div className="rounded-3xl bg-white p-10 text-center shadow-subtle border border-manara-teal/10">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-manara-teal/10">
+              <UserPlus className="h-10 w-10 text-manara-teal" />
+            </div>
+            <h1 className="font-display text-3xl font-bold text-ink mb-3">
+              Join Manarat Science Club
+            </h1>
+            <p className="text-ink/60 font-body mb-8 max-w-sm mx-auto">
+              You need an account to submit a membership application. Already a member? Sign in, or create a new account to get started.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Link
+                href="/signin?redirect=/join"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-manara-teal bg-white px-8 py-3 font-display font-bold text-manara-teal transition hover:bg-manara-teal/5"
+              >
+                <LogIn className="h-5 w-5" />
+                Sign In
+              </Link>
+              <Link
+                href="/signup"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-manara-teal px-8 py-3 font-display font-bold text-white shadow-academic transition hover:-translate-y-0.5 hover:bg-manara-teal/90"
+              >
+                <UserPlus className="h-5 w-5" />
+                Create Account
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-cream py-16">
@@ -43,7 +89,6 @@ export default function JoinPage() {
         ) : (
           <div className="rounded-3xl bg-white p-8 shadow-subtle border border-manara-teal/10 sm:p-10">
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Personal Info */}
               <div className="space-y-4">
                 <h3 className="font-display text-xl font-bold text-ink border-b border-manara-teal/10 pb-2">Personal Information</h3>
                 
@@ -75,7 +120,6 @@ export default function JoinPage() {
                 </div>
               </div>
 
-              {/* Interests */}
               <div className="space-y-4">
                 <h3 className="font-display text-xl font-bold text-ink border-b border-manara-teal/10 pb-2">Academic Interests</h3>
                 <p className="text-sm text-ink/60 mb-3">Select the tracks you are most interested in (select all that apply):</p>
@@ -90,7 +134,6 @@ export default function JoinPage() {
                 </div>
               </div>
 
-              {/* Statement of Purpose */}
               <div className="space-y-4">
                 <h3 className="font-display text-xl font-bold text-ink border-b border-manara-teal/10 pb-2">Statement of Purpose</h3>
                 <div>

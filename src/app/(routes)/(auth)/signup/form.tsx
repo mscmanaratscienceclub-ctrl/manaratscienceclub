@@ -12,7 +12,7 @@ import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signUp } from "@/lib/auth/client";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -23,8 +23,9 @@ import { cn } from "@/lib/utils";
 import { AtSign, MailIcon, UserIcon } from "lucide-react";
 import { GenderRadioGroup } from "../components/gender-radio-group";
 
-export default function SignUpForm() {
+export default function SignUpForm({ redirect }: { redirect?: string }) {
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
   const form = useForm<SignUpValues>({
     resolver: zodResolver(SignUpSchema),
     defaultValues: {
@@ -45,7 +46,7 @@ export default function SignUpForm() {
         console.log("SIGN_UP:", response.error.status);
         toast.error(response.error.message);
       } else {
-        redirect("/");
+        router.push(redirect || "/");
       }
     });
   }
@@ -167,14 +168,17 @@ export default function SignUpForm() {
           name="gender"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Gender</FormLabel>
-              <GenderRadioGroup value={field.value} onChange={field.onChange} />
+              <FormLabel className="font-display text-sm font-bold text-ink">Gender</FormLabel>
+              <GenderRadioGroup
+                value={field.value}
+                onChange={field.onChange}
+              />
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type="submit" disabled={isPending} className="mt-5 w-full">
+        <Button type="submit" disabled={isPending} className="mt-5 w-full rounded-full bg-manara-teal font-display text-sm font-bold normal-case tracking-normal text-white shadow-subtle hover:bg-manara-teal/90 hover:-translate-y-0.5">
           Sign Up
         </Button>
       </form>

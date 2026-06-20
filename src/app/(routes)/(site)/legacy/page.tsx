@@ -1,62 +1,91 @@
-import { History, BookOpen, Quote } from "lucide-react";
+import { Camera, MessageCircle, GitFork, ExternalLink, Globe, User } from "lucide-react";
+import { legacyMembers, currentMembers, nextGenMembers } from "@/lib/data";
+import type { Member } from "@/lib/data";
 
 export const metadata = {
-  title: "Institutional Legacy | Manarat Science Club",
-  description: "The history, founding, and progression of the Manarat Science Club over time.",
+  title: "Our Members | Manarat Science Club",
+  description: "Meet the past and present members of the Manarat Science Club.",
 };
+
+const socialIcons = {
+  instagram: Camera,
+  facebook: MessageCircle,
+  github: GitFork,
+  linkedin: ExternalLink,
+  website: Globe,
+} as const;
+
+function MemberCard({ member }: { member: Member }) {
+  return (
+    <article className="flex flex-col items-center rounded-[2rem] border border-manara-teal/10 bg-white p-6 shadow-subtle text-center transition hover:-translate-y-1 hover:shadow-academic">
+      <div className="flex h-24 w-24 items-center justify-center rounded-full bg-manara-teal/10 text-manara-teal mb-4 overflow-hidden">
+        {member.image ? (
+          <img src={member.image} alt={member.name} className="h-full w-full object-cover" />
+        ) : (
+          <User className="h-10 w-10" />
+        )}
+      </div>
+      <h3 className="font-display text-lg font-bold text-ink">{member.name}</h3>
+      <p className="mt-1 text-sm font-semibold text-manara-teal">{member.role}</p>
+      <p className="mt-0.5 text-xs text-ink/40">{member.batch}</p>
+      {Object.keys(member.socials).length > 0 && (
+        <div className="mt-4 flex items-center gap-2.5">
+          {Object.entries(member.socials).map(([platform, url]) => {
+            const Icon = socialIcons[platform as keyof typeof socialIcons];
+            if (!Icon) return null;
+            return (
+              <a
+                key={platform}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-cream text-ink/50 transition-colors hover:bg-manara-teal hover:text-white"
+                aria-label={`${member.name} on ${platform}`}
+              >
+                <Icon className="h-4 w-4" />
+              </a>
+            );
+          })}
+        </div>
+      )}
+    </article>
+  );
+}
+
+function MemberGrid({ members, label }: { members: Member[]; label: string }) {
+  if (members.length === 0) return null;
+  return (
+    <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mb-10 text-center">
+        <h2 className="font-display text-3xl font-bold text-ink">{label}</h2>
+      </div>
+      <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        {members.map((member) => (
+          <MemberCard key={member.id} member={member} />
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export default function LegacyPage() {
   return (
     <div className="min-h-screen bg-cream">
-      {/* Hero Section */}
       <section className="bg-gradient-to-br from-manara-teal/5 via-cream to-manara-purple/5 px-4 py-20 text-center border-b border-manara-teal/10">
         <h1 className="font-display text-4xl font-bold text-ink md:text-5xl">
-          Institutional Legacy
+          Our Members
         </h1>
         <p className="mx-auto mt-4 max-w-2xl font-body text-lg text-ink/60">
-          The history, founding year, and structural progression of the club over time.
+          The people who have built and continue to carry the Manarat Science Club forward.
         </p>
       </section>
 
-      {/* Content Section */}
-      <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
-        <article className="prose prose-lg prose-ink mx-auto font-body text-ink/75">
-          <p className="lead text-xl text-ink/80 font-medium">
-            Since its inception, the Manarat Science Club has been a beacon of curiosity and innovation. It started as a small gathering of enthusiastic students and has grown into a structured organization dedicated to fostering scientific temper.
-          </p>
-          
-          <h2 className="font-display text-3xl font-bold text-ink mt-12 mb-6 flex items-center gap-3">
-            <History className="h-8 w-8 text-manara-yellow" />
-            The Genesis
-          </h2>
-          <p>
-            The club was founded with a simple mission: to take science beyond the textbook. Early activities were primarily focused on simple lab experiments and participating in inter-school science fairs. However, as the student body grew more ambitious, so did the club.
-          </p>
-
-          <blockquote className="border-l-4 border-manara-teal pl-6 my-8 italic text-ink/60 relative">
-            <Quote className="absolute -left-3 -top-3 h-8 w-8 text-manara-teal/20" />
-            Science is not just a subject learned in classrooms—it is a mindset of inquiry, observation, and discovery.
-          </blockquote>
-
-          <h2 className="font-display text-3xl font-bold text-ink mt-12 mb-6 flex items-center gap-3">
-            <BookOpen className="h-8 w-8 text-manara-purple" />
-            Structural Progression
-          </h2>
-          <p>
-            Over the years, the club expanded into specialized divisions. What was once a general science club is now structured into engineering teams, experimental labs, and a dedicated research studio. 
-          </p>
-          <ul className="list-disc pl-6 space-y-2 mt-4 marker:text-manara-teal">
-            <li><strong>Phase I:</strong> Formation of the general science assembly.</li>
-            <li><strong>Phase II:</strong> Introduction of competitive Olympiad training.</li>
-            <li><strong>Phase III:</strong> The launch of specialized tracks: Robotics, Creative Coding, and Biology.</li>
-            <li><strong>Phase IV:</strong> The establishment of the Research Hub and bimonthly student-led science journals.</li>
-          </ul>
-
-          <p className="mt-8">
-            Today, the Manarat Science Club stands as a testament to what young minds can achieve when given the right platform, mentorship, and resources. Our legacy is not just in the accolades we win, but in the curiosity we spark in every new generation of students.
-          </p>
-        </article>
-      </section>
+      <MemberGrid members={legacyMembers} label="Legacy Members" />
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <hr className="border-manara-teal/10" />
+      </div>
+      <MemberGrid members={currentMembers} label="Current Members" />
+      <MemberGrid members={nextGenMembers} label="2026–2027 Edition" />
     </div>
   );
 }
