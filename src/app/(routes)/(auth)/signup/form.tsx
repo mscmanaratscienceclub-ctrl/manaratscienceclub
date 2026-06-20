@@ -33,13 +33,12 @@ export default function SignUpForm() {
       username: "",
       password: "",
       confirmPassword: "",
-      gender: false
+      gender: false,
     },
   });
 
   function onSubmit(data: SignUpValues) {
     startTransition(async () => {
-      console.log("submit data:", data);
       const response = await signUp.email(data);
 
       if (response.error) {
@@ -169,10 +168,7 @@ export default function SignUpForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Gender</FormLabel>
-              <GenderRadioGroup
-                value={field.value}
-                onChange={field.onChange}
-              />
+              <GenderRadioGroup value={field.value} onChange={field.onChange} />
               <FormMessage />
             </FormItem>
           )}
