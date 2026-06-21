@@ -9,7 +9,7 @@ export default function EventsPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-cream to-white px-4 py-20 text-center">
+      <section className="bg-cream px-4 py-20 text-center">
         <h1 className="font-display text-4xl font-bold text-ink md:text-5xl">
           Events & Sessions
         </h1>
@@ -27,7 +27,7 @@ export default function EventsPage() {
               Upcoming sessions
             </h2>
           </div>
-          <button className="inline-flex w-fit items-center gap-2 rounded-full bg-manara-teal px-6 py-3 font-display text-sm font-bold text-white transition hover:-translate-y-1 hover:bg-manara-yellow hover:text-manara-teal">
+          <button className="inline-flex w-fit items-center gap-2 rounded-full bg-manara-yellow px-6 py-3 font-display text-sm font-bold text-manara-teal transition hover:-translate-y-1 hover:bg-manara-red hover:text-white">
             Request calendar <CalendarDays className="h-4 w-4" />
           </button>
         </div>
@@ -52,14 +52,14 @@ export default function EventsPage() {
               <span className="font-bold text-ink">Fri, Jan 24</span>
               <span className="font-semibold text-ink">Robot Rescue Challenge</span>
               <span className="text-sm text-ink/60">Sensors, logic, path optimization</span>
-              <span className="w-fit rounded-full bg-manara-purple/10 px-3 py-1 text-xs font-bold text-manara-purple">Few seats</span>
+              <span className="w-fit rounded-full bg-manara-red/10 px-3 py-1 text-xs font-bold text-manara-red">Few seats</span>
             </div>
             
             <div className="grid gap-3 px-6 py-5 md:grid-cols-[1fr_1fr_1.2fr_.8fr] items-center hover:bg-cream/40 transition-colors">
               <span className="font-bold text-ink">Thu, Jan 30</span>
               <span className="font-semibold text-ink">Young Innovators Forum</span>
               <span className="text-sm text-ink/60">Presentation, critique, project defense</span>
-              <span className="w-fit rounded-full bg-manara-pink/10 px-3 py-1 text-xs font-bold text-manara-pink">Register</span>
+              <span className="w-fit rounded-full bg-manara-yellow/10 px-3 py-1 text-xs font-bold text-manara-yellow">Register</span>
             </div>
           </div>
         </div>

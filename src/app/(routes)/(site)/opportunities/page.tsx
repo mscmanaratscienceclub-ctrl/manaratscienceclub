@@ -10,7 +10,7 @@ export default function OpportunitiesPage() {
   return (
     <div className="min-h-screen bg-cream">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-manara-purple/5 via-cream to-manara-pink/5 px-4 py-20 text-center border-b border-manara-teal/10">
+      <section className="bg-cream px-4 py-20 text-center border-b border-manara-teal/10">
         <h1 className="font-display text-4xl font-bold text-ink md:text-5xl">
           Opportunities & Teams
         </h1>
@@ -27,8 +27,8 @@ export default function OpportunitiesPage() {
         </div>
 
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          <article className="rounded-[2rem] border border-manara-teal/10 bg-white p-6 shadow-subtle flex flex-col items-center text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-manara-yellow/10 text-manara-yellow">
+          <article className="rounded-[2rem] border border-manara-red/10 bg-white p-6 shadow-subtle flex flex-col items-center text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-manara-red/10 text-manara-red">
               <FlaskConical className="h-8 w-8" />
             </div>
             <h3 className="font-display text-xl font-bold text-ink">Experimental Lab</h3>
@@ -40,8 +40,8 @@ export default function OpportunitiesPage() {
             </span>
           </article>
           
-          <article className="rounded-[2rem] border border-manara-teal/10 bg-white p-6 shadow-subtle flex flex-col items-center text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-manara-purple/10 text-manara-purple">
+          <article className="rounded-[2rem] border border-manara-yellow/10 bg-white p-6 shadow-subtle flex flex-col items-center text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-manara-yellow/10 text-manara-yellow">
               <Code2 className="h-8 w-8" />
             </div>
             <h3 className="font-display text-xl font-bold text-ink">Software Division</h3>
@@ -66,8 +66,8 @@ export default function OpportunitiesPage() {
             </span>
           </article>
 
-          <article className="rounded-[2rem] border border-manara-teal/10 bg-white p-6 shadow-subtle flex flex-col items-center text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-manara-pink/10 text-manara-pink">
+          <article className="rounded-[2rem] border border-manara-red/10 bg-white p-6 shadow-subtle flex flex-col items-center text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-manara-red/10 text-manara-red">
               <Presentation className="h-8 w-8" />
             </div>
             <h3 className="font-display text-xl font-bold text-ink">Research Studio</h3>
@@ -90,7 +90,7 @@ export default function OpportunitiesPage() {
           </p>
           <Link
             href="/join"
-            className="inline-flex items-center gap-2 rounded-full bg-manara-teal px-8 py-4 font-display text-base font-bold text-white shadow-academic transition hover:-translate-y-1 hover:bg-manara-yellow hover:text-manara-teal"
+            className="inline-flex items-center gap-2 rounded-full bg-manara-red px-8 py-4 font-display text-base font-bold text-white shadow-red transition hover:-translate-y-1 hover:bg-manara-yellow hover:text-manara-teal"
           >
             Apply to Join <Users className="h-5 w-5" />
           </Link>

@@ -1,18 +1,28 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import { createPost, updatePost, deletePost } from "@/lib/actions/posts";
 import type { Post } from "@/db/schema/posts";
-import { CalendarDays, Clock, Globe, FileText, Trash2 } from "lucide-react";
+import { CalendarDays, Clock, Globe, FileText, Trash2, ListTree, X, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const RichTextEditor = dynamic(() => import("./editor"), {
   ssr: false,
   loading: () => <div className="flex min-h-[360px] items-center justify-center rounded-xl border border-gray-200 bg-white text-sm text-ink/40">Loading editor...</div>,
 });
+
+function extractHeadings(html: string): { level: number; text: string }[] {
+  const headings: { level: number; text: string }[] = [];
+  const h1Re = /<h1[^>]*>([\s\S]*?)<\/h1>/gi;
+  const h2Re = /<h2[^>]*>([\s\S]*?)<\/h2>/gi;
+  let m;
+  while ((m = h1Re.exec(html)) !== null) headings.push({ level: 1, text: m[1].replace(/<[^>]*>/g, "") });
+  while ((m = h2Re.exec(html)) !== null) headings.push({ level: 2, text: m[1].replace(/<[^>]*>/g, "") });
+  return headings;
+}
 
 export default function PostForm({ post }: { post?: Post }) {
   const router = useRouter();
@@ -21,18 +31,36 @@ export default function PostForm({ post }: { post?: Post }) {
   const [title, setTitle] = useState(post?.title ?? "");
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
   const [content, setContent] = useState(post?.content ?? "");
+  const [tagInput, setTagInput] = useState("");
+  const [tags, setTags] = useState<string[]>(post?.tags ?? []);
   const [status, setStatus] = useState<"draft" | "published">((post?.status as "draft" | "published") ?? "draft");
+
+  const tocHeadings = useMemo(() => extractHeadings(content), [content]);
+
+  function addTag() {
+    const t = tagInput.trim().toLowerCase();
+    if (t && !tags.includes(t)) setTags([...tags, t]);
+    setTagInput("");
+  }
+
+  function removeTag(tag: string) {
+    setTags(tags.filter((t) => t !== tag));
+  }
+
+  function handleTagKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") { e.preventDefault(); addTag(); }
+  }
 
   function handleSave(targetStatus: "draft" | "published") {
     if (!title.trim()) { toast.error("A title is required"); return; }
     startTransition(async () => {
       try {
         if (post) {
-          await updatePost(post.id, { title, excerpt, content, status: targetStatus });
+          await updatePost(post.id, { title, excerpt, content, tags, status: targetStatus });
           toast.success(targetStatus === "published" ? "Post published!" : "Draft saved");
           setStatus(targetStatus);
         } else {
-          const result = await createPost({ title, excerpt, content, status: targetStatus });
+          const result = await createPost({ title, excerpt, content, tags, status: targetStatus });
           toast.success(targetStatus === "published" ? "Post published!" : "Draft saved");
           router.push(`/cms/posts/${result.id}`);
         }
@@ -60,6 +88,27 @@ export default function PostForm({ post }: { post?: Post }) {
       </div>
 
       <aside className="space-y-4">
+        {/* Tags */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-ink/40">
+            <Tag className="size-3" /> Tags
+          </p>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {tags.map((tag) => (
+              <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-manara-teal/10 px-2.5 py-1 font-display text-xs font-bold text-manara-teal">
+                {tag}
+                <button type="button" onClick={() => removeTag(tag)} className="hover:text-manara-teal/60"><X className="size-3" /></button>
+              </span>
+            ))}
+          </div>
+          <div className="mt-2 flex gap-1">
+            <input type="text" placeholder="Add tag..." value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={handleTagKeyDown}
+              className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-ink placeholder:text-ink/30 focus:border-manara-teal focus:outline-none" />
+            <button type="button" onClick={addTag} className="rounded-lg bg-manara-teal px-3 py-1.5 text-xs font-bold text-white transition hover:bg-manara-teal/80">Add</button>
+          </div>
+        </div>
+
+        {/* Status */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <p className="text-xs font-bold uppercase tracking-widest text-ink/40">Status</p>
           <div className="mt-3 flex items-center gap-1 rounded-lg bg-gray-100 p-1">
@@ -72,6 +121,22 @@ export default function PostForm({ post }: { post?: Post }) {
           </div>
         </div>
 
+        {/* Table of Contents Preview */}
+        {tocHeadings.length > 0 && (
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-ink/40">
+              <ListTree className="size-3" /> Table of Contents
+            </p>
+            <p className="mt-1 text-[10px] text-ink/30">Auto-detected from h1/h2 headings</p>
+            <ul className="mt-3 space-y-1">
+              {tocHeadings.map((h, i) => (
+                <li key={i} className={cn("truncate text-xs text-ink/60", h.level === 1 ? "font-bold" : "ml-3")}>{h.text}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Save Buttons */}
         <div className="space-y-2">
           <button type="button" onClick={() => handleSave("published")} disabled={isPending}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-manara-teal py-3 font-display font-bold text-white transition hover:bg-manara-yellow hover:text-manara-teal disabled:opacity-50">
@@ -83,6 +148,7 @@ export default function PostForm({ post }: { post?: Post }) {
           </button>
         </div>
 
+        {/* Post Info */}
         {post && (
           <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-5 text-sm">
             <p className="text-xs font-bold uppercase tracking-widest text-ink/40">Post Info</p>

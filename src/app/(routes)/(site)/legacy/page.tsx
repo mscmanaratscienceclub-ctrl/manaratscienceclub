@@ -71,7 +71,7 @@ function MemberGrid({ members, label }: { members: Member[]; label: string }) {
 export default function LegacyPage() {
   return (
     <div className="min-h-screen bg-cream">
-      <section className="bg-gradient-to-br from-manara-teal/5 via-cream to-manara-purple/5 px-4 py-20 text-center border-b border-manara-teal/10">
+      <section className="bg-cream px-4 py-20 text-center border-b border-manara-teal/10">
         <h1 className="font-display text-4xl font-bold text-ink md:text-5xl">
           Our Members
         </h1>

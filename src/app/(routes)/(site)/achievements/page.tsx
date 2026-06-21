@@ -14,8 +14,8 @@ const achievements = [
     tier: "Gold Medalist",
     category: "Physics",
     icon: Trophy,
-    color: "text-manara-yellow",
-    bg: "bg-manara-yellow/10",
+    color: "text-manara-red",
+    bg: "bg-manara-red/10",
   },
   {
     id: 2,
@@ -25,8 +25,8 @@ const achievements = [
     tier: "First Runner-Up",
     category: "Robotics",
     icon: Medal,
-    color: "text-manara-teal",
-    bg: "bg-manara-teal/10",
+    color: "text-manara-yellow",
+    bg: "bg-manara-yellow/10",
   },
   {
     id: 3,
@@ -47,8 +47,8 @@ const achievements = [
     tier: "Grand Prize",
     category: "Biology",
     icon: Trophy,
-    color: "text-manara-pink",
-    bg: "bg-manara-pink/10",
+    color: "text-manara-red",
+    bg: "bg-manara-red/10",
   },
 ];
 
@@ -56,9 +56,9 @@ export default function AchievementsPage() {
   return (
     <div className="min-h-screen bg-cream">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-manara-teal/5 via-cream to-manara-yellow/5 px-4 py-20 text-center">
+      <section className="bg-cream px-4 py-20 text-center">
         <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-manara-yellow to-orange-400 shadow-yellow">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-manara-yellow shadow-yellow">
             <Trophy className="h-8 w-8 text-white" />
           </div>
         </div>
