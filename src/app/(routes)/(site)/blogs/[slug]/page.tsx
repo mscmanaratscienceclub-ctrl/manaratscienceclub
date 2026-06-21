@@ -1,10 +1,21 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getPostBySlug } from "@/lib/actions/posts";
-import { ArrowLeft, Calendar, Clock, UserRound } from "lucide-react";
+import { getPostBySlug, getRelatedPosts } from "@/lib/actions/posts";
+import { ArrowLeft, Calendar, Clock, UserRound, BookOpen, Share2, ListTree, Tag } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+// Force dynamic rendering — prevents Next.js from prerenderering all slugs
+// in parallel at build time (would exhaust the Supabase free-tier pool)
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+}
+
+interface TocItem {
+  level: number;
+  text: string;
+  id: string;
 }
 
 function formatDate(date: Date | null): string {
@@ -23,14 +34,31 @@ function estimateReadingTime(html: string): number {
   return Math.max(1, Math.ceil(wordCount / 200));
 }
 
+function extractToc(html: string): TocItem[] {
+  const items: TocItem[] = [];
+  const re = /<h([12])[^>]*>([\s\S]*?)<\/h[12]>/gi;
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    const text = m[2].replace(/<[^>]*>/g, "").trim();
+    if (!text) continue;
+    const id = text.toLowerCase().replace(/[^\w]+/g, "-").replace(/(^-|-$)/g, "");
+    items.push({ level: Number(m[1]), text, id });
+  }
+  return items;
+}
+
+function injectHeadingIds(html: string): string {
+  return html.replace(/<(h[12])([^>]*)>([\s\S]*?)<\/\1>/gi, (_, tag, attrs, content) => {
+    const text = content.replace(/<[^>]*>/g, "").trim();
+    const id = text.toLowerCase().replace(/[^\w]+/g, "-").replace(/(^-|-$)/g, "");
+    return `<${tag}${attrs} id="${id}">${content}</${tag}>`;
+  });
+}
+
 export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params;
   const post = await getPostBySlug(slug);
-
-  if (!post) {
-    return { title: "Post Not Found" };
-  }
-
+  if (!post) return { title: "Post Not Found" };
   return {
     title: `${post.title} | Manarat Science Club`,
     description: post.excerpt ?? `Read "${post.title}" on Manarat Science Club.`,
@@ -40,52 +68,196 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params;
   const post = await getPostBySlug(slug);
-
-  if (!post) {
-    notFound();
-  }
+  if (!post) notFound();
 
   const readingTime = estimateReadingTime(post.content ?? "");
+  const toc = extractToc(post.content ?? "");
+  const relatedPosts = await getRelatedPosts(slug);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-cream/50 to-white">
-      <article className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:py-16">
-        {/* Back Link */}
-        <Link
-          href="/blogs"
-          className="group mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-manara-teal transition-colors hover:text-manara-teal/80"
-        >
-          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-          Back to articles
-        </Link>
-
-        {/* Title */}
-        <h1 className="font-display text-3xl font-bold leading-tight text-ink sm:text-4xl lg:text-5xl">
-          {post.title}
-        </h1>
-
-        {/* Metadata Bar */}
-        <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-manara-teal/10 pb-6 text-sm text-ink/50">
-          <span className="inline-flex items-center gap-1.5">
-            <UserRound className="h-4 w-4" />
-            {post.authorName}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Calendar className="h-4 w-4" />
-            {formatDate(post.publishedAt)}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Clock className="h-4 w-4" />
-            {readingTime} min read
-          </span>
+    <div className="min-h-screen bg-cream">
+      {/* Header */}
+      <section className="bg-white px-4 py-12 sm:px-6 lg:py-16">
+        <div className="mx-auto max-w-6xl">
+          <Link
+            href="/blogs"
+            className="group mb-6 inline-flex items-center gap-1.5 rounded-full border border-manara-teal/10 bg-cream px-4 py-2 text-sm font-medium text-manara-teal transition-all hover:bg-manara-teal hover:text-white"
+          >
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+            Back to articles
+          </Link>
+          <h1 className="mt-4 font-display text-4xl font-bold leading-tight text-ink sm:text-5xl lg:text-6xl">
+            {post.title}
+          </h1>
+          <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-ink/50">
+            <span className="inline-flex items-center gap-1.5">
+              <Calendar className="h-4 w-4" />
+              {formatDate(post.publishedAt)}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="h-4 w-4" />
+              {readingTime} min read
+            </span>
+          </div>
         </div>
+      </section>
 
-        {/* Content Body */}
-        <div
-          className="blog-content mt-10"
-          dangerouslySetInnerHTML={{ __html: post.content ?? "" }}
-        />
-      </article>
+      {/* Content + Sidebar */}
+      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:py-14">
+        <div className="flex flex-col-reverse gap-10 lg:flex-row lg:gap-14">
+          {/* Main Content */}
+          <div className="min-w-0 flex-1">
+            <div
+              className="blog-content"
+              dangerouslySetInnerHTML={{ __html: injectHeadingIds(post.content ?? "") }}
+            />
+          </div>
+
+          {/* Sidebar */}
+          <aside className="w-full shrink-0 lg:w-72 xl:w-80">
+            <div className="space-y-6 lg:sticky lg:top-24">
+              {/* Author card — table style */}
+              <div className="rounded-2xl border border-manara-teal/10 bg-white shadow-subtle">
+                <div className="border-b border-manara-teal/10 px-5 py-3">
+                  <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink/50">Author</h3>
+                </div>
+                <div className="px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-manara-teal text-sm font-bold text-white">
+                      {post.authorName?.charAt(0)?.toUpperCase() ?? "A"}
+                    </div>
+                    <div>
+                      <p className="font-display text-base font-bold text-ink">{post.authorName}</p>
+                      <p className="text-xs text-manara-teal">Author, MSC</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="border-t border-manara-teal/10">
+                  <table className="w-full text-sm">
+                    <tbody>
+                      <tr className="border-b border-manara-teal/5">
+                        <td className="px-5 py-2.5 font-medium text-ink/50">Published</td>
+                        <td className="px-5 py-2.5 text-ink/70">{formatDate(post.publishedAt)}</td>
+                      </tr>
+                      <tr className="border-b border-manara-teal/5">
+                        <td className="px-5 py-2.5 font-medium text-ink/50">Read time</td>
+                        <td className="px-5 py-2.5 text-ink/70">{readingTime} min</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-2.5 font-medium text-ink/50">Type</td>
+                        <td className="px-5 py-2.5 text-ink/70">Research Article</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Tags */}
+              {post.tags && post.tags.length > 0 && (
+                <div className="rounded-2xl border border-manara-teal/10 bg-white shadow-subtle">
+                  <div className="border-b border-manara-teal/10 px-5 py-3">
+                    <h3 className="flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wider text-ink/50">
+                      <Tag className="h-4 w-4" /> Tags
+                    </h3>
+                  </div>
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {post.tags.map((tag: string) => (
+                        <tr key={tag} className="border-b border-manara-teal/5 last:border-b-0">
+                          <td className="px-5 py-2.5">
+                            <span className="rounded-full bg-manara-teal/10 px-2.5 py-0.5 font-display text-xs font-bold text-manara-teal">{tag}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Table of Contents */}
+              {toc.length > 0 && (
+                <div className="rounded-2xl border border-manara-teal/10 bg-white shadow-subtle">
+                  <div className="border-b border-manara-teal/10 px-5 py-3">
+                    <h3 className="flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wider text-ink/50">
+                      <ListTree className="h-4 w-4" /> On this page
+                    </h3>
+                  </div>
+                  <nav className="px-5 py-4">
+                    <ul className="space-y-1.5">
+                      {toc.map((item, i) => (
+                        <li key={i}>
+                          <a
+                            href={`#${item.id}`}
+                            className={cn(
+                              "block text-xs leading-relaxed text-ink/50 transition-colors hover:text-manara-teal",
+                              item.level === 1 ? "font-bold" : "pl-3"
+                            )}
+                          >
+                            {item.text}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </nav>
+                </div>
+              )}
+
+              {/* Share card */}
+              <div className="rounded-2xl border border-manara-teal/10 bg-white p-5 shadow-subtle">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Share2 className="h-4 w-4 text-manara-teal" />
+                    <span className="font-display text-sm font-bold text-ink">Share</span>
+                  </div>
+                  <span className="rounded-full bg-manara-teal/10 px-3 py-1.5 font-display text-xs font-bold text-manara-teal transition-colors hover:bg-manara-teal hover:text-white">
+                    Copy Link
+                  </span>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      {/* Related */}
+      {relatedPosts.length > 0 && (
+        <section className="border-t border-manara-teal/10 bg-white py-16">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-8 flex items-center justify-between">
+              <h2 className="font-display text-xl font-bold text-ink">Related Articles</h2>
+              <Link
+                href="/blogs"
+                className="inline-flex items-center gap-1.5 rounded-full bg-manara-teal px-4 py-2 font-display text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:shadow-academic"
+              >
+                View All <ArrowLeft className="h-4 w-4 rotate-180" />
+              </Link>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {relatedPosts.map((related) => (
+                <Link
+                  key={related.id}
+                  href={`/blogs/${related.slug}`}
+                  className="group rounded-2xl border border-manara-teal/10 bg-cream p-6 transition-all hover:-translate-y-1 hover:shadow-academic"
+                >
+                  <h3 className="font-display text-lg font-bold text-ink transition-colors group-hover:text-manara-teal line-clamp-2">
+                    {related.title}
+                  </h3>
+                  <p className="mt-2 font-body text-sm leading-relaxed text-ink/60 line-clamp-2">
+                    {related.excerpt}
+                  </p>
+                  <div className="mt-4 flex items-center gap-3 text-xs text-ink/40">
+                    <span>{related.authorName}</span>
+                    <span className="text-ink/20">&middot;</span>
+                    <span>{related.publishedAt ? formatDate(related.publishedAt) : ""}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <div className="h-12" />
     </div>
   );
 }

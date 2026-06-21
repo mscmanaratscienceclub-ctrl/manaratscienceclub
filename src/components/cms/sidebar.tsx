@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, FileText, Users, ExternalLink, LogOut, Atom, PenSquare } from "lucide-react";
+import { LayoutDashboard, FileText, Users, ExternalLink, LogOut, Atom, PenSquare, Tag } from "lucide-react";
 import { signOut } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ interface SidebarProps { user: { name: string; email: string; role: string } }
 const navItems = [
   { href: "/cms", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/cms/posts", label: "Posts", icon: FileText, exact: false },
+  { href: "/cms/tags", label: "Tags", icon: Tag, exact: false },
 ];
 const adminItems = [{ href: "/cms/users", label: "Users", icon: Users, exact: false }];
 

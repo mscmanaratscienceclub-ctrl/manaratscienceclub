@@ -10,6 +10,7 @@ export const posts = pgTable("posts", {
   excerpt: text("excerpt").default(""),
   content: text("content").notNull().default(""),
   coverImage: text("cover_image"),
+  tags: text("tags").array().default([]),
   status: text("status").notNull().default("draft"), // "draft" | "published"
   authorId: text("author_id")
     .notNull()
