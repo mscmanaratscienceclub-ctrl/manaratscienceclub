@@ -12,7 +12,20 @@ export const auth = betterAuth({
     username({
       minUsernameLength: 4,
       maxUsernameLength: 10,
-      usernameValidator: (value) => !restrictedUsernames.includes(value),
+      usernameValidator: (value) => {
+        const normalized = value.toLowerCase();
+        // Regex check matching client-side (only letters and numbers)
+        if (!/^[a-zA-Z0-9]+$/.test(value)) {
+          return false;
+        }
+        // Partial match check for restricted usernames
+        for (const pattern of restrictedUsernames) {
+          if (normalized.includes(pattern.toLowerCase())) {
+            return false;
+          }
+        }
+        return true;
+      },
       usernameNormalization: (value) => value.toLowerCase(),
     }),
     admin(),

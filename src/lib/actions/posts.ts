@@ -6,6 +6,7 @@ import { user } from "@/db/schema/auth/user";
 import { getServerSession } from "@/lib/auth/get-session";
 import { eq, and, ne, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { cache } from "react";
 
 function generateSlug(title: string): string {
   return title.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim().slice(0, 80);
@@ -32,12 +33,13 @@ const postFields = {
   authorName: user.name,
 };
 
-export async function getPublishedPosts() {
-  return db.select(postFields).from(posts)
+export const getPublishedPosts = cache(async (limit?: number) => {
+  const query = db
+    .select(postFields)
+    .from(posts)
     .leftJoin(user, eq(posts.authorId, user.id))
     .where(eq(posts.status, "published"))
     .orderBy(desc(posts.publishedAt));
-}
 
 export async function getRelatedPosts(currentSlug: string, limit = 3) {
   return db.select(postFields).from(posts)
@@ -55,7 +57,7 @@ export async function getPostBySlug(slug: string) {
     .where(and(eq(posts.slug, slug), eq(posts.status, "published")))
     .limit(1);
   return result[0] ?? null;
-}
+});
 
 export async function getAllPostsCms() {
   const session = await getServerSession();

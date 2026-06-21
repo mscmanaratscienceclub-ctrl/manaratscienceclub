@@ -34,13 +34,12 @@ export default function SignUpForm({ redirect }: { redirect?: string }) {
       username: "",
       password: "",
       confirmPassword: "",
-      gender: false
+      gender: false,
     },
   });
 
   function onSubmit(data: SignUpValues) {
     startTransition(async () => {
-      console.log("submit data:", data);
       const response = await signUp.email(data);
 
       if (response.error) {
