@@ -41,6 +41,13 @@ export const getPublishedPosts = cache(async (limit?: number) => {
     .where(eq(posts.status, "published"))
     .orderBy(desc(posts.publishedAt));
 
+  if (limit) {
+    query.limit(limit);
+  }
+
+  return query;
+});
+
 export async function getRelatedPosts(currentSlug: string, limit = 3) {
   return db.select(postFields).from(posts)
     .leftJoin(user, eq(posts.authorId, user.id))
@@ -49,7 +56,7 @@ export async function getRelatedPosts(currentSlug: string, limit = 3) {
     .limit(limit);
 }
 
-export async function getPostBySlug(slug: string) {
+export const getPostBySlug = cache(async (slug: string) => {
   const result = await db
     .select({ ...postFields, content: posts.content })
     .from(posts)
