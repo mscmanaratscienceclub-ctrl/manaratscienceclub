@@ -10,12 +10,17 @@ function assertAdmin(role: string) {
   if (role !== "admin") throw new Error("Unauthorized: Admin only");
 }
 
-export async function getAllUsers() {
+export async function getAllUsers(limit = 20, offset = 0) {
   const session = await getServerSession();
   if (!session) throw new Error("Unauthorized");
   const role = (session.user as { role: string }).role ?? "member";
   assertAdmin(role);
-  return db.select({ id: user.id, name: user.name, email: user.email, username: user.username, role: user.role, createdAt: user.createdAt }).from(user).orderBy(desc(user.createdAt));
+  return db
+    .select({ id: user.id, name: user.name, email: user.email, username: user.username, role: user.role, createdAt: user.createdAt })
+    .from(user)
+    .orderBy(desc(user.createdAt))
+    .limit(limit)
+    .offset(offset);
 }
 
 export async function updateUserRole(userId: string, newRole: "admin" | "writer" | "member") {
