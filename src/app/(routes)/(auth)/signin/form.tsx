@@ -38,7 +38,6 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
       const response = await signIn.username(data);
 
       if (response.error) {
-        console.log("SIGN_IN:", response.error.message);
         toast.error(response.error.message);
       } else {
         router.push(redirect || "/");

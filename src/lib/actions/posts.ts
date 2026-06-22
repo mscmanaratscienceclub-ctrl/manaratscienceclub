@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { posts } from "@/db/schema/posts";
 import { user } from "@/db/schema/auth/user";
 import { getServerSession } from "@/lib/auth/get-session";
-import { eq, and, ne, desc } from "drizzle-orm";
+import { eq, and, ne, desc, sql, count, like } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
 
@@ -13,13 +13,20 @@ function generateSlug(title: string): string {
 }
 
 async function ensureUniqueSlug(baseSlug: string, excludeId?: string): Promise<string> {
-  let slug = baseSlug; let counter = 1;
-  while (true) {
-    const existing = await db.select({ id: posts.id }).from(posts).where(eq(posts.slug, slug)).limit(1);
-    if (existing.length === 0 || existing[0].id === excludeId) break;
-    slug = `${baseSlug}-${counter}`; counter++;
+  const existingSlugs = await db
+    .select({ slug: posts.slug, id: posts.id })
+    .from(posts)
+    .where(like(posts.slug, `${baseSlug}%`));
+
+  const slugSet = new Set(existingSlugs.filter((p) => p.id !== excludeId).map((p) => p.slug));
+
+  if (!slugSet.has(baseSlug)) return baseSlug;
+
+  let counter = 1;
+  while (slugSet.has(`${baseSlug}-${counter}`)) {
+    counter++;
   }
-  return slug;
+  return `${baseSlug}-${counter}`;
 }
 
 function assertCmsRole(role: string) {
@@ -33,19 +40,15 @@ const postFields = {
   authorName: user.name,
 };
 
-export const getPublishedPosts = cache(async (limit?: number) => {
-  const query = db
+export const getPublishedPosts = cache(async (limit = 10, offset = 0) => {
+  return db
     .select(postFields)
     .from(posts)
     .leftJoin(user, eq(posts.authorId, user.id))
     .where(eq(posts.status, "published"))
-    .orderBy(desc(posts.publishedAt));
-
-  if (limit) {
-    query.limit(limit);
-  }
-
-  return query;
+    .orderBy(desc(posts.publishedAt))
+    .limit(limit)
+    .offset(offset);
 });
 
 export async function getRelatedPosts(currentSlug: string, limit = 3) {
@@ -66,14 +69,23 @@ export const getPostBySlug = cache(async (slug: string) => {
   return result[0] ?? null;
 });
 
-export async function getAllPostsCms() {
+export async function getAllPostsCms(limit = 20, offset = 0) {
   const session = await getServerSession();
   if (!session) throw new Error("Unauthorized");
   const role = (session.user as { role: string }).role ?? "member";
   assertCmsRole(role);
-  const q = db.select(postFields).from(posts).leftJoin(user, eq(posts.authorId, user.id)).orderBy(desc(posts.updatedAt));
-  if (role === "writer") return q.where(eq(posts.authorId, session.user.id));
-  return q;
+
+  let q = db
+    .select(postFields)
+    .from(posts)
+    .leftJoin(user, eq(posts.authorId, user.id))
+    .$dynamic();
+
+  if (role === "writer") {
+    q = q.where(eq(posts.authorId, session.user.id));
+  }
+
+  return q.orderBy(desc(posts.updatedAt)).limit(limit).offset(offset);
 }
 
 export async function getPostByIdCms(id: string) {
@@ -147,24 +159,15 @@ export async function getAllTagsWithCounts() {
   const role = (session.user as { role: string }).role ?? "member";
   assertCmsRole(role);
 
-  const allPosts = await db.select({ tags: posts.tags }).from(posts);
-  const tagCounts: Record<string, number> = {};
+  const result = await db
+    .select({
+      name: sql<string>`trim(unnest(coalesce(${posts.tags}, ARRAY[]::text[])))`.as("tag_name"),
+      count: count(),
+    })
+    .from(posts)
+    .groupBy(sql`tag_name`)
+    .orderBy(desc(count()));
 
-  allPosts.forEach((post) => {
-    if (post.tags) {
-      post.tags.forEach((tag) => {
-        if (tag) {
-          const trimmed = tag.trim();
-          if (trimmed) {
-            tagCounts[trimmed] = (tagCounts[trimmed] || 0) + 1;
-          }
-        }
-      });
-    }
-  });
-
-  return Object.entries(tagCounts)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count);
+  return result.filter((r) => r.name !== "");
 }
 

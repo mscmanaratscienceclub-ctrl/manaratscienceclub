@@ -43,7 +43,6 @@ export default function SignUpForm({ redirect }: { redirect?: string }) {
       const response = await signUp.email(data);
 
       if (response.error) {
-        console.log("SIGN_UP:", response.error.status);
         toast.error(response.error.message);
       } else {
         router.push(redirect || "/");
