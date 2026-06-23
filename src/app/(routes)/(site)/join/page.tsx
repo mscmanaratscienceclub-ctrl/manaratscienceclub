@@ -26,7 +26,7 @@ export default function JoinPage() {
     return (
       <div className="min-h-screen bg-cream py-16">
         <div className="mx-auto max-w-lg px-4 sm:px-6 lg:px-8">
-          <div className="rounded-3xl bg-white p-10 text-center shadow-subtle border border-manara-teal/10">
+          <div className="rounded-3xl bg-surface p-10 text-center shadow-subtle border border-manara-teal/10">
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-manara-teal/10">
               <UserPlus className="h-10 w-10 text-manara-teal" />
             </div>
@@ -39,7 +39,7 @@ export default function JoinPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/signin?redirect=/join"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-manara-teal bg-white px-8 py-3 font-display font-bold text-manara-teal transition hover:bg-manara-teal/5"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-manara-teal bg-surface px-8 py-3 font-display font-bold text-manara-teal transition hover:bg-manara-teal/5"
               >
                 <LogIn className="h-5 w-5" />
                 Sign In
@@ -71,7 +71,7 @@ export default function JoinPage() {
         </div>
 
         {submitted ? (
-          <div className="rounded-3xl bg-white p-12 text-center shadow-subtle border border-manara-teal/10">
+          <div className="rounded-3xl bg-surface p-12 text-center shadow-subtle border border-manara-teal/10">
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-manara-teal/10">
               <CheckCircle2 className="h-10 w-10 text-manara-teal" />
             </div>
@@ -87,7 +87,7 @@ export default function JoinPage() {
             </button>
           </div>
         ) : (
-          <div className="rounded-3xl bg-white p-8 shadow-subtle border border-manara-teal/10 sm:p-10">
+          <div className="rounded-3xl bg-surface p-8 shadow-subtle border border-manara-teal/10 sm:p-10">
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-4">
                 <h3 className="font-display text-xl font-bold text-ink border-b border-manara-teal/10 pb-2">Personal Information</h3>
@@ -95,22 +95,22 @@ export default function JoinPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label htmlFor="fullName" className="mb-1 block text-sm font-semibold text-ink/80">Full Name</label>
-                    <input required type="text" id="fullName" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-ink focus:border-manara-teal focus:bg-white focus:outline-none focus:ring-2 focus:ring-manara-teal/20" placeholder="John Doe" />
+                    <input required type="text" id="fullName" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-ink focus:border-manara-teal focus:bg-surface focus:outline-none focus:ring-2 focus:ring-manara-teal/20" placeholder="John Doe" />
                   </div>
                   <div>
                     <label htmlFor="studentId" className="mb-1 block text-sm font-semibold text-ink/80">Student ID / Roll No</label>
-                    <input required type="text" id="studentId" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-ink focus:border-manara-teal focus:bg-white focus:outline-none focus:ring-2 focus:ring-manara-teal/20" placeholder="e.g. 210042" />
+                    <input required type="text" id="studentId" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-ink focus:border-manara-teal focus:bg-surface focus:outline-none focus:ring-2 focus:ring-manara-teal/20" placeholder="e.g. 210042" />
                   </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label htmlFor="email" className="mb-1 block text-sm font-semibold text-ink/80">Email Address</label>
-                    <input required type="email" id="email" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-ink focus:border-manara-teal focus:bg-white focus:outline-none focus:ring-2 focus:ring-manara-teal/20" placeholder="john@example.com" />
+                    <input required type="email" id="email" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-ink focus:border-manara-teal focus:bg-surface focus:outline-none focus:ring-2 focus:ring-manara-teal/20" placeholder="john@example.com" />
                   </div>
                   <div>
                     <label htmlFor="cohort" className="mb-1 block text-sm font-semibold text-ink/80">Academic Cohort / Year</label>
-                    <select id="cohort" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-ink focus:border-manara-teal focus:bg-white focus:outline-none focus:ring-2 focus:ring-manara-teal/20">
+                    <select id="cohort" className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-ink focus:border-manara-teal focus:bg-surface focus:outline-none focus:ring-2 focus:ring-manara-teal/20">
                       <option>Class 9</option>
                       <option>Class 10</option>
                       <option>Class 11</option>
@@ -138,7 +138,7 @@ export default function JoinPage() {
                 <h3 className="font-display text-xl font-bold text-ink border-b border-manara-teal/10 pb-2">Statement of Purpose</h3>
                 <div>
                   <label htmlFor="sop" className="mb-2 block text-sm font-semibold text-ink/80">Why do you want to join Manarat Science Club?</label>
-                  <textarea id="sop" rows={4} required className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-ink focus:border-manara-teal focus:bg-white focus:outline-none focus:ring-2 focus:ring-manara-teal/20" placeholder="Tell us about your passion for science and what you hope to achieve..."></textarea>
+                  <textarea id="sop" rows={4} required className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-ink focus:border-manara-teal focus:bg-surface focus:outline-none focus:ring-2 focus:ring-manara-teal/20" placeholder="Tell us about your passion for science and what you hope to achieve..."></textarea>
                 </div>
               </div>
 

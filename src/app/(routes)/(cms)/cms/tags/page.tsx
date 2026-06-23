@@ -1,37 +1,6 @@
 import { getAllTagsWithCounts } from "@/lib/actions/posts";
+import { getTagConfig } from "@/lib/tag-styles";
 import { Tag as TagIcon, FileText } from "lucide-react";
-
-interface TagConfig {
-  name: string;
-  dot: string;
-  text: string;
-  bg: string;
-  accent: string;
-}
-
-const tagStyles = [
-  { dot: "#60a5fa", text: "#2563eb", bg: "rgba(96, 165, 250, 0.15)", accent: "var(--color-manara-blue)" },
-  { dot: "#7c3aed", text: "#7c3aed", bg: "rgba(124, 58, 237, 0.13)", accent: "var(--color-manara-purple)" },
-  { dot: "#ec4899", text: "#db2777", bg: "rgba(236, 72, 153, 0.13)", accent: "var(--color-manara-pink)" },
-  { dot: "#dc2626", text: "#dc2626", bg: "rgba(220, 38, 38, 0.1)", accent: "var(--color-manara-red)" },
-  { dot: "#ffb703", text: "#b45309", bg: "rgba(255, 183, 3, 0.18)", accent: "var(--color-manara-yellow)" },
-  { dot: "#005f6b", text: "#005f6b", bg: "rgba(0, 95, 107, 0.1)", accent: "var(--color-manara-teal)" },
-  { dot: "#16a34a", text: "#16a34a", bg: "rgba(22, 163, 74, 0.12)", accent: "#16a34a" },
-];
-
-function getTagConfig(tag: string): TagConfig {
-  let hash = 0;
-  const trimmed = tag.trim().toLowerCase();
-  for (let i = 0; i < trimmed.length; i++) {
-    hash = trimmed.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % tagStyles.length;
-  const config = tagStyles[index];
-  return {
-    name: tag.charAt(0).toUpperCase() + tag.slice(1),
-    ...config,
-  };
-}
 
 export default async function TagsCmsPage() {
   const tags = await getAllTagsWithCounts();
@@ -56,7 +25,7 @@ export default async function TagsCmsPage() {
             return (
               <div
                 key={tagObj.name}
-                className="relative overflow-hidden rounded-2xl border border-manara-teal/10 bg-white p-6 shadow-subtle transition-all hover:-translate-y-0.5 hover:shadow-md"
+                className="relative overflow-hidden rounded-2xl border border-manara-teal/10 bg-surface p-6 shadow-subtle transition-all hover:-translate-y-0.5 hover:shadow-md"
               >
                 <div
                   className="absolute top-0 left-0 right-0 h-1"
@@ -96,7 +65,7 @@ export default async function TagsCmsPage() {
           })}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-manara-teal/10 bg-white py-16 text-center shadow-subtle">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-manara-teal/10 bg-surface py-16 text-center shadow-subtle">
           <TagIcon className="mb-3 h-10 w-10 text-manara-teal/30" />
           <h3 className="font-display text-lg font-bold text-ink/70">
             No tags found

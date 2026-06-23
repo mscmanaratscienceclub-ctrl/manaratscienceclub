@@ -27,7 +27,7 @@ export default function OpportunitiesPage() {
         </div>
 
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          <article className="rounded-[2rem] border border-manara-red/10 bg-white p-6 shadow-subtle flex flex-col items-center text-center">
+          <article className="rounded-[2rem] border border-manara-red/10 bg-surface p-6 shadow-subtle flex flex-col items-center text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-manara-red/10 text-manara-red">
               <FlaskConical className="h-8 w-8" />
             </div>
@@ -40,7 +40,7 @@ export default function OpportunitiesPage() {
             </span>
           </article>
           
-          <article className="rounded-[2rem] border border-manara-yellow/10 bg-white p-6 shadow-subtle flex flex-col items-center text-center">
+          <article className="rounded-[2rem] border border-manara-yellow/10 bg-surface p-6 shadow-subtle flex flex-col items-center text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-manara-yellow/10 text-manara-yellow">
               <Code2 className="h-8 w-8" />
             </div>
@@ -53,7 +53,7 @@ export default function OpportunitiesPage() {
             </span>
           </article>
 
-          <article className="rounded-[2rem] border border-manara-teal/10 bg-white p-6 shadow-subtle flex flex-col items-center text-center">
+          <article className="rounded-[2rem] border border-manara-teal/10 bg-surface p-6 shadow-subtle flex flex-col items-center text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-manara-teal/10 text-manara-teal">
               <Bot className="h-8 w-8" />
             </div>
@@ -66,7 +66,7 @@ export default function OpportunitiesPage() {
             </span>
           </article>
 
-          <article className="rounded-[2rem] border border-manara-red/10 bg-white p-6 shadow-subtle flex flex-col items-center text-center">
+          <article className="rounded-[2rem] border border-manara-red/10 bg-surface p-6 shadow-subtle flex flex-col items-center text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-manara-red/10 text-manara-red">
               <Presentation className="h-8 w-8" />
             </div>
@@ -82,7 +82,7 @@ export default function OpportunitiesPage() {
       </section>
 
       {/* Projects Repository Preview */}
-      <section className="bg-white py-16 sm:py-20">
+      <section className="bg-surface py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="font-display text-3xl font-bold text-ink mb-6">Open Positions</h2>
           <p className="font-body text-ink/60 max-w-2xl mx-auto mb-10">

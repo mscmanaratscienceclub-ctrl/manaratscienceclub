@@ -23,7 +23,7 @@ export default function RichTextEditor({ content, onChange, placeholder = "Start
   }, [content, editor]);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white [&_.ProseMirror]:break-words">
       <Toolbar editor={editor} />
       <EditorContent editor={editor} />
     </div>

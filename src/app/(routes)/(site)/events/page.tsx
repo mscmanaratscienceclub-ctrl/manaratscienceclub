@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function EventsPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-surface">
       {/* Hero Section */}
       <section className="bg-cream px-4 py-20 text-center">
         <h1 className="font-display text-4xl font-bold text-ink md:text-5xl">
@@ -32,7 +32,7 @@ export default function EventsPage() {
           </button>
         </div>
 
-        <div className="overflow-hidden rounded-[2rem] border border-manara-teal/10 bg-white shadow-subtle">
+        <div className="overflow-hidden rounded-[2rem] border border-manara-teal/10 bg-surface shadow-subtle">
           <div className="hidden grid-cols-[1fr_1fr_1.2fr_.8fr] bg-manara-teal px-6 py-4 text-sm font-bold uppercase tracking-wide text-white md:grid">
             <span>Date</span>
             <span>Session</span>

@@ -45,6 +45,22 @@
   --sidebar-ring: oklch(0.708 0 0);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
+
+  /* ── Brand raw tokens (light) ───────────────────────────────── */
+  --cream: #fff8ec;
+  --ink: #142326;
+  --surface: #ffffff;
+  --manara-teal: #005f6b;
+  --manara-yellow: #ffb703;
+  --manara-purple: #7c3aed;
+  --manara-pink: #ec4899;
+  --manara-blue: #60a5fa;
+  --manara-red: #dc2626;
+
+  --sh-academic: 0 18px 50px rgba(0, 95, 107, 0.12);
+  --sh-subtle: 0 10px 30px rgba(20, 35, 38, 0.08);
+  --sh-yellow: 0 16px 36px rgba(255, 183, 3, 0.25);
+  --sh-red: 0 16px 36px rgba(220, 38, 38, 0.2);
 }
 
 .dark {
@@ -80,6 +96,22 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* ── Brand raw tokens (dark) ────────────────────────────────── */
+  --cream: #0b1120;
+  --ink: #e2e8f0;
+  --surface: #131c2e;
+  --manara-teal: #2dd4bf;
+  --manara-yellow: #fbbf24;
+  --manara-purple: #a78bfa;
+  --manara-pink: #f472b6;
+  --manara-blue: #60a5fa;
+  --manara-red: #f87171;
+
+  --sh-academic: 0 18px 50px rgba(0, 0, 0, 0.45);
+  --sh-subtle: 0 10px 30px rgba(0, 0, 0, 0.3);
+  --sh-yellow: 0 16px 36px rgba(251, 191, 36, 0.12);
+  --sh-red: 0 16px 36px rgba(248, 113, 113, 0.12);
 }
 
 @theme inline {
@@ -154,19 +186,20 @@
 
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  --color-manara-teal: #005f6b;
-  --color-manara-yellow: #ffb703;
-  --color-manara-purple: #7c3aed;
-  --color-manara-pink: #ec4899;
-  --color-manara-blue: #60a5fa;
-  --color-manara-red: #dc2626;
-  --color-cream: #fff8ec;
-  --color-ink: #142326;
+  --color-manara-teal: var(--manara-teal);
+  --color-manara-yellow: var(--manara-yellow);
+  --color-manara-purple: var(--manara-purple);
+  --color-manara-pink: var(--manara-pink);
+  --color-manara-blue: var(--manara-blue);
+  --color-manara-red: var(--manara-red);
+  --color-cream: var(--cream);
+  --color-ink: var(--ink);
+  --color-surface: var(--surface);
 
-  --shadow-academic: 0 18px 50px rgba(0, 95, 107, 0.12);
-  --shadow-subtle: 0 10px 30px rgba(20, 35, 38, 0.08);
-  --shadow-yellow: 0 16px 36px rgba(255, 183, 3, 0.25);
-  --shadow-red: 0 16px 36px rgba(220, 38, 38, 0.2);
+  --shadow-academic: var(--sh-academic);
+  --shadow-subtle: var(--sh-subtle);
+  --shadow-yellow: var(--sh-yellow);
+  --shadow-red: var(--sh-red);
 }
 
 @layer base {
@@ -174,23 +207,31 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--color-cream);
+    color: var(--color-ink);
   }
   html {
     @apply font-sans;
   }
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-manara-teal) 25%, transparent);
+  }
+}
+
+html {
+  transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 @layer utilities {
   .diagram-grid {
     background-image:
-      linear-gradient(rgba(0, 95, 107, 0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 95, 107, 0.08) 1px, transparent 1px);
+      linear-gradient(color-mix(in srgb, var(--color-manara-teal) 8%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--color-manara-teal) 8%, transparent) 1px, transparent 1px);
     background-size: 32px 32px;
   }
   .dot-grid {
     background-image: radial-gradient(
-      rgba(0, 95, 107, 0.14) 1.4px,
+      color-mix(in srgb, var(--color-manara-teal) 14%, transparent) 1.4px,
       transparent 1.4px
     );
     background-size: 20px 20px;
@@ -220,6 +261,7 @@
 /* ── Blog / CMS prose content ───────────────────────────────────── */
 .blog-content {
   @apply font-body text-ink/80;
+  overflow-wrap: break-word;
 }
 .blog-content h1 {
   @apply font-display text-ink mt-12 mb-5 text-4xl font-bold leading-tight sm:text-5xl;
@@ -270,6 +312,9 @@
 .blog-content pre {
   @apply bg-ink my-8 overflow-x-auto rounded-2xl p-5 text-sm leading-6 text-white shadow-lg;
 }
+.dark .blog-content pre {
+  background: #0f172a;
+}
 .blog-content code {
   @apply bg-manara-teal/10 text-manara-teal rounded-lg px-1.5 py-0.5 font-mono text-sm;
 }
@@ -286,10 +331,25 @@
   @apply my-10 border-manara-teal/10;
 }
 .blog-content img {
-  @apply my-8 rounded-2xl shadow-subtle;
+  @apply my-8 max-w-full rounded-2xl shadow-subtle;
 }
 .blog-content iframe {
   @apply my-8 aspect-video w-full rounded-2xl shadow-subtle;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.bg-footer {
+  background: linear-gradient(135deg, #002f36 0%, #005f6b 60%, #007a8a 100%);
+}
+.dark .bg-footer {
+  background: linear-gradient(135deg, #04101a 0%, #0b1a2e 60%, #112340 100%);
+}
+
+.bg-footer-accent {
+  background: linear-gradient(90deg, #ffb703, #ec4899, #7c3aed, #005f6b);
+}
+.dark .bg-footer-accent {
+  background: linear-gradient(90deg, #fbbf24, #f472b6, #a78bfa, #22d3ee);
 }
 
 @keyframes fadeUp {

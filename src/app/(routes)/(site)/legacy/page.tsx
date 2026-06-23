@@ -17,7 +17,7 @@ const socialIcons = {
 
 function MemberCard({ member }: { member: Member }) {
   return (
-    <article className="flex flex-col items-center rounded-[2rem] border border-manara-teal/10 bg-white p-6 shadow-subtle text-center transition hover:-translate-y-1 hover:shadow-academic">
+    <article className="flex flex-col items-center rounded-[2rem] border border-manara-teal/10 bg-surface p-6 shadow-subtle text-center transition hover:-translate-y-1 hover:shadow-academic">
       <div className="flex h-24 w-24 items-center justify-center rounded-full bg-manara-teal/10 text-manara-teal mb-4 overflow-hidden">
         {member.image ? (
           <img src={member.image} alt={member.name} className="h-full w-full object-cover" />
@@ -80,11 +80,11 @@ export default function LegacyPage() {
         </p>
       </section>
 
-      <MemberGrid members={legacyMembers} label="Legacy Members" />
+      <MemberGrid members={currentMembers} label="Current Members" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <hr className="border-manara-teal/10" />
       </div>
-      <MemberGrid members={currentMembers} label="Current Members" />
+      <MemberGrid members={legacyMembers} label="Legacy Members" />
       <MemberGrid members={nextGenMembers} label="2026–2027 Edition" />
     </div>
   );

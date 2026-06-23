@@ -38,6 +38,9 @@ const postFields = {
   tags: posts.tags, status: posts.status, authorId: posts.authorId,
   publishedAt: posts.publishedAt, createdAt: posts.createdAt, updatedAt: posts.updatedAt,
   authorName: user.name,
+  customAuthorName: posts.customAuthorName,
+  customAuthorAvatar: posts.customAuthorAvatar,
+  customAuthorBio: posts.customAuthorBio,
 };
 
 export const getPublishedPosts = cache(async (limit = 10, offset = 0) => {
@@ -99,7 +102,7 @@ export async function getPostByIdCms(id: string) {
   return post;
 }
 
-export async function createPost(data: { title: string; excerpt: string; content: string; tags?: string[]; status: "draft" | "published" }) {
+export async function createPost(data: { title: string; excerpt: string; content: string; tags?: string[]; status: "draft" | "published"; customAuthorName?: string; customAuthorAvatar?: string; customAuthorBio?: string }) {
   const session = await getServerSession();
   if (!session) throw new Error("Unauthorized");
   const role = (session.user as { role: string }).role ?? "member";
@@ -107,12 +110,12 @@ export async function createPost(data: { title: string; excerpt: string; content
   if (!data.title.trim()) throw new Error("Title is required");
   const slug = await ensureUniqueSlug(generateSlug(data.title));
   const id = crypto.randomUUID();
-  await db.insert(posts).values({ id, title: data.title, slug, excerpt: data.excerpt, content: data.content, tags: data.tags ?? [], authorId: session.user.id, status: data.status, publishedAt: data.status === "published" ? new Date() : null });
+  await db.insert(posts).values({ id, title: data.title, slug, excerpt: data.excerpt, content: data.content, tags: data.tags ?? [], authorId: session.user.id, status: data.status, publishedAt: data.status === "published" ? new Date() : null, customAuthorName: data.customAuthorName ?? null, customAuthorAvatar: data.customAuthorAvatar ?? null, customAuthorBio: data.customAuthorBio ?? null });
   revalidatePath("/cms/posts"); revalidatePath("/blogs");
   return { id, slug };
 }
 
-export async function updatePost(id: string, data: { title: string; excerpt: string; content: string; tags?: string[]; status: "draft" | "published" }) {
+export async function updatePost(id: string, data: { title: string; excerpt: string; content: string; tags?: string[]; status: "draft" | "published"; customAuthorName?: string; customAuthorAvatar?: string; customAuthorBio?: string }) {
   const session = await getServerSession();
   if (!session) throw new Error("Unauthorized");
   const role = (session.user as { role: string }).role ?? "member";
@@ -121,7 +124,7 @@ export async function updatePost(id: string, data: { title: string; excerpt: str
   if (!existing[0]) throw new Error("Post not found");
   if (role === "writer" && existing[0].authorId !== session.user.id) throw new Error("Unauthorized");
   const slug = await ensureUniqueSlug(generateSlug(data.title), id);
-  await db.update(posts).set({ title: data.title, slug, excerpt: data.excerpt, content: data.content, tags: data.tags ?? [], status: data.status, publishedAt: data.status === "published" && !existing[0].publishedAt ? new Date() : existing[0].publishedAt, updatedAt: new Date() }).where(eq(posts.id, id));
+  await db.update(posts).set({ title: data.title, slug, excerpt: data.excerpt, content: data.content, tags: data.tags ?? [], status: data.status, publishedAt: data.status === "published" && !existing[0].publishedAt ? new Date() : existing[0].publishedAt, updatedAt: new Date(), customAuthorName: data.customAuthorName ?? null, customAuthorAvatar: data.customAuthorAvatar ?? null, customAuthorBio: data.customAuthorBio ?? null }).where(eq(posts.id, id));
   revalidatePath("/cms/posts"); revalidatePath(`/cms/posts/${id}`); revalidatePath("/blogs"); revalidatePath(`/blogs/${slug}`);
   return { id, slug };
 }

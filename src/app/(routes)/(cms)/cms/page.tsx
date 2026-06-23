@@ -66,7 +66,7 @@ export default async function CmsDashboardPage() {
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="flex items-center gap-4 rounded-2xl bg-white p-6 shadow-subtle"
+            className="flex items-center gap-4 rounded-2xl bg-surface p-6 shadow-subtle"
           >
             <div className={`rounded-xl ${stat.bg} p-3`}>
               <stat.icon className={`h-6 w-6 ${stat.color}`} />
@@ -82,7 +82,7 @@ export default async function CmsDashboardPage() {
       </div>
 
       {/* Recent Posts */}
-      <div className="rounded-2xl bg-white shadow-subtle">
+      <div className="rounded-2xl bg-surface shadow-subtle">
         <div className="flex items-center justify-between border-b border-ink/5 px-6 py-4">
           <h2 className="font-display text-lg font-semibold text-ink">
             Recent Posts
@@ -144,7 +144,7 @@ export default async function CmsDashboardPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 font-body text-sm text-ink/60">
-                      {post.authorName ?? "Unknown"}
+                      {post.customAuthorName ?? post.authorName ?? "Unknown"}
                     </td>
                     <td className="px-6 py-4 font-body text-sm text-ink/60">
                       {new Date(post.createdAt).toLocaleDateString("en-US", {

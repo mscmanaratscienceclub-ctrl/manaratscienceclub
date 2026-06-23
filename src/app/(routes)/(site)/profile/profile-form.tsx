@@ -202,7 +202,7 @@ export default function ProfileForm({ user }: { user: any }) {
             />
             <label
               htmlFor="profile-image-input"
-              className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-manara-teal/20 bg-white px-5 py-2 text-sm font-semibold text-manara-teal transition-colors hover:bg-manara-teal/5"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-manara-teal/20 bg-surface px-5 py-2 text-sm font-semibold text-manara-teal transition-colors hover:bg-manara-teal/5"
             >
               <ImagePlus className="h-4 w-4" />
               {user.image ? "Change Photo" : "Upload Photo"}

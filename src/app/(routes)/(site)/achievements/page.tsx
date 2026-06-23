@@ -76,7 +76,7 @@ export default function AchievementsPage() {
           {achievements.map((item) => (
             <div
               key={item.id}
-              className="group flex flex-col overflow-hidden rounded-2xl border border-manara-teal/10 bg-white shadow-subtle transition-all duration-300 hover:-translate-y-1 hover:shadow-academic p-6"
+              className="group flex flex-col overflow-hidden rounded-2xl border border-manara-teal/10 bg-surface shadow-subtle transition-all duration-300 hover:-translate-y-1 hover:shadow-academic p-6"
             >
               <div className={`mb-5 flex h-12 w-12 items-center justify-center rounded-xl ${item.bg} ${item.color}`}>
                 <item.icon className="h-6 w-6" />

@@ -13,7 +13,7 @@ export default async function SignInPage({
 }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
-      <div className="flex w-full flex-col rounded-2xl border border-manara-teal/10 bg-white px-8 py-6 shadow-subtle md:w-96">
+      <div className="flex w-full flex-col rounded-2xl border border-manara-teal/10 bg-surface px-8 py-6 shadow-subtle md:w-96">
         <h1 className="font-display text-3xl font-bold text-ink">Sign In</h1>
         <p className="mt-1 font-body text-sm text-ink/60">Welcome back! Sign in to your account.</p>
         <SignInForm redirect={(await searchParams).redirect} />

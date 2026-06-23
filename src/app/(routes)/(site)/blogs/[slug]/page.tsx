@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getPostBySlug, getRelatedPosts } from "@/lib/actions/posts";
-import { ArrowLeft, Calendar, Clock, UserRound, BookOpen, Share2, ListTree, Tag } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, UserRound, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import TocSidebar from "../_components/toc-sidebar";
 
 // Force dynamic rendering — prevents Next.js from prerenderering all slugs
 // in parallel at build time (would exhaust the Supabase free-tier pool)
@@ -39,7 +40,7 @@ function estimateReadingTime(html: string): number {
 
 function extractToc(html: string): TocItem[] {
   const items: TocItem[] = [];
-  const re = /<h([12])[^>]*>([\s\S]*?)<\/h[12]>/gi;
+  const re = /<h([123])[^>]*>([\s\S]*?)<\/h[123]>/gi;
   let m;
   while ((m = re.exec(html)) !== null) {
     const text = m[2].replace(/<[^>]*>/g, "").trim();
@@ -51,7 +52,7 @@ function extractToc(html: string): TocItem[] {
 }
 
 function injectHeadingIds(html: string): string {
-  return html.replace(/<(h[12])([^>]*)>([\s\S]*?)<\/\1>/gi, (_, tag, attrs, content) => {
+  return html.replace(/<(h[123])([^>]*)>([\s\S]*?)<\/\1>/gi, (_, tag, attrs, content) => {
     const text = content.replace(/<[^>]*>/g, "").trim();
     const id = text.toLowerCase().replace(/[^\w]+/g, "-").replace(/(^-|-$)/g, "");
     return `<${tag}${attrs} id="${id}">${content}</${tag}>`;
@@ -76,11 +77,13 @@ export default async function BlogPostPage({ params }: PageProps) {
   const readingTime = estimateReadingTime(post.content ?? "");
   const toc = extractToc(post.content ?? "");
   const relatedPosts = await getRelatedPosts(slug);
+  const displayName = post.customAuthorName ?? post.authorName;
+  const displayAvatar = post.customAuthorAvatar ?? null;
 
   return (
     <div className="min-h-screen bg-cream">
       {/* Header */}
-      <section className="bg-white px-4 py-12 sm:px-6 lg:py-16">
+      <section className="bg-surface px-4 py-12 sm:px-6 lg:py-16">
         <div className="mx-auto max-w-6xl">
           <Link
             href="/blogs"
@@ -102,6 +105,15 @@ export default async function BlogPostPage({ params }: PageProps) {
               {readingTime} min read
             </span>
           </div>
+          {post.tags && post.tags.length > 0 && (
+            <div className="mt-5 flex flex-wrap gap-2">
+              {post.tags.map((tag: string) => (
+                <span key={tag} className="rounded-full bg-manara-teal/10 px-3 py-1 font-display text-xs font-bold text-manara-teal">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -120,18 +132,25 @@ export default async function BlogPostPage({ params }: PageProps) {
           <aside className="w-full shrink-0 lg:w-72 xl:w-80">
             <div className="space-y-6 lg:sticky lg:top-24">
               {/* Author card — table style */}
-              <div className="rounded-2xl border border-manara-teal/10 bg-white shadow-subtle">
+              <div className="rounded-2xl border border-manara-teal/10 bg-surface shadow-subtle">
                 <div className="border-b border-manara-teal/10 px-5 py-3">
                   <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink/50">Author</h3>
                 </div>
                 <div className="px-5 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-manara-teal text-sm font-bold text-white">
-                      {post.authorName?.charAt(0)?.toUpperCase() ?? "A"}
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-manara-teal text-sm font-bold text-white">
+                      {displayAvatar ? (
+                        <img src={displayAvatar} alt={displayName ?? ""} className="h-full w-full object-cover" />
+                      ) : (
+                        displayName?.charAt(0)?.toUpperCase() ?? "A"
+                      )}
                     </div>
                     <div>
-                      <p className="font-display text-base font-bold text-ink">{post.authorName}</p>
+                      <p className="font-display text-base font-bold text-ink">{displayName}</p>
                       <p className="text-xs text-manara-teal">Author, MSC</p>
+                      {post.customAuthorBio && (
+                        <p className="mt-0.5 text-[11px] leading-tight text-ink/50">{post.customAuthorBio}</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -155,58 +174,11 @@ export default async function BlogPostPage({ params }: PageProps) {
                 </div>
               </div>
 
-              {/* Tags */}
-              {post.tags && post.tags.length > 0 && (
-                <div className="rounded-2xl border border-manara-teal/10 bg-white shadow-subtle">
-                  <div className="border-b border-manara-teal/10 px-5 py-3">
-                    <h3 className="flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wider text-ink/50">
-                      <Tag className="h-4 w-4" /> Tags
-                    </h3>
-                  </div>
-                  <table className="w-full text-sm">
-                    <tbody>
-                      {post.tags.map((tag: string) => (
-                        <tr key={tag} className="border-b border-manara-teal/5 last:border-b-0">
-                          <td className="px-5 py-2.5">
-                            <span className="rounded-full bg-manara-teal/10 px-2.5 py-0.5 font-display text-xs font-bold text-manara-teal">{tag}</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {/* Table of Contents */}
-              {toc.length > 0 && (
-                <div className="rounded-2xl border border-manara-teal/10 bg-white shadow-subtle">
-                  <div className="border-b border-manara-teal/10 px-5 py-3">
-                    <h3 className="flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wider text-ink/50">
-                      <ListTree className="h-4 w-4" /> On this page
-                    </h3>
-                  </div>
-                  <nav className="px-5 py-4">
-                    <ul className="space-y-1.5">
-                      {toc.map((item, i) => (
-                        <li key={i}>
-                          <a
-                            href={`#${item.id}`}
-                            className={cn(
-                              "block text-xs leading-relaxed text-ink/50 transition-colors hover:text-manara-teal",
-                              item.level === 1 ? "font-bold" : "pl-3"
-                            )}
-                          >
-                            {item.text}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </nav>
-                </div>
-              )}
+              {/* Table of Contents with scroll-spy */}
+              <TocSidebar items={toc} />
 
               {/* Share card */}
-              <div className="rounded-2xl border border-manara-teal/10 bg-white p-5 shadow-subtle">
+              <div className="rounded-2xl border border-manara-teal/10 bg-surface p-5 shadow-subtle">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Share2 className="h-4 w-4 text-manara-teal" />
@@ -224,7 +196,7 @@ export default async function BlogPostPage({ params }: PageProps) {
 
       {/* Related */}
       {relatedPosts.length > 0 && (
-        <section className="border-t border-manara-teal/10 bg-white py-16">
+        <section className="border-t border-manara-teal/10 bg-surface py-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="mb-8 flex items-center justify-between">
               <h2 className="font-display text-xl font-bold text-ink">Related Articles</h2>
@@ -249,7 +221,7 @@ export default async function BlogPostPage({ params }: PageProps) {
                     {related.excerpt}
                   </p>
                   <div className="mt-4 flex items-center gap-3 text-xs text-ink/40">
-                    <span>{related.authorName}</span>
+                    <span>{related.customAuthorName ?? related.authorName}</span>
                     <span className="text-ink/20">&middot;</span>
                     <span>{related.publishedAt ? formatDate(related.publishedAt) : ""}</span>
                   </div>

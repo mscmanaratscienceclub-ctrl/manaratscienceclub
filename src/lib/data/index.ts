@@ -4,24 +4,24 @@ export const siteConfig = {
   name: "Manarat Science Club",
   shortName: "MSC",
   tagline: "Where curiosity meets creativity",
-  address: "Manarat Dhaka International School & College, Bosila, Mohammadpur, Dhaka-1207",
-  email: "msc@manarat.edu.bd",
-  phone: "+880 2-7791044",
-  bugReportUrl: "mailto:bugs@msc.manarat.edu.bd?subject=Bug%20Report%20%7C%20MSC%20Website",
+  address: "Manarat Dhaka International School & College, Gulshan, Dhaka-1212",
+  email: "manaratscienceclub@gmail.com",
+  phone: "+8801920522197",
+  bugReportUrl: "mailto:manaratscienceclub@gmail.com?subject=Bug%20Report%20%7C%20MSC%20Website",
   social: {
-    instagram: "https://instagram.com/manaratsc",
-    discord: "https://discord.gg/manaratsc",
-    facebook: "https://facebook.com/manaratsc",
-    boysCommunity: "https://facebook.com/groups/msc-brothers",
-    girlsCommunity: "https://facebook.com/groups/msc-sisters",
+    instagram: "https://www.instagram.com/manaratscience",
+    discord: " https://discord.gg/FTHAkQcSHJ",
+    facebook: "https://www.facebook.com/manaratscienceclub",
+    boysCommunity: "https://chat.whatsapp.com/Eyja5DTaDmYAotXkQQsCl4?s=cl&p=i&mlu=1",
+    girlsCommunity: "https://chat.whatsapp.com/F8bNUetkCdX8dsIDmXq7vi?s=cl&p=i&mlu=1",
   },
-  developer: "MSC Editorial & Design Board",
-  foundedYear: 2019,
+  developer: "Abrar Jawad - B25",
+  foundedYear: 2023,
 };
 
 // ─── Metrics ──────────────────────────────────────────────────────────────────
 
-export const metrics = { members: 247, activeTeams: 6, completedProjects: 43, accolades: 18 };
+export const metrics = { members: 500, activeTeams: 6, completedProjects: 43, accolades: 18 };
 
 // ─── Leadership ───────────────────────────────────────────────────────────────
 
@@ -148,66 +148,90 @@ export interface Member {
   };
 }
 
-export const legacyMembers: Member[] = [
+export const currentMembers: Member[] = [
   {
-    id: "legacy-tariq",
-    name: "Tariq Ziad Mahmud",
-    image: "",
-    batch: "2024–2025",
-    role: "Club President",
-    socials: {
-      instagram: "https://instagram.com/tariqziad",
-      facebook: "https://facebook.com/tariqziad",
-      github: "https://github.com/tariqziad",
-    },
+    id: "current-ajmain",
+    name: "Mohammad Ajmain Faieq",
+    image: "/memberimage/ajmain.jpg",
+    batch: "2026–2027",
+    role: "President",
+    socials: {},
   },
   {
-    id: "legacy-nadia",
-    name: "Nadia Rahman",
-    image: "",
-    batch: "2024–2025",
-    role: "Vice President — Robotics",
-    socials: {
-      instagram: "https://instagram.com/nadiarahman",
-      linkedin: "https://linkedin.com/in/nadiarahman",
-    },
+    id: "current-yasa",
+    name: "Yasa Rahman",
+    image: "/memberimage/yasa.jpg",
+    batch: "2026–2027",
+    role: "General Secretary",
+    socials: {},
   },
   {
-    id: "legacy-khalid",
-    name: "Khalid Hassan",
+    id: "current-zarifah",
+    name: "Zarifah Tasnim",
     image: "",
-    batch: "2024–2025",
-    role: "Vice President — Research",
-    socials: {
-      facebook: "https://facebook.com/khalidhassan",
-      github: "https://github.com/khalidhassan",
-    },
+    batch: "2026–2027",
+    role: "General Secretary",
+    socials: {},
   },
   {
-    id: "legacy-samia",
-    name: "Samia Begum",
-    image: "",
-    batch: "2024–2025",
-    role: "Vice President — Biology",
-    socials: {
-      instagram: "https://instagram.com/samiabegum",
-      linkedin: "https://linkedin.com/in/samiabegum",
-    },
+    id: "current-abrar",
+    name: "Abrar Jawad",
+    image: "/memberimage/abrar.png",
+    batch: "2026–2027",
+    role: "Head of Department — IT",
+    socials: {},
   },
   {
-    id: "legacy-farhan",
-    name: "Farhan Ahmed",
+    id: "current-aarina",
+    name: "Aarina Moitry",
     image: "",
-    batch: "2024–2025",
-    role: "Vice President — Chemistry",
-    socials: {
-      facebook: "https://facebook.com/farhanahmed",
-      github: "https://github.com/farhanahmed",
-    },
+    batch: "2026–2027",
+    role: "Head of Department — Media",
+    socials: {},
+  },
+  {
+    id: "current-ruhma",
+    name: "Ruhma Hossain",
+    image: "",
+    batch: "2026–2027",
+    role: "Head of Department — Academics",
+    socials: {},
+  },
+  {
+    id: "current-nureen",
+    name: "Nureen Rayan",
+    image: "/memberimage/nureen.png",
+    batch: "2026–2027",
+    role: "Head of Department — Activity",
+    socials: {},
+  },
+  {
+    id: "current-nusaiba",
+    name: "Nusaiba Farha",
+    image: "/memberimage/nusaiba.png",
+    batch: "2026–2027",
+    role: "Head of Department — Activity",
+    socials: {},
+  },
+  {
+    id: "current-tahiad",
+    name: "Mohammad Tahiad Islam",
+    image: "",
+    batch: "2026–2027",
+    role: "Head of Department — Engineering & Innovation",
+    socials: {},
+  },
+  {
+    id: "current-alfe",
+    name: "Shafe Islam Alfe",
+    image: "",
+    batch: "2026–2027",
+    role: "Creative Director",
+    socials: {},
   },
 ];
 
-export const currentMembers: Member[] = [
+export const legacyMembers: Member[] = [
   {
     id: "current-jaif",
     name: "Jaif Bin Morshed",

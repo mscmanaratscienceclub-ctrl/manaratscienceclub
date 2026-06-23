@@ -15,6 +15,9 @@ export const posts = pgTable("posts", {
   authorId: text("author_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
+  customAuthorName: text("custom_author_name"),
+  customAuthorAvatar: text("custom_author_avatar"),
+  customAuthorBio: text("custom_author_bio"),
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

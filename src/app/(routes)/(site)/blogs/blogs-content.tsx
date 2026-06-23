@@ -20,6 +20,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getTagConfig } from "@/lib/tag-styles";
 
 interface Post {
   id: string;
@@ -32,43 +33,12 @@ interface Post {
   createdAt: Date;
   updatedAt: Date;
   authorName: string | null;
+  customAuthorName: string | null;
   tags: string[] | null;
 }
 
 interface BlogsContentProps {
   posts: Post[];
-}
-
-interface TagConfig {
-  name: string;
-  dot: string;
-  text: string;
-  bg: string;
-  accent: string;
-}
-
-const tagStyles = [
-  { dot: "#60a5fa", text: "#2563eb", bg: "rgba(96, 165, 250, 0.15)", accent: "var(--color-manara-blue)" },
-  { dot: "#7c3aed", text: "#7c3aed", bg: "rgba(124, 58, 237, 0.13)", accent: "var(--color-manara-purple)" },
-  { dot: "#ec4899", text: "#db2777", bg: "rgba(236, 72, 153, 0.13)", accent: "var(--color-manara-pink)" },
-  { dot: "#dc2626", text: "#dc2626", bg: "rgba(220, 38, 38, 0.1)", accent: "var(--color-manara-red)" },
-  { dot: "#ffb703", text: "#b45309", bg: "rgba(255, 183, 3, 0.18)", accent: "var(--color-manara-yellow)" },
-  { dot: "#005f6b", text: "#005f6b", bg: "rgba(0, 95, 107, 0.1)", accent: "var(--color-manara-teal)" },
-  { dot: "#16a34a", text: "#16a34a", bg: "rgba(22, 163, 74, 0.12)", accent: "#16a34a" },
-];
-
-function getTagConfig(tag: string): TagConfig {
-  let hash = 0;
-  const trimmed = tag.trim().toLowerCase();
-  for (let i = 0; i < trimmed.length; i++) {
-    hash = trimmed.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % tagStyles.length;
-  const config = tagStyles[index];
-  return {
-    name: tag.charAt(0).toUpperCase() + tag.slice(1),
-    ...config,
-  };
 }
 
 function formatDate(date: Date | null): string {
@@ -158,7 +128,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
   return (
     <div className="font-body min-h-screen bg-cream text-ink">
       {/* Hero Section */}
-      <section className="bg-white border-b border-manara-teal/10">
+      <section className="bg-surface border-b border-manara-teal/10">
         <div className="max-w-7xl mx-auto px-6 py-16 lg:py-20 grid lg:grid-cols-[1.15fr_0.85fr] gap-12 items-center">
           <div className="fade-up">
             <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 bg-manara-teal/7">
@@ -192,26 +162,26 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
           <div className="relative rounded-[2rem] p-10 overflow-hidden bg-manara-teal/5 min-h-[320px] flex flex-col items-center justify-center">
             <div className="absolute inset-0 dot-grid opacity-60"></div>
             <div className="relative h-full flex flex-col items-center justify-center text-center gap-6 min-h-[240px]">
-              <div className="w-24 h-24 rounded-3xl bg-white shadow-subtle flex items-center justify-center">
+              <div className="w-24 h-24 rounded-3xl bg-surface shadow-subtle flex items-center justify-center">
                 <Microscope className="w-12 h-12 text-manara-teal" />
               </div>
               <div className="flex flex-col items-center gap-2 max-w-xs">
                 <div className="flex justify-center -space-x-3">
-                  <span className="px-3.5 py-1.5 rounded-full bg-white text-xs font-display font-medium shadow-subtle flex items-center gap-1.5 -rotate-3">
+                  <span className="px-3.5 py-1.5 rounded-full bg-surface text-xs font-display font-medium shadow-subtle flex items-center gap-1.5 -rotate-3">
                     <span className="w-2 h-2 rounded-full bg-manara-purple"></span>
                     Astronomy
                   </span>
-                  <span className="px-3.5 py-1.5 rounded-full bg-white text-xs font-display font-medium shadow-subtle flex items-center gap-1.5 rotate-2 z-10">
+                  <span className="px-3.5 py-1.5 rounded-full bg-surface text-xs font-display font-medium shadow-subtle flex items-center gap-1.5 rotate-2 z-10">
                     <span className="w-2 h-2 rounded-full bg-manara-pink"></span>
                     Biology
                   </span>
                 </div>
                 <div className="flex justify-center -space-x-3">
-                  <span className="px-3.5 py-1.5 rounded-full bg-white text-xs font-display font-medium shadow-subtle flex items-center gap-1.5 rotate-3 z-10">
+                  <span className="px-3.5 py-1.5 rounded-full bg-surface text-xs font-display font-medium shadow-subtle flex items-center gap-1.5 rotate-3 z-10">
                     <span className="w-2 h-2 rounded-full bg-manara-blue"></span>
                     Physics
                   </span>
-                  <span className="px-3.5 py-1.5 rounded-full bg-white text-xs font-display font-medium shadow-subtle flex items-center gap-1.5 -rotate-2">
+                  <span className="px-3.5 py-1.5 rounded-full bg-surface text-xs font-display font-medium shadow-subtle flex items-center gap-1.5 -rotate-2">
                     <span className="w-2 h-2 rounded-full bg-manara-yellow"></span>
                     Robotics
                   </span>
@@ -239,7 +209,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
                     "rounded-full px-4 py-2 text-sm font-display font-medium border transition-all cursor-pointer",
                     selectedTag === "all"
                       ? "bg-manara-teal border-manara-teal text-white shadow-subtle"
-                      : "bg-white border-manara-teal/15 text-ink/75 hover:border-manara-teal/40"
+                      : "bg-surface border-manara-teal/15 text-ink/75 hover:border-manara-teal/40"
                   )}
                 >
                   All <span className="opacity-70">{posts.length}</span>
@@ -255,7 +225,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
                         "rounded-full px-4 py-2 text-sm font-display font-medium border flex items-center gap-2 transition-all cursor-pointer",
                         isActive
                           ? "bg-manara-teal border-manara-teal text-white shadow-subtle"
-                          : "bg-white border-manara-teal/15 text-ink/75 hover:border-manara-teal/40"
+                          : "bg-surface border-manara-teal/15 text-ink/75 hover:border-manara-teal/40"
                       )}
                     >
                       <span
@@ -283,7 +253,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
                 </div>
                 <Link
                   href={`/blogs/${featuredPost.slug}`}
-                  className="group relative block rounded-2xl bg-white border border-manara-teal/10 shadow-subtle hover:shadow-academic overflow-hidden transition-all duration-300"
+                  className="group relative block rounded-2xl bg-surface border border-manara-teal/10 shadow-subtle hover:shadow-academic overflow-hidden transition-all duration-300"
                 >
                   <div
                     className="absolute top-0 left-0 right-0 h-1.5"
@@ -325,7 +295,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
                       <div className="pt-2 flex flex-wrap items-center gap-5 text-sm text-ink/45">
                         <span className="flex items-center gap-1.5">
                           <UserRound className="w-3.5 h-3.5 text-manara-teal" />{" "}
-                          {featuredPost.authorName}
+                          {featuredPost.customAuthorName ?? featuredPost.authorName}
                         </span>
                         <span className="flex items-center gap-1.5">
                           <CalendarDays className="w-3.5 h-3.5 text-manara-teal" />{" "}
@@ -368,7 +338,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
                         key={post.id}
                         href={`/blogs/${post.slug}`}
                         className={cn(
-                          "group relative flex flex-col rounded-2xl bg-white border border-manara-teal/10 shadow-subtle hover:shadow-academic p-6 overflow-hidden transition-all duration-300",
+                          "group relative flex flex-col rounded-2xl bg-surface border border-manara-teal/10 shadow-subtle hover:shadow-academic p-6 overflow-hidden transition-all duration-300",
                           !isVisible && "opacity-30 saturate-40 pointer-events-none"
                         )}
                       >
@@ -403,7 +373,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
                             <div className="flex items-center gap-3 text-xs text-ink/45 flex-wrap font-body">
                               <span className="flex items-center gap-1">
                                 <UserRound className="w-3.5 h-3.5 text-manara-teal" />{" "}
-                                {post.authorName}
+                                {post.customAuthorName ?? post.authorName}
                               </span>
                               <span>·</span>
                               <span>{formatDate(post.publishedAt)}</span>
@@ -418,7 +388,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
                   })}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-2xl border border-manara-teal/10 shadow-subtle p-8">
+                <div className="flex flex-col items-center justify-center py-20 text-center bg-surface rounded-2xl border border-manara-teal/10 shadow-subtle p-8">
                   <div className="w-16 h-16 rounded-2xl bg-manara-teal/10 flex items-center justify-center mb-4">
                     <BookOpen className="w-8 h-8 text-manara-teal" />
                   </div>
@@ -437,7 +407,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
           {/* Right Column: Sidebar */}
           <aside className="lg:sticky lg:top-24 space-y-6">
             {/* Browse Tags */}
-            <div className="rounded-2xl bg-white border border-manara-teal/10 shadow-subtle p-6">
+            <div className="rounded-2xl bg-surface border border-manara-teal/10 shadow-subtle p-6">
               <h4 className="font-display font-bold text-lg mb-4 flex items-center gap-2 text-ink">
                 <Hash className="w-4.5 h-4.5 text-manara-teal" /> Browse Tags
               </h4>
@@ -474,7 +444,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
             </div>
 
             {/* Trending Panel */}
-            <div className="rounded-2xl bg-white border border-manara-teal/10 shadow-subtle p-6">
+            <div className="rounded-2xl bg-surface border border-manara-teal/10 shadow-subtle p-6">
               <h4 className="font-display font-bold text-lg mb-4 flex items-center gap-2 text-ink">
                 <TrendingUp className="w-4.5 h-4.5 text-manara-teal" /> Trending
               </h4>
@@ -506,7 +476,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
             <div className="rounded-2xl p-6 relative overflow-hidden bg-manara-teal text-white">
               <div className="absolute inset-0 dot-grid opacity-20"></div>
               <div className="relative space-y-4">
-                <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center">
+                <div className="w-11 h-11 rounded-xl bg-surface/15 flex items-center justify-center">
                   <Send className="w-5.5 h-5.5 text-white" />
                 </div>
                 <div>

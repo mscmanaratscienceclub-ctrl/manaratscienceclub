@@ -134,7 +134,7 @@ export default function UsersTable({ users }: UsersTableProps) {
                         handleRoleChange(user.id, e.target.value)
                       }
                       className={cn(
-                        "rounded-lg border border-manara-teal/15 bg-white px-2 py-1 text-xs text-ink/70 outline-none transition-opacity focus:border-manara-teal focus:ring-1 focus:ring-manara-teal/30",
+                        "rounded-lg border border-manara-teal/15 bg-surface px-2 py-1 text-xs text-ink/70 outline-none transition-opacity focus:border-manara-teal focus:ring-1 focus:ring-manara-teal/30",
                         isThisPending && "cursor-not-allowed opacity-50"
                       )}
                     >

@@ -15,7 +15,7 @@ export default async function ProfilePage() {
   return (
     <div className="container mx-auto px-5 py-16 lg:px-8 max-w-4xl">
       <h1 className="font-display text-4xl font-bold text-manara-teal mb-8">Your Profile</h1>
-      <div className="bg-white rounded-[2rem] border border-manara-teal/10 shadow-subtle p-8">
+      <div className="bg-surface rounded-[2rem] border border-manara-teal/10 shadow-subtle p-8">
         <ProfileForm user={session.user as any} />
       </div>
     </div>

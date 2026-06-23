@@ -12,6 +12,7 @@ interface Post {
   slug: string;
   status: string;
   authorName: string | null;
+  customAuthorName: string | null;
   updatedAt: Date;
   publishedAt: Date | null;
 }
@@ -50,7 +51,7 @@ export default function PostsTable({ posts }: { posts: Post[] }) {
 
   if (posts.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl bg-white px-6 py-20 shadow-subtle">
+      <div className="flex flex-col items-center justify-center rounded-2xl bg-surface px-6 py-20 shadow-subtle">
         <FileText className="mb-3 h-12 w-12 text-ink/20" />
         <p className="font-display text-lg font-semibold text-ink/70">
           No posts found
@@ -63,7 +64,7 @@ export default function PostsTable({ posts }: { posts: Post[] }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-subtle">
+    <div className="overflow-hidden rounded-2xl bg-surface shadow-subtle">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -114,7 +115,7 @@ export default function PostsTable({ posts }: { posts: Post[] }) {
                   </span>
                 </td>
                 <td className="px-6 py-4 font-body text-sm text-ink/60">
-                  {post.authorName ?? "Unknown"}
+                  {post.customAuthorName ?? post.authorName ?? "Unknown"}
                 </td>
                 <td className="px-6 py-4 font-body text-sm text-ink/60">
                   {new Date(post.updatedAt).toLocaleDateString("en-US", {
