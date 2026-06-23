@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "@/providers";
 import { Fredoka, Rubik, Noto_Sans, Playfair_Display } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const playfairDisplayHeading = Playfair_Display({
   subsets: ["latin"],
@@ -61,6 +62,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>{children}</Providers>
+        <SpeedInsights />
       </body>
     </html>
   );
