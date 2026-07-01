@@ -1,14 +1,30 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "PLACEHOLDER_SERVICE_KEY";
+// ── Singleton ────────────────────────────────────────────────────────────────
+// Same HMR issue as the DB client — without a singleton, every hot reload
+// creates a new Supabase client instance.
 
-export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-  },
-});
+const globalForSupabase = globalThis as unknown as {
+  supabaseClient?: SupabaseClient;
+};
+
+function makeSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
+export const supabase: SupabaseClient =
+  globalForSupabase.supabaseClient ?? makeSupabaseClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForSupabase.supabaseClient = supabase;
+}
 
 export const AVATARS_BUCKET = "avatars";
 

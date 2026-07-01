@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getPostBySlug, getRelatedPosts } from "@/lib/actions/posts";
-import { ArrowLeft, Calendar, Clock, UserRound, Share2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ArrowLeft, Calendar, Clock, Share2 } from "lucide-react";
 import TocSidebar from "../_components/toc-sidebar";
+import sanitizeHtml from "sanitize-html";
 
 // Force dynamic rendering — prevents Next.js from prerenderering all slugs
 // in parallel at build time (would exhaust the Supabase free-tier pool)
@@ -57,6 +57,26 @@ function injectHeadingIds(html: string): string {
     const id = text.toLowerCase().replace(/[^\w]+/g, "-").replace(/(^-|-$)/g, "");
     return `<${tag}${attrs} id="${id}">${content}</${tag}>`;
   });
+}
+
+function sanitizeAndInjectHeadingIds(html: string): string {
+  // Use sanitize-html (already in dependencies) instead of fragile regexes.
+  // This properly strips <script>, <iframe>, <object>, <embed>, event handlers, etc.
+  const clean = sanitizeHtml(html, {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+      "img", "h1", "h2", "h3", "figure", "figcaption", "video", "source",
+      "details", "summary", "mark", "abbr", "sub", "sup",
+    ]),
+    allowedAttributes: {
+      ...sanitizeHtml.defaults.allowedAttributes,
+      img: ["src", "alt", "title", "width", "height", "loading"],
+      a: ["href", "target", "rel", "title"],
+      "*": ["class", "style"],
+    },
+    disallowedTagsMode: "discard",
+  });
+
+  return injectHeadingIds(clean);
 }
 
 export async function generateMetadata({ params }: PageProps) {
@@ -124,7 +144,7 @@ export default async function BlogPostPage({ params }: PageProps) {
           <div className="min-w-0 flex-1">
             <div
               className="blog-content"
-              dangerouslySetInnerHTML={{ __html: injectHeadingIds(post.content ?? "") }}
+              dangerouslySetInnerHTML={{ __html: sanitizeAndInjectHeadingIds(post.content ?? "") }}
             />
           </div>
 

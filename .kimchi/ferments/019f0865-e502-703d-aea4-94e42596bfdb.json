@@ -1,0 +1,316 @@
+{
+  "id": "019f0865-e502-703d-aea4-94e42596bfdb",
+  "name": "MSC Department Join Wizard",
+  "description": "Create a proper form system with first being asking you to choose ( you can choose multiple) dept to apply, then it will take u through seperate form for each dept. there are 4 dept, creativty, actiivity, engeering and media. create placeholder questions for now. It should link the to join msc button on the  navbar",
+  "status": "paused",
+  "worktree": {
+    "path": "/mnt/e/Web Dev/test/manaratscienceclub",
+    "branch": "main",
+    "commit": "31624520786d50ba22b6cddc31f845bfcbfd2c65"
+  },
+  "scoping": {
+    "goal": {
+      "answer": "Replace the existing /join page with branching behaviour based on submission state: if the user already has an application in the new `applications` table, render a read-only summary view of what they submitted; otherwise show the multi-step wizard (step 1 multi-select dept picker, step 2 one RHF+Zod form per selected dept, final step POSTs via a Drizzle server action and shows confirmation). One application per user (UNIQUE on userId). Nav \"Join MSC\" button already routes to /join — no navbar change needed.",
+      "confirmedAt": "2026-06-27T10:05:30.538Z"
+    },
+    "criteria": {
+      "answer": "Replaced /join page branches on submission state: if a row exists for the current userId → render read-only \"Your Application\" summary card (lists chosen departments + each dept's submitted responses); if no row → render the multi-step wizard from scratch.\nAll 4 depts present and selectable: creativity, activity, engineering, media — with min 1 selected required (Zod-validated) in the wizard flow.\nEach dept exposes its own Zod schema + placeholder form (≥2 fields each, e.g. name + why-join text), rendered via react-hook-form with @hookform/resolvers/zod.\nNew Drizzle schema src/db/schema/applications.ts defines `applications` table with id (uuid PK), userId (uuid NOT NULL UNIQUE, FK → user.id cascade delete), depts (text[] not null), responses (jsonb not null), createdAt + updatedAt (timestamptz). UNIQUE enforced at DB level. Migration generated and applied via `pnpm db:generate` + `pnpm db:migrate`. RLS enabled.\nNew server module src/lib/actions/applications.ts ('use server') exposes: (a) `submitApplication(input)` — re-validates with Zod, upserts one row per userId via `onConflictDoUpdate`; (b) `getMyApplication()` — returns the current session user's row (or null). Both enforce session presence server-side.\nSingle unified submission — wizard aggregates dept selections + per-dept responses into one payload, POSTs once via submitApplication, shows success confirmation card on success and a sonner error toast with retry on failure. Upsert semantics allow safe re-submission (no UI for re-submit in this ferment).\nExisting /join auth gating preserved client-side (useSession) and server-side (server actions reject unauthenticated callers). Nav \"Join MSC\" button continues to route to /join (verified, not edited).\nProject verification: `pnpm tsc --noEmit` passes; `pnpm lint` passes; `pnpm build` succeeds; old hardcoded single-form /join content fully removed (no orphan code); UNIQUE constraint on userId present in generated migration SQL.",
+      "confirmedAt": "2026-06-27T10:05:30.538Z"
+    },
+    "constraints": {
+      "answer": "Use react-hook-form + Zod via @hookform/resolvers/zod for client forms (project standard; matches profile/signin/signup)., Use existing shadcn/ui primitives (button, form, input, label, textarea) — do not introduce new dependencies., Use existing Drizzle + Supabase setup; do not introduce a new ORM or DB driver. RLS enabled on `applications` matching the project convention., Server actions must re-validate payloads server-side (never trust client) and enforce session presence via Better Auth's server-side session helper., Maintain existing visual style (manara-teal/yellow theme, surface card pattern, cream background) consistent with current /join., Forms use placeholder fields only (no real questions yet); this ferment establishes the schema, persistence, and submission-state branching, not the question content., One application per user: UNIQUE on userId at DB level; server-action upsert via `onConflictDoUpdate`; submitted view is read-only (no edit UI in this ferment — re-application is out of scope)., Branching logic is determined server-side via getMyApplication() to avoid a flash of the wizard before redirect; client shows a loading state while the fetch resolves.",
+      "confirmedAt": "2026-06-27T10:05:30.538Z"
+    },
+    "phases": {
+      "answer": "Backend: applications table + server actions, Frontend: /join wizard + submitted view",
+      "confirmedAt": "2026-06-27T10:05:30.538Z"
+    },
+    "assumptions": {
+      "answer": "The codebase has react-hook-form, @hookform/resolvers, zod, drizzle-orm, @supabase/supabase-js, and Better Auth already installed and in active use. shadcn/ui Form primitives (form.tsx) are available. No shadcn checkbox primitive exists in src/components/ui — dept-select uses plain `<input type=\"checkbox\">` styled to match existing /join dept-card style. Departments are typed as a literal union ('creativity' | 'activity' | 'engineering' | 'media') in a single source of truth, matching existing leadership data (HODs exist for Creativity, Activity, Engineering & Innovation, Media). Database shape: one `applications` row per userId with `depts` as text[] and `responses` as jsonb keyed by DeptId. UNIQUE on userId is enforced at DB level and supplemented by server-action upsert (`onConflictDoUpdate`) so re-submissions update the existing row rather than erroring. RLS policy: authenticated users can SELECT/INSERT/UPDATE rows where userId matches their session id. Server actions use Better Auth's server-side session helper (pattern in src/lib/auth/server.ts). The submitted view is purely read-only: it lists the chosen depts and renders each dept's responses in a labeled list using a generic key→value definition list (no per-dept typed renderer). No \"edit application\" or \"withdraw application\" button is added — re-application is out of scope. The branching fetch (getMyApplication) is called once when /join mounts; while the fetch is in flight the page shows the existing 'Loading...' skeleton (already present in the current /join). If the user is not signed in, the existing auth gate renders sign-in/sign-up CTAs (no fetch attempted). Navbar already links \"Join MSC\" to /join — no navbar edit needed, only verification. Migration applied via `pnpm db:generate` + `pnpm db:migrate` workflow.",
+      "confirmedAt": "2026-06-27T10:05:30.538Z"
+    }
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "index": 1,
+      "name": "Backend: applications table + server actions",
+      "goal": "Add Drizzle schema for `applications` (UNIQUE on userId), generate+apply migration with RLS, and create server actions `submitApplication` (upsert) and `getMyApplication` (read own row).",
+      "description": "Add the persistence + read layer first so the frontend wizard has both a target to POST to and a way to detect prior submissions. Localized change in src/db/schema/, src/lib/actions/, and a generated migration.",
+      "parallel": false,
+      "status": "completed",
+      "steps": [
+        {
+          "id": "step-1",
+          "index": 1,
+          "description": "Create src/db/schema/applications.ts: define `applications` table with `pgTable` from drizzle-orm/pg-core — id (uuid PK defaultRandom), userId (uuid NOT NULL UNIQUE with FK references('user','id',{onDelete:'cascade'})), depts (text().array().notNull()), responses (jsonb().$type<Record<DeptId, unknown>>().notNull()), createdAt (timestamp().defaultNow().notNull()), updatedAt (timestamp().defaultNow().notNull().$onUpdate(() => new Date())). Export the inferred row type. The `.unique()` on userId produces a UNIQUE constraint in the generated SQL.",
+          "status": "verified",
+          "verification": {
+            "command": "pnpm tsc --noEmit (no errors in new schema file)",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-27T10:05:59.042Z",
+          "completedAt": "2026-06-27T10:07:46.616Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-27T10:07:46.616Z"
+          }
+        },
+        {
+          "id": "step-2",
+          "index": 2,
+          "description": "Register the new schema in src/db/schema index (if one exists) or import it where the Drizzle client is constructed. Run `pnpm db:generate` to produce a migration SQL file under drizzle/. Inspect generated SQL — verify it includes CREATE TABLE applications with UNIQUE (userId) and the RLS policy. If RLS is not auto-generated, append manually (e.g. `ALTER TABLE applications ENABLE ROW LEVEL SECURITY; CREATE POLICY \"users manage own\" ON applications FOR ALL TO authenticated USING (auth.uid() = \"userId\") WITH CHECK (auth.uid() = \"userId\");`).",
+          "status": "verified",
+          "verification": {
+            "command": "pnpm db:generate produces drizzle/000N_applications.sql containing UNIQUE (userId) and CREATE POLICY lines; tsc clean",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-27T10:08:48.679Z",
+          "completedAt": "2026-06-27T10:22:37.965Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-27T10:22:37.965Z"
+          }
+        },
+        {
+          "id": "step-3",
+          "index": 3,
+          "description": "Run `pnpm db:migrate` (drizzle-kit push) against the configured Supabase DB to apply the migration. Verify by inspecting the live DB or running a quick `SELECT * FROM applications LIMIT 0` query via a test script.",
+          "status": "verified",
+          "verification": {
+            "command": "pnpm db:migrate exits 0; new `applications` table with UNIQUE(userId) exists in DB",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-27T10:24:39.640Z",
+          "completedAt": "2026-06-27T10:27:50.595Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-27T10:27:50.595Z"
+          }
+        },
+        {
+          "id": "step-4",
+          "index": 4,
+          "description": "Create src/lib/actions/applications.ts ('use server'): export (a) `submitApplication(input: unknown): Promise<{ ok: true; id: string } | { ok: false; error: string }>` — resolves session, re-validates against a server-side ApplicationSchema (defined locally to avoid coupling server to client component), upserts via `db.insert(applications).values({ userId, depts, responses }).onConflictDoUpdate({ target: applications.userId, set: { depts, responses, updatedAt: new Date() } }).returning({ id: applications.id })`; (b) `getMyApplication(): Promise<{ ok: true; application: ApplicationRow } | { ok: true; application: null } | { ok: false; error: string }>` — resolves session, returns the user's row or null. Both throw if no session.",
+          "status": "verified",
+          "verification": {
+            "command": "pnpm tsc --noEmit + pnpm lint passes",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-27T10:28:38.426Z",
+          "completedAt": "2026-06-27T10:37:28.636Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-27T10:37:28.636Z"
+          }
+        },
+        {
+          "id": "step-5",
+          "index": 5,
+          "description": "Verification: run `pnpm tsc --noEmit && pnpm lint && pnpm build` — all must exit 0. Confirm the new table is registered and migration applied.",
+          "status": "verified",
+          "verification": {
+            "command": "pnpm tsc --noEmit && pnpm lint && pnpm build all exit 0",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-27T10:38:28.607Z",
+          "completedAt": "2026-06-27T10:42:50.877Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-27T10:42:50.877Z"
+          }
+        }
+      ],
+      "startedAt": "2026-06-27T10:05:35.113Z",
+      "completedAt": "2026-06-27T10:43:12.121Z",
+      "summary": "Phase 1 complete: backend plumbing for the application table is in place. Schema (`src/db/schema/applications.ts`) defines `applications` with text IDs, `.enableRLS()`, FK cascade to `user.id`, UNIQUE on `user_id`, JSONB responses, and a text array of dept ids. Migration (`drizzle/0003_cooing_sentinels.sql`) generated and applied to the live Supabase DB with RLS enabled and a manually-appended RESTRICTIVE policy `users manage own applications` TO authenticated using `(select auth.uid())::text = user_id` (the `::text` cast is required because `auth.uid()` returns `uuid` and `user_id` is `text`). Server actions (`src/lib/actions/applications.ts`) expose `submitApplication(input)` (Zod re-validation, upsert via `onConflictDoUpdate`, `revalidatePath(\"/join\")`) and `getMyApplication()` (returns row or null). Both throw `Unauthorized` if no session. Project verify (`pnpm tsc --noEmit && pnpm lint && pnpm build`) all exit 0 with the /join route still in the route table (existing client component, slated for replacement in Phase 2).",
+      "grade": {
+        "grade": "A",
+        "rationale": "All gates pass; project checks validate.",
+        "gradedAt": "2026-06-27T10:43:12.105Z"
+      }
+    },
+    {
+      "id": "phase-2",
+      "index": 2,
+      "name": "Frontend: /join wizard + submitted view",
+      "goal": "Replace /join with branching view: existing submission → read-only summary; otherwise → multi-step wizard POSTing to submitApplication.",
+      "description": "Build the wizard AND the submitted-state summary view at /join, both consuming the server actions from Phase 1. All files localized under src/app/(routes)/(site)/join/.",
+      "parallel": false,
+      "status": "active",
+      "steps": [
+        {
+          "id": "step-1",
+          "index": 1,
+          "description": "Create src/app/(routes)/(site)/join/schemas.ts: define DeptId union ('creativity'|'activity'|'engineering'|'media'), DEPARTMENTS const with id/label/description/icon for each, per-dept Zod schemas (CreativitySchema, ActivitySchema, EngineeringSchema, MediaSchema) each with ≥2 placeholder fields (e.g. portfolioUrl: z.string().url(), motivation: z.string().min(20)), and a combined ApplicationSchema ({ depts: z.array(z.enum([...])).min(1), responses: z.record(z.enum([...]), z.unknown()) }). Export inferred TS types for each.",
+          "status": "verified",
+          "verification": {
+            "command": "pnpm tsc --noEmit (no errors in schemas.ts)",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-27T10:43:27.946Z",
+          "completedAt": "2026-06-27T10:51:16.238Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-27T10:51:16.238Z"
+          }
+        },
+        {
+          "id": "step-2",
+          "index": 2,
+          "description": "Create src/app/(routes)/(site)/join/dept-select-step.tsx ('use client'): controlled checkbox-grid component taking selected: DeptId[] + onChange, renders 4 dept cards (icon + label + description) from DEPARTMENTS, each with a styled checkbox, minimum-1 enforced via parent schema. Visual style mirrors existing /join dept-card pattern.",
+          "status": "verified",
+          "verification": {
+            "command": "pnpm tsc --noEmit + pnpm lint passes",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-27T10:51:20.325Z",
+          "completedAt": "2026-06-27T10:52:22.998Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-27T10:52:22.998Z"
+          }
+        },
+        {
+          "id": "step-3",
+          "index": 3,
+          "description": "Create src/app/(routes)/(site)/join/dept-form-step.tsx ('use client'): generic single-dept form component accepting dept: Department, defaultValues, onSubmit, onBack. Uses react-hook-form + zodResolver with the dept's Zod schema. Renders via shadcn Form primitives (FormField/FormItem/FormLabel/FormControl/FormMessage). Submit button advances wizard; Back button returns to dept-select.",
+          "status": "verified",
+          "verification": {
+            "command": "pnpm tsc --noEmit + pnpm lint passes",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-27T10:52:30.057Z",
+          "completedAt": "2026-06-27T10:57:50.566Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-27T10:57:50.566Z"
+          }
+        },
+        {
+          "id": "step-4",
+          "index": 4,
+          "description": "Create src/app/(routes)/(site)/join/submitted-view.tsx ('use client'): read-only summary card component accepting application: ApplicationRow. Renders a 'Your Application' header, lists chosen departments as labelled chips, then for each selected dept renders a sub-card with the dept label and a generic key→value definition list (Object.entries(responses[dept])). No edit/withdraw buttons in this ferment. Visual style mirrors the existing /join success card (CheckCircle2 icon + surface card pattern).",
+          "status": "verified",
+          "verification": {
+            "command": "pnpm tsc --noEmit + pnpm lint passes",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-27T11:00:06.701Z",
+          "completedAt": "2026-06-27T11:01:10.903Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-27T11:01:10.903Z"
+          }
+        },
+        {
+          "id": "step-5",
+          "index": 5,
+          "description": "Replace src/app/(routes)/(site)/join/page.tsx: rewrite as 'use client' component with branching based on existing application. (1) Preserve useSession auth gate from old page (loading skeleton + sign-in/sign-up CTAs for unauthenticated). (2) On mount and on session resolve, call getMyApplication() from Phase 1. (3) If application exists → render SubmittedView. (4) If application is null → render the wizard shell with step state machine ('select' | 'forms' | 'submitting' | 'done' | 'error'), accumulated state { selectedDepts: DeptId[], responses: Record<DeptId, object>, currentFormIndex: number }. Step 'select' renders DeptSelectStep; step 'forms' iterates selectedDepts rendering DeptFormStep per dept, persisting responses; final submit calls submitApplication({ depts, responses }) — on ok transition to 'done' with success card; on error show sonner toast and re-enable retry. Navbar link untouched.",
+          "status": "verified",
+          "verification": {
+            "command": "pnpm tsc --noEmit + pnpm lint passes + pnpm build succeeds",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-27T11:01:20.353Z",
+          "completedAt": "2026-06-27T11:05:12.370Z",
+          "result": {
+            "success": true,
+            "exitCode": 0,
+            "stdout": "",
+            "stderr": "",
+            "completedAt": "2026-06-27T11:05:12.370Z"
+          }
+        },
+        {
+          "id": "step-6",
+          "index": 6,
+          "description": "End-to-end verification: (1) `pnpm tsc --noEmit && pnpm lint && pnpm build` all exit 0; (2) old hardcoded form JSX fully removed from page.tsx (grep for \"Personal Information\" or \"Statement of Purpose\" returns no hits); (3) navbar 'Join MSC' still routes to /join (visual grep); (4) smoke test documented in .kimchi/docs/smoke.md: (a) submit an application as a mock user → submitted view shows on revisit; (b) call submitApplication twice with the same userId → second call updates rather than errors; (c) getMyApplication returns null for a user with no submission.",
+          "status": "pending",
+          "verification": {
+            "command": "pnpm tsc --noEmit && pnpm lint && pnpm build all exit 0; grep for old form strings returns no hits; smoke checks documented in .kimchi/docs/smoke.md",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false,
+          "startedAt": "2026-06-27T11:08:10.534Z"
+        }
+      ],
+      "startedAt": "2026-06-27T10:43:14.940Z"
+    }
+  ],
+  "decisions": [],
+  "memories": [],
+  "createdAt": "2026-06-27T09:25:23.330Z",
+  "updatedAt": "2026-06-27T11:24:40.665Z",
+  "goal": "Replace the existing /join page with branching behaviour based on submission state: if the user already has an application in the new `applications` table, render a read-only summary view of what they submitted; otherwise show the multi-step wizard (step 1 multi-select dept picker, step 2 one RHF+Zod form per selected dept, final step POSTs via a Drizzle server action and shows confirmation). One application per user (UNIQUE on userId). Nav \"Join MSC\" button already routes to /join — no navbar change needed.",
+  "successCriteria": [
+    "Replaced /join page branches on submission state: if a row exists for the current userId → render read-only \"Your Application\" summary card (lists chosen departments + each dept's submitted responses); if no row → render the multi-step wizard from scratch.",
+    "All 4 depts present and selectable: creativity, activity, engineering, media — with min 1 selected required (Zod-validated) in the wizard flow.",
+    "Each dept exposes its own Zod schema + placeholder form (≥2 fields each, e.g. name + why-join text), rendered via react-hook-form with @hookform/resolvers/zod.",
+    "New Drizzle schema src/db/schema/applications.ts defines `applications` table with id (uuid PK), userId (uuid NOT NULL UNIQUE, FK → user.id cascade delete), depts (text[] not null), responses (jsonb not null), createdAt + updatedAt (timestamptz). UNIQUE enforced at DB level. Migration generated and applied via `pnpm db:generate` + `pnpm db:migrate`. RLS enabled.",
+    "New server module src/lib/actions/applications.ts ('use server') exposes: (a) `submitApplication(input)` — re-validates with Zod, upserts one row per userId via `onConflictDoUpdate`; (b) `getMyApplication()` — returns the current session user's row (or null). Both enforce session presence server-side.",
+    "Single unified submission — wizard aggregates dept selections + per-dept responses into one payload, POSTs once via submitApplication, shows success confirmation card on success and a sonner error toast with retry on failure. Upsert semantics allow safe re-submission (no UI for re-submit in this ferment).",
+    "Existing /join auth gating preserved client-side (useSession) and server-side (server actions reject unauthenticated callers). Nav \"Join MSC\" button continues to route to /join (verified, not edited).",
+    "Project verification: `pnpm tsc --noEmit` passes; `pnpm lint` passes; `pnpm build` succeeds; old hardcoded single-form /join content fully removed (no orphan code); UNIQUE constraint on userId present in generated migration SQL."
+  ],
+  "constraints": [
+    "Use react-hook-form + Zod via @hookform/resolvers/zod for client forms (project standard; matches profile/signin/signup).",
+    "Use existing shadcn/ui primitives (button, form, input, label, textarea) — do not introduce new dependencies.",
+    "Use existing Drizzle + Supabase setup; do not introduce a new ORM or DB driver. RLS enabled on `applications` matching the project convention.",
+    "Server actions must re-validate payloads server-side (never trust client) and enforce session presence via Better Auth's server-side session helper.",
+    "Maintain existing visual style (manara-teal/yellow theme, surface card pattern, cream background) consistent with current /join.",
+    "Forms use placeholder fields only (no real questions yet); this ferment establishes the schema, persistence, and submission-state branching, not the question content.",
+    "One application per user: UNIQUE on userId at DB level; server-action upsert via `onConflictDoUpdate`; submitted view is read-only (no edit UI in this ferment — re-application is out of scope).",
+    "Branching logic is determined server-side via getMyApplication() to avoid a flash of the wizard before redirect; client shows a loading state while the fetch resolves."
+  ],
+  "lastActiveAt": "2026-06-27T10:43:14.940Z",
+  "activePhaseId": "phase-2"
+}

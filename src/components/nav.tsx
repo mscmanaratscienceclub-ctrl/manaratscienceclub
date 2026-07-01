@@ -11,10 +11,7 @@ import { useTheme } from "next-themes";
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/legacy", label: "Legacy" },
-  { href: "/achievements", label: "Achievements" },
   { href: "/blogs", label: "Research" },
-  { href: "/events", label: "Events" },
-  { href: "/opportunities", label: "Opportunities" },
 ];
 
 export default function Nav() {
@@ -64,7 +61,7 @@ export default function Nav() {
           <a href={siteConfig.bugReportUrl} className="flex items-center gap-1.5 text-xs text-manara-red/60 transition-colors hover:text-manara-red">
             <Bug className="size-3.5" />Report a bug
           </a>
-          <Link href={session ? "/join" : "/signin?redirect=/join"} className="rounded-full bg-manara-teal px-6 py-2.5 font-display text-sm font-bold text-white shadow-subtle transition hover:-translate-y-0.5 hover:bg-manara-yellow hover:text-manara-teal">
+          <Link href="/join" className="rounded-full bg-manara-teal px-6 py-2.5 font-display text-sm font-bold text-white shadow-subtle transition hover:-translate-y-0.5 hover:bg-manara-yellow hover:text-manara-teal">
             Join MSC
           </Link>
         </div>
@@ -84,7 +81,7 @@ export default function Nav() {
           >
             <User className="size-4" />
           </Link>
-          <Link href={session ? "/join" : "/signin?redirect=/join"} className="rounded-full bg-manara-yellow px-4 py-2 font-display text-xs font-bold text-manara-teal">Join</Link>
+          <Link href="/join" className="rounded-full bg-manara-yellow px-4 py-2 font-display text-xs font-bold text-manara-teal">Join</Link>
           <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-manara-yellow/10 text-manara-yellow" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
             {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
