@@ -152,7 +152,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-ajmain",
     name: "Mohammad Ajmain Faieq",
-    image: "/memberimage/ajmain.jpg",
+    image: "/memberimage/ajmain.png",
     batch: "2026–2027",
     role: "President",
     socials: {},
@@ -168,7 +168,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-zarifah",
     name: "Zarifah Tasnim",
-    image: "",
+    image: "/memberimage/zarifa.jpg",
     batch: "2026–2027",
     role: "General Secretary",
     socials: {},
@@ -192,7 +192,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-alfe",
     name: "Shafe Islam Alfe",
-    image: "",
+    image: "/memberimage/shafe.jpeg",
     batch: "2026–2027",
     role: "Creative Director",
     socials: {},
@@ -225,7 +225,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-tahiad",
     name: "Mohammad Tahiad Islam",
-    image: "",
+    image: "memberimage/tahiad.jpg",
     batch: "2026–2027",
     role: "Head of Department — Engineering & Innovation",
     socials: {},

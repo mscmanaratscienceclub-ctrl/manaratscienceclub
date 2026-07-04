@@ -31,7 +31,7 @@ Focus on **shared UI primitives** (Button, Input, Dialog, Card, Select, Checkbox
 ### 3. Write `layouts.md`
 Find and READ all shared layout components. These are the components that appear on every page or across multiple pages:
 - App shell / root layout
-- Navigation bar (top nav, bottom nav)
+- .igation bar (top nav, bottom nav)
 - Sidebar
 - Header / top bar
 - Footer

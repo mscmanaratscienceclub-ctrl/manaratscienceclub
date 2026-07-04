@@ -4,7 +4,7 @@ import { siteConfig } from "@/lib/data";
 
 const explorationLinks = [
   { href: "/", label: "Home" }, { href: "/legacy", label: "Past and Current Members" },
-  { href: "/achievements", label: "Achievements & Accolades" }, { href: "/blogs", label: "Articles" },
+ { href: "/blogs", label: "Articles" },
   { href: "/join", label: "Join MSC" },
 ];
 

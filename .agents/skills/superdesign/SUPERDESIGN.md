@@ -134,7 +134,7 @@ Step 3 — Design in Superdesign
     -p "Create a PIXEL-PERFECT reproduction of the current page. Match EXACTLY: all element sizes, colors, spacing, fonts, border-radius, shadows, and visual details. The reproduction must be indistinguishable from the original. Use the provided source code as the single source of truth." \
     --context-file .superdesign/design-system.md \
     --context-file src/layouts/AppLayout.tsx \
-    --context-file src/components/Nav.tsx \
+    --context-file src/components \
     --context-file src/components/Sidebar.tsx \
     --context-file src/pages/Target.tsx:45 \
     --context-file src/components/Target/SubComponent1.tsx \
