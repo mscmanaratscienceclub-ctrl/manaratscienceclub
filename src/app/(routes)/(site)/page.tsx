@@ -1,57 +1,82 @@
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, Trophy, GraduationCap, ArrowUpRight, Microscope, Medal, BadgeCheck, CalendarDays, Send } from "lucide-react";
+import { ArrowRight, GraduationCap, ArrowUpRight, Microscope, CalendarDays, Send } from "lucide-react";
 import { getPublishedPosts } from "@/lib/actions/posts";
-
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import RotatingText from "@/components/ui/rotating-text";
+import { WobbleCard } from "@/components/ui/wobble-card";
 export default async function HomePage() {
   const recentPosts = await getPublishedPosts(4, 0);
 
   return (
     <div className="relative">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-surface">
-        <div className="absolute inset-0 diagram-grid opacity-80" />
-        <div className="relative mx-auto max-w-7xl px-5 py-16 lg:px-8 lg:py-24">
-          <div className="fade-up relative z-10 flex flex-col justify-center max-w-4xl">
-            <div className="mb-7 inline-flex w-fit items-center gap-2 rounded-full border border-manara-red/15 bg-cream px-4 py-2 font-display text-sm font-bold text-manara-red">
-              <GraduationCap className="h-5 w-5 text-manara-yellow" />
+      <section className="relative overflow-hidden bg-gradient-to-b from-surface to-cream">
+        <div className="absolute inset-0 diagram-grid opacity-40" />
+        <div className="absolute -top-48 -right-48 h-[500px] w-[500px] rounded-full bg-manara-teal/3 blur-3xl" />
+        <div className="absolute -bottom-32 -left-32 h-[350px] w-[350px] rounded-full bg-manara-yellow/5 blur-3xl" />
+        <div className="relative mx-auto max-w-7xl px-5 py-24 lg:px-8 lg:py-36">
+          <div className="max-w-4xl">
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-manara-teal/10 bg-surface px-4 py-2 font-display text-sm font-bold text-manara-teal shadow-subtle">
+              <GraduationCap className="h-4 w-4 text-manara-yellow" />
               Evidence-based science learning for young innovators
             </div>
-            <h1 className="max-w-4xl font-display text-5xl font-bold leading-[0.98] tracking-tight text-manara-teal sm:text-6xl lg:text-7xl">
+            <h1 className="font-display text-5xl font-bold leading-[1.05] tracking-tight text-ink sm:text-6xl lg:text-7xl">
               Opportunities on<br />
-              <span className="">what you dream</span>
+              <span className="text-manara-red">
+                <RotatingText
+                  texts={['what you dream', 'what you explore', 'what you build', 'what you discover']}
+                  mainClassName=""
+                  staggerFrom="last"
+                  initial={{ y: '100%' }}
+                  animate={{ y: 0 }}
+                  exit={{ y: '-120%' }}
+                  staggerDuration={0.025}
+                  splitLevelClassName="overflow-hidden pb-0.5 sm:pb-1 md:pb-1"
+                  transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+                  rotationInterval={2500}
+                />
+              </span>
             </h1>
-            <p className="mt-7 max-w-3xl text-lg font-medium leading-8 text-ink/70">
-              What if black holes aren&apos;t just places where things vanish, but doorways to other dimensions? These are questions that sparked MSC – a club where curious young minds socialize, research, and discuss topics that intrigue them.
+            <p className="mt-8 max-w-3xl text-lg font-medium leading-8 text-ink/60">
+              A community where curious young minds explore science through research, discussion, and discovery — guided by mentors and driven by curiosity.
             </p>
-            <div className="mt-9 flex flex-col gap-4 sm:flex-row">
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <Link
                 href="/opportunities"
-                className="inline-flex items-center justify-center gap-3 rounded-full bg-manara-teal px-8 py-4 font-display text-base font-bold text-white shadow-academic transition hover:-translate-y-1 hover:bg-manara-yellow hover:text-manara-teal"
+                className="inline-flex items-center justify-center gap-3 rounded-full bg-manara-teal px-8 py-4 font-display text-base font-bold text-white shadow-academic transition-all hover:-translate-y-1 hover:bg-manara-yellow hover:text-manara-teal hover:shadow-yellow"
               >
                 View Academic Tracks
                 <ArrowUpRight className="h-5 w-5" />
               </Link>
               <Link
                 href="/join"
-                className="inline-flex items-center justify-center gap-3 rounded-full border border-manara-teal/20 bg-surface px-8 py-4 font-display text-base font-bold text-manara-teal shadow-subtle transition hover:-translate-y-1 hover:border-manara-yellow"
+                className="inline-flex items-center justify-center gap-3 rounded-full border border-manara-teal/20 bg-surface px-8 py-4 font-display text-base font-bold text-manara-teal shadow-subtle transition-all hover:-translate-y-1 hover:border-manara-teal/40 hover:bg-manara-teal/5"
               >
                 Join MSC
                 <Microscope className="h-5 w-5" />
               </Link>
             </div>
-            <div className="mt-12 grid max-w-2xl grid-cols-3 overflow-hidden rounded-[2rem] border border-manara-teal/10 bg-surface shadow-subtle">
-              <div className="p-5">
-                <p className="font-display text-3xl font-bold text-manara-red">450+</p>
-                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-ink/50">General Members</p>
+            <div className="mt-16 flex flex-wrap items-center gap-x-12 gap-y-4">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-0.5 bg-manara-teal/15" />
+                <div>
+                  <p className="font-display text-3xl font-bold text-manara-red">450+</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-ink/40">General Members</p>
+                </div>
               </div>
-              <div className="border-x border-manara-teal/10 p-5">
-                <p className="font-display text-3xl font-bold text-manara-yellow">30+</p>
-                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-ink/50">Engineering Teams</p>
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-0.5 bg-manara-teal/15" />
+                <div>
+                  <p className="font-display text-3xl font-bold text-manara-yellow">30+</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-ink/40">Engineering Teams</p>
+                </div>
               </div>
-              <div className="p-5">
-                <p className="font-display text-3xl font-bold text-manara-teal">61</p>
-                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-ink/50">Accolades</p>
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-0.5 bg-manara-teal/15" />
+                <div>
+                  <p className="font-display text-3xl font-bold text-manara-teal">61</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-ink/40">Accolades</p>
+                </div>
               </div>
             </div>
           </div>
@@ -59,36 +84,84 @@ export default async function HomePage() {
       </section>
 
       {/* Programs Section */}
-      <section id="programs" className="bg-cream py-24">
+      <section id="programs" className="bg-cream py-16">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <div className="mb-12 grid gap-8 lg:grid-cols-[.8fr_1.2fr] lg:items-end">
+          <div className="mb-8 grid gap-8 lg:grid-cols-[.8fr_1.2fr] lg:items-end">
             <div>
               <p className="font-display text-base font-bold text-manara-red">Academic tracks</p>
               <h2 className="mt-3 font-display text-5xl font-bold leading-tight tracking-tight text-ink lg:text-6xl">Proven results at the highest level.</h2>
             </div>
             <p className="max-w-2xl text-lg font-medium leading-8 text-ink/65 lg:justify-self-end">Our members have consistently placed at national olympiads and international competitions. With weekly mentoring sessions and a track record of medalists, we turn ambitious students into champions.</p>
           </div>
-          <div className="grid gap-6 lg:grid-cols-4">
-            <article className="rounded-[2rem] border border-manara-teal/10 bg-surface p-6 shadow-subtle transition hover:-translate-y-1 hover:shadow-academic">
-              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-manara-yellow text-manara-teal"><Medal className="h-7 w-7" /></div>
-              <h3 className="font-display text-2xl font-bold text-ink">National Olympiad Success</h3>
-              <p className="mt-3 text-sm font-medium leading-6 text-ink/60">Our students earn top distinctions at national science olympiads year after year through rigorous preparation and expert mentorship.</p>
-            </article>
-            <article className="rounded-[2rem] border border-manara-teal/10 bg-surface p-6 shadow-subtle transition hover:-translate-y-1 hover:shadow-academic">
-              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-manara-purple text-white"><Trophy className="h-7 w-7" /></div>
-              <h3 className="font-display text-2xl font-bold text-ink">International Medalists</h3>
-              <p className="mt-3 text-sm font-medium leading-6 text-ink/60">Multiple alumni have represented on global stages, bringing home medals from international science competitions and olympiads.</p>
-            </article>
-            <article className="rounded-[2rem] border border-manara-teal/10 bg-surface p-6 shadow-subtle transition hover:-translate-y-1 hover:shadow-academic">
-              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-manara-teal text-white"><BadgeCheck className="h-7 w-7" /></div>
-              <h3 className="font-display text-2xl font-bold text-ink">Alumni Medalists</h3>
-              <p className="mt-3 text-sm font-medium leading-6 text-ink/60">Former members now mentor the next generation, continuing our legacy of excellence and passing down proven strategies for success.</p>
-            </article>
-            <article className="rounded-[2rem] border border-manara-teal/10 bg-surface p-6 shadow-subtle transition hover:-translate-y-1 hover:shadow-academic">
-              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-manara-red text-white"><CalendarDays className="h-7 w-7" /></div>
-              <h3 className="font-display text-2xl font-bold text-ink">Weekly Sessions</h3>
-              <p className="mt-3 text-sm font-medium leading-6 text-ink/60">Structured weekly meetings covering concept mastery, problem-solving drills, mock competitions, and personalized feedback loops.</p>
-            </article>
+          <div className="grid gap-4 lg:grid-cols-2 lg:grid-rows-2">
+            {/* Left card - spans full height */}
+            <WobbleCard
+              containerClassName="lg:row-span-2 bg-gradient-to-br from-pink-500 to-rose-600"
+              className="flex flex-col justify-center h-full"
+            >
+              <div className="flex flex-row items-center gap-6">
+                <DotLottieReact
+                  src="https://lottie.host/28b5853e-ed20-4d95-a0aa-0bfe8d2a5fa6/rHHhZUmMFO.lottie"
+                  className="w-[140px] h-[140px] shrink-0"
+                  loop={false}
+                  autoplay
+                />
+                <div className="flex-1">
+                  <h3 className="font-display text-3xl font-bold text-white leading-tight mb-3">
+                    National Olympiad Success
+                  </h3>
+                  <p className="text-sm font-medium leading-relaxed text-white/90 max-w-sm">
+                    Our students earn top distinctions at national science olympiads year after year through rigorous preparation and expert mentorship.
+                  </p>
+                </div>
+              </div>
+            </WobbleCard>
+
+            {/* Right top card */}
+            <WobbleCard
+              containerClassName="bg-gradient-to-br from-purple-500 to-indigo-600"
+              className="flex flex-col justify-center h-full"
+            >
+              <div className="flex flex-row items-center gap-4">
+                <DotLottieReact
+                  src="https://lottie.host/7296dff4-19f0-4692-a6fc-6fd27bc22280/GMbkMuCo3o.lottie"
+                  className="w-[120px] h-[120px] shrink-0"
+                  loop={false}
+                  autoplay
+                />
+                <div className="flex-1">
+                  <h3 className="font-display text-2xl font-bold text-white leading-tight mb-2">
+                    International Medalists
+                  </h3>
+                  <p className="text-xs font-medium leading-relaxed text-white/85">
+                    Multiple alumni represented on global stages, bringing home medals.
+                  </p>
+                </div>
+              </div>
+            </WobbleCard>
+
+            {/* Right bottom card */}
+            <WobbleCard
+              containerClassName="bg-gradient-to-br from-blue-500 to-blue-600"
+              className="flex flex-col justify-center h-full"
+            >
+              <div className="flex flex-row items-center gap-4">
+                <DotLottieReact
+                  src="https://lottie.host/d248abfd-3b2a-4f7d-8668-45b0bf9d7cad/fHawse3HuY.lottie"
+                  className="w-[120px] h-[120px] shrink-0"
+                  loop={false}
+                  autoplay
+                />
+                <div className="flex-1">
+                  <h3 className="font-display text-2xl font-bold text-white leading-tight mb-2">
+                    Weekly mentoring sessions
+                  </h3>
+                  <p className="text-xs font-medium leading-relaxed text-white/85">
+                    Structured weekly meetings covering concept mastery, problem-solving drills, mock competitions, and personalized feedback loops.
+                  </p>
+                </div>
+              </div>
+            </WobbleCard>
           </div>
         </div>
       </section>
@@ -148,6 +221,7 @@ export default async function HomePage() {
                 <Link
                   key={post.id}
                   href={`/blogs/${post.slug}`}
+
                   className="group flex flex-col overflow-hidden rounded-2xl border border-manara-teal/10 bg-surface shadow-subtle transition-all duration-300 hover:-translate-y-1 hover:shadow-academic"
                 >
                   <div className="flex flex-1 flex-col p-6">

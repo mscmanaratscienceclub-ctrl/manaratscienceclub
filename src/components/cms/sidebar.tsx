@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, FileText, Users, ExternalLink, LogOut, Atom, PenSquare, Tag } from "lucide-react";
 import { signOut } from "@/lib/auth/client";
+import { trackEvent, resetAnalytics } from "@/lib/analytics";
+import { clearSentryUser } from "@/lib/sentry-helpers";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps { user: { name: string; email: string; role: string } }
@@ -21,7 +23,16 @@ export default function CmsSidebar({ user }: SidebarProps) {
   const isActive = (href: string, exact: boolean) => exact ? pathname === href : pathname.startsWith(href);
 
   async function handleSignOut() {
-    await signOut({ fetchOptions: { onSuccess: () => router.push("/signin") } });
+    await signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          trackEvent("user_signed_out");
+          resetAnalytics();
+          clearSentryUser();
+          router.push("/signin");
+        },
+      },
+    });
   }
 
   const initials = user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();

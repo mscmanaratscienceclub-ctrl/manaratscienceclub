@@ -5,6 +5,7 @@ import { user } from "@/db/schema/auth/user";
 import { getServerSession } from "@/lib/auth/get-session";
 import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { trackEvent } from "@/lib/analytics";
 
 function assertAdmin(role: string) {
   if (role !== "admin") throw new Error("Unauthorized: Admin only");
@@ -31,4 +32,5 @@ export async function updateUserRole(userId: string, newRole: "admin" | "writer"
   if (userId === session.user.id) throw new Error("You cannot change your own role");
   await db.update(user).set({ role: newRole }).where(eq(user.id, userId));
   revalidatePath("/cms/users");
+  trackEvent("user_role_changed", { userId, newRole });
 }

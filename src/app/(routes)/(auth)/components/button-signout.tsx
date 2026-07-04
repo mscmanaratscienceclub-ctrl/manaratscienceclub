@@ -4,6 +4,8 @@ import { useState } from "react";
 import { signOut } from "@/lib/auth/client";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { resetAnalytics } from "@/lib/analytics";
+import { clearSentryUser } from "@/lib/sentry-helpers";
 
 export default function SignOutButton() {
   const [isPending, setIsPending] = useState(false);
@@ -14,6 +16,8 @@ export default function SignOutButton() {
       fetchOptions: {
         onSuccess: () => {
           setIsPending(false);
+          resetAnalytics();
+          clearSentryUser();
           redirect("/");
         },
       },

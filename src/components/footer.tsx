@@ -3,9 +3,8 @@ import { MapPin, Mail, Phone, Camera, Globe, MessageCircle, Users, Microscope } 
 import { siteConfig } from "@/lib/data";
 
 const explorationLinks = [
-  { href: "/", label: "Home" }, { href: "/legacy", label: "Institutional Legacy" },
-  { href: "/achievements", label: "Achievements & Accolades" }, { href: "/blogs", label: "Research Hub" },
-  { href: "/events", label: "Events Calendar" }, { href: "/opportunities", label: "Teams & Projects" },
+  { href: "/", label: "Home" }, { href: "/legacy", label: "Past and Current Members" },
+  { href: "/achievements", label: "Achievements & Accolades" }, { href: "/blogs", label: "Articles" },
   { href: "/join", label: "Join MSC" },
 ];
 
@@ -57,8 +56,8 @@ export default function Footer() {
               <li><a href={siteConfig.social.discord} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-white/65 transition-colors hover:text-manara-purple"><MessageCircle className="size-4" />Discord Server</a></li>
               <li><a href={siteConfig.social.facebook} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-white/65 transition-colors hover:text-white"><Globe className="size-4" />Facebook Page</a></li>
               <li className="pt-2 text-xs font-semibold uppercase tracking-wide text-white/30">Community Groups</li>
-              <li><a href={siteConfig.social.boysCommunity} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-white/65 transition-colors hover:text-manara-yellow"><Users className="size-4" />Brothers Group</a></li>
-              <li><a href={siteConfig.social.girlsCommunity} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-white/65 transition-colors hover:text-manara-pink"><Users className="size-4" />Sisters Group</a></li>
+              <li><a href={siteConfig.social.boysCommunity} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-white/65 transition-colors hover:text-manara-yellow"><Users className="size-4" />Boys Group</a></li>
+              <li><a href={siteConfig.social.girlsCommunity} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-white/65 transition-colors hover:text-manara-pink"><Users className="size-4" />Girls Group</a></li>
             </ul>
           </div>
         </div>

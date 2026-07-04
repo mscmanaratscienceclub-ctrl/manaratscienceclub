@@ -1,5 +1,6 @@
 import { Code2, Bot, FlaskConical, Presentation, Users } from "lucide-react";
 import Link from "next/link";
+import ScrollReveal from "@/components/animations/ScrollReveal";
 
 export const metadata = {
   title: "Opportunities & Teams | Manarat Science Club",
@@ -10,14 +11,16 @@ export default function OpportunitiesPage() {
   return (
     <div className="min-h-screen bg-cream">
       {/* Hero Section */}
-      <section className="bg-cream px-4 py-20 text-center border-b border-manara-teal/10">
-        <h1 className="font-display text-4xl font-bold text-ink md:text-5xl">
-          Opportunities & Teams
-        </h1>
-        <p className="mx-auto mt-4 max-w-2xl font-body text-lg text-ink/60">
-          Discover our specialized active engineering divisions, ongoing innovative prototypes, and opening positions.
-        </p>
-      </section>
+      <ScrollReveal>
+        <section className="bg-cream px-4 py-20 text-center border-b border-manara-teal/10">
+          <h1 className="font-display text-4xl font-bold text-ink md:text-5xl">
+            Opportunities & Teams
+          </h1>
+          <p className="mx-auto mt-4 max-w-2xl font-body text-lg text-ink/60">
+            Discover our specialized active engineering divisions, ongoing innovative prototypes, and opening positions.
+          </p>
+        </section>
+      </ScrollReveal>
 
       {/* Teams Section */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
@@ -26,8 +29,9 @@ export default function OpportunitiesPage() {
           <p className="font-body text-ink/60">Join a specialized division focused on hands-on building and research.</p>
         </div>
 
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          <article className="rounded-[2rem] border border-manara-red/10 bg-surface p-6 shadow-subtle flex flex-col items-center text-center">
+        <ScrollReveal>
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <article className="rounded-[2rem] border border-manara-red/10 bg-surface p-6 shadow-subtle flex flex-col items-center text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-manara-red/10 text-manara-red">
               <FlaskConical className="h-8 w-8" />
             </div>
@@ -79,7 +83,8 @@ export default function OpportunitiesPage() {
             </span>
           </article>
         </div>
-      </section>
+      </ScrollReveal>
+    </section>
 
       {/* Projects Repository Preview */}
       <section className="bg-surface py-16 sm:py-20">

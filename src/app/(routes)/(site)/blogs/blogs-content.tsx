@@ -130,7 +130,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
       {/* Hero Section */}
       <section className="bg-surface border-b border-manara-teal/10">
         <div className="max-w-7xl mx-auto px-6 py-16 lg:py-20 grid lg:grid-cols-[1.15fr_0.85fr] gap-12 items-center">
-          <div className="fade-up">
+          <div>
             <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6 bg-manara-teal/7">
               <Sparkles className="w-3.5 h-3.5 text-manara-teal" />
               <span className="font-display font-medium text-sm text-manara-teal">
@@ -337,6 +337,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
                       <Link
                         key={post.id}
                         href={`/blogs/${post.slug}`}
+                       
                         className={cn(
                           "group relative flex flex-col rounded-2xl bg-surface border border-manara-teal/10 shadow-subtle hover:shadow-academic p-6 overflow-hidden transition-all duration-300",
                           !isVisible && "opacity-30 saturate-40 pointer-events-none"

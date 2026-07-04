@@ -173,34 +173,10 @@ export const currentMembers: Member[] = [
     role: "General Secretary",
     socials: {},
   },
-  {
-    id: "current-abrar",
-    name: "Abrar Jawad",
-    image: "/memberimage/abrar.png",
-    batch: "2026–2027",
-    role: "Head of Department — IT",
-    socials: {},
-  },
-  {
-    id: "current-aarina",
-    name: "Aarina Moitry",
-    image: "",
-    batch: "2026–2027",
-    role: "Head of Department — Media",
-    socials: {},
-  },
-  {
-    id: "current-ruhma",
-    name: "Ruhma Hossain",
-    image: "",
-    batch: "2026–2027",
-    role: "Head of Department — Academics",
-    socials: {},
-  },
-  {
+    {
     id: "current-nureen",
     name: "Nureen Rayan",
-    image: "/memberimage/nureen.png",
+    image: "/memberimage/nureen.jpg",
     batch: "2026–2027",
     role: "Head of Department — Activity",
     socials: {},
@@ -214,14 +190,6 @@ export const currentMembers: Member[] = [
     socials: {},
   },
   {
-    id: "current-tahiad",
-    name: "Mohammad Tahiad Islam",
-    image: "",
-    batch: "2026–2027",
-    role: "Head of Department — Engineering & Innovation",
-    socials: {},
-  },
-  {
     id: "current-alfe",
     name: "Shafe Islam Alfe",
     image: "",
@@ -229,6 +197,40 @@ export const currentMembers: Member[] = [
     role: "Creative Director",
     socials: {},
   },
+  {
+    id: "current-aarina",
+    name: "Aarina Moitry",
+    image: "memberimage/aarina.jpg",
+    batch: "2026–2027",
+    role: "Head of Department — Media",
+    socials: {},
+  },
+  {
+    id: "current-ruhma",
+    name: "Ruhma Hossain",
+    image: "memberimage/ruhma.jpg",
+    batch: "2026–2027",
+    role: "Head of Department — Academics",
+    socials: {},
+  },
+
+    {
+    id: "current-abrar",
+    name: "Abrar Jawad",
+    image: "memberimage/abrar.png",
+    batch: "2026–2027",
+    role: "Head of Department — IT",
+    socials: {},
+  },
+  {
+    id: "current-tahiad",
+    name: "Mohammad Tahiad Islam",
+    image: "",
+    batch: "2026–2027",
+    role: "Head of Department — Engineering & Innovation",
+    socials: {},
+  },
+
 ];
 
 export const legacyMembers: Member[] = [
@@ -304,22 +306,7 @@ export const legacyMembers: Member[] = [
     role: "Deputy Coordinator",
     socials: {},
   },
-  {
-    id: "current-eousuf",
-    name: "Eousuf Wasi",
-    image: "/memberimage/eosoufwasi.png",
-    batch: "2025–2026",
-    role: "Chief Coordinator",
-    socials: {},
-  },
-  {
-    id: "current-rafeed",
-    name: "Rafeed Redwan",
-    image: "/memberimage/rafeedredwan.png",
-    batch: "2025–2026",
-    role: "Chief Coordinator",
-    socials: {},
-  },
+
   {
     id: "current-golam",
     name: "Golam Sami",

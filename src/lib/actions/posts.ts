@@ -7,6 +7,7 @@ import { getServerSession } from "@/lib/auth/get-session";
 import { eq, and, ne, desc, sql, count, like } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 function generateSlug(title: string): string {
   return title.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim().slice(0, 80);
@@ -112,6 +113,9 @@ export async function createPost(data: { title: string; excerpt: string; content
   const id = crypto.randomUUID();
   await db.insert(posts).values({ id, title: data.title, slug, excerpt: data.excerpt, content: data.content, tags: data.tags ?? [], authorId: session.user.id, status: data.status, publishedAt: data.status === "published" ? new Date() : null, customAuthorName: data.customAuthorName ?? null, customAuthorAvatar: data.customAuthorAvatar ?? null, customAuthorBio: data.customAuthorBio ?? null });
   revalidatePath("/cms/posts"); revalidatePath("/blogs");
+  if (data.status === "published") {
+    trackEvent("post_published", { postId: id });
+  }
   return { id, slug };
 }
 
@@ -126,6 +130,7 @@ export async function updatePost(id: string, data: { title: string; excerpt: str
   const slug = await ensureUniqueSlug(generateSlug(data.title), id);
   await db.update(posts).set({ title: data.title, slug, excerpt: data.excerpt, content: data.content, tags: data.tags ?? [], status: data.status, publishedAt: data.status === "published" && !existing[0].publishedAt ? new Date() : existing[0].publishedAt, updatedAt: new Date(), customAuthorName: data.customAuthorName ?? null, customAuthorAvatar: data.customAuthorAvatar ?? null, customAuthorBio: data.customAuthorBio ?? null }).where(eq(posts.id, id));
   revalidatePath("/cms/posts"); revalidatePath(`/cms/posts/${id}`); revalidatePath("/blogs"); revalidatePath(`/blogs/${slug}`);
+  trackEvent("post_updated", { postId: existing[0].id });
   return { id, slug };
 }
 
@@ -140,6 +145,7 @@ export async function deletePost(id: string) {
   const slug = existing[0].slug;
   await db.delete(posts).where(eq(posts.id, id));
   revalidatePath("/cms/posts"); revalidatePath("/blogs"); revalidatePath(`/blogs/${slug}`);
+  trackEvent("post_deleted", { postId: id });
 }
 
 export async function togglePostStatus(id: string) {

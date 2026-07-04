@@ -1,6 +1,7 @@
 import { Camera, MessageCircle, GitFork, ExternalLink, Globe, User } from "lucide-react";
 import { legacyMembers, currentMembers, nextGenMembers } from "@/lib/data";
 import type { Member } from "@/lib/data";
+import ScrollReveal from "@/components/animations/ScrollReveal";
 
 export const metadata = {
   title: "Our Members | Manarat Science Club",
@@ -59,11 +60,13 @@ function MemberGrid({ members, label }: { members: Member[]; label: string }) {
       <div className="mb-10 text-center">
         <h2 className="font-display text-3xl font-bold text-ink">{label}</h2>
       </div>
-      <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {members.map((member) => (
-          <MemberCard key={member.id} member={member} />
-        ))}
-      </div>
+      <ScrollReveal>
+        <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {members.map((member) => (
+            <MemberCard key={member.id} member={member} />
+          ))}
+        </div>
+      </ScrollReveal>
     </section>
   );
 }
@@ -71,14 +74,16 @@ function MemberGrid({ members, label }: { members: Member[]; label: string }) {
 export default function LegacyPage() {
   return (
     <div className="min-h-screen bg-cream">
-      <section className="bg-cream px-4 py-20 text-center border-b border-manara-teal/10">
-        <h1 className="font-display text-4xl font-bold text-ink md:text-5xl">
-          Our Members
-        </h1>
-        <p className="mx-auto mt-4 max-w-2xl font-body text-lg text-ink/60">
-          The people who have built and continue to carry the Manarat Science Club forward.
-        </p>
-      </section>
+      <ScrollReveal>
+        <section className="bg-cream px-4 py-20 text-center border-b border-manara-teal/10">
+          <h1 className="font-display text-4xl font-bold text-ink md:text-5xl">
+            Our Members
+          </h1>
+          <p className="mx-auto mt-4 max-w-2xl font-body text-lg text-ink/60">
+            The people who have built and continue to carry the Manarat Science Club forward.
+          </p>
+        </section>
+      </ScrollReveal>
 
       <MemberGrid members={currentMembers} label="Current Members" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

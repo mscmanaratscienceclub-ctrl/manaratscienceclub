@@ -40,6 +40,7 @@ export const metadata: Metadata = {
   },
   description:
     "A prestigious high school science club where curiosity meets creativity — featuring robotics, astronomy, chemistry, biology, and student research.",
+  icons: { icon: "/msc.svg" },
 };
 
 export default function RootLayout({
