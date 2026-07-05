@@ -17,6 +17,13 @@ interface Post {
   publishedAt: Date | null;
 }
 
+// Hoist formatter to avoid re-instantiation in loops
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
 export default function PostsTable({ posts }: { posts: Post[] }) {
   const router = useRouter();
 
@@ -118,11 +125,7 @@ export default function PostsTable({ posts }: { posts: Post[] }) {
                   {post.customAuthorName ?? post.authorName ?? "Unknown"}
                 </td>
                 <td className="px-6 py-4 font-body text-sm text-ink/60">
-                  {new Date(post.updatedAt).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
+                  {dateFormatter.format(new Date(post.updatedAt))}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-end gap-1">

@@ -2,6 +2,13 @@ import { getAllPostsCms } from "@/lib/actions/posts";
 import { FileText, BookOpen, FilePenLine, Plus } from "lucide-react";
 import Link from "next/link";
 
+// Hoist formatter to avoid re-instantiation in loops
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
 export default async function CmsDashboardPage() {
   const posts = await getAllPostsCms();
 
@@ -147,11 +154,7 @@ export default async function CmsDashboardPage() {
                       {post.customAuthorName ?? post.authorName ?? "Unknown"}
                     </td>
                     <td className="px-6 py-4 font-body text-sm text-ink/60">
-                      {new Date(post.createdAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                      {dateFormatter.format(new Date(post.createdAt))}
                     </td>
                   </tr>
                 ))}
