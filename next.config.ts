@@ -6,8 +6,15 @@ const nextConfig: NextConfig = {
     return [];
   },
   skipTrailingSlashRedirect: true,
+
   images: {
-    formats: ["image/avif", "image/webp"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "ipmdyrxfptdsulfhxjkb.supabase.co",
+        pathname: "/storage/v1/object/public/avatars/**",
+      },
+    ],
   },
 };
 

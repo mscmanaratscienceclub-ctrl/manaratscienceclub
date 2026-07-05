@@ -179,7 +179,7 @@ export default async function HomePage() {
             <div className="group relative rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,95,107,0.15)] hover:-translate-y-2 border-[3px] border-manara-yellow/40 bg-manara-teal/[0.04]">
               <div className="p-6 md:p-7 bg-surface/90 backdrop-blur-sm h-full flex flex-col justify-between">
                 <div className="flex flex-col items-center text-center">
-                  <Image src="/memberimage/maksud.png" alt="Dr. Maksud Alam" width={160} height={160} className="h-40 w-40 rounded-full object-cover border-4 border-manara-yellow/30 shadow-xl mb-4" />
+                  <Image src="https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/maksud.png" alt="Dr. Maksud Alam" width={160} height={160} className="h-40 w-40 rounded-full object-cover border-4 border-manara-yellow/30 shadow-xl mb-4" />
                   <h3 className="text-2xl md:text-3xl lg:text-4xl font-black mb-1 text-ink drop-shadow-lg">Dr. Maksud Alam</h3>
                   <p className="text-base md:text-lg font-bold text-manara-teal">MCCA Convener and Club In-Charge, MSC</p>
                   <p className="text-sm md:text-base leading-relaxed font-medium mt-6 text-ink/70">
@@ -191,7 +191,7 @@ export default async function HomePage() {
             <div className="group relative rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 hover:shadow-[0_20px_50px_rgba(255,183,3,0.15)] hover:-translate-y-2 border-[3px] border-manara-teal/40 bg-manara-yellow/[0.04]">
               <div className="p-6 md:p-7 bg-surface/90 backdrop-blur-sm h-full flex flex-col justify-between">
                 <div className="flex flex-col items-center text-center">
-                  <Image src="/memberimage/roksana.png" alt="Roksana Khanam" width={160} height={160} className="h-40 w-40 rounded-full object-cover border-4 border-manara-teal/30 shadow-xl mb-4" />
+                  <Image src="https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/roksana.png" alt="Roksana Khanam" width={160} height={160} className="h-40 w-40 rounded-full object-cover border-4 border-manara-teal/30 shadow-xl mb-4" />
                   <h3 className="text-2xl md:text-3xl lg:text-4xl font-black mb-1 text-ink drop-shadow-lg">Roksana Khanam</h3>
                   <p className="text-base md:text-lg font-bold text-manara-yellow">Club In-Charge, MSC</p>
                   <p className="text-sm md:text-base leading-relaxed font-medium mt-6 text-ink/70">
