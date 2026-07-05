@@ -2,15 +2,10 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import Providers from "@/providers";
-import { Fredoka, Rubik, Noto_Sans, Playfair_Display } from "next/font/google";
+import { Fredoka, Rubik } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-const playfairDisplayHeading = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-heading",
-});
-const notoSans = Noto_Sans({ subsets: ["latin"], variable: "--font-sans" });
 const fredoka = Fredoka({
   subsets: ["latin"],
   variable: "--font-fredoka",
@@ -53,8 +48,6 @@ export default function RootLayout({
       lang="en"
       className={cn(
         "font-sans",
-        notoSans.variable,
-        playfairDisplayHeading.variable,
         fredoka.variable,
         rubik.variable,
       )}

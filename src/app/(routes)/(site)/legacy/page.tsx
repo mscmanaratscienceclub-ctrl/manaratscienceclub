@@ -2,6 +2,7 @@ import { Camera, MessageCircle, GitFork, ExternalLink, Globe, User } from "lucid
 import { legacyMembers, currentMembers, nextGenMembers } from "@/lib/data";
 import type { Member } from "@/lib/data";
 import ScrollReveal from "@/components/animations/ScrollReveal";
+import Image from "next/image";
 
 export const metadata = {
   title: "Our Members | Manarat Science Club",
@@ -21,7 +22,7 @@ function MemberCard({ member }: { member: Member }) {
     <article className="flex flex-col items-center rounded-[2rem] border border-manara-teal/10 bg-surface p-6 shadow-subtle text-center transition hover:-translate-y-1 hover:shadow-academic">
       <div className="flex h-24 w-24 items-center justify-center rounded-full bg-manara-teal/10 text-manara-teal mb-4 overflow-hidden">
         {member.image ? (
-          <img src={member.image} alt={member.name} className="h-full w-full object-cover" />
+          <Image src={member.image} alt={member.name} width={96} height={96} className="h-full w-full object-cover" />
         ) : (
           <User className="h-10 w-10" />
         )}

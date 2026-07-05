@@ -4,6 +4,7 @@ import { getPostBySlug, getRelatedPosts } from "@/lib/actions/posts";
 import { ArrowLeft, Calendar, Clock, Share2 } from "lucide-react";
 import TocSidebar from "../_components/toc-sidebar";
 import sanitizeHtml from "sanitize-html";
+import Image from "next/image";
 
 // Force dynamic rendering — prevents Next.js from prerenderering all slugs
 // in parallel at build time (would exhaust the Supabase free-tier pool)
@@ -160,7 +161,7 @@ export default async function BlogPostPage({ params }: PageProps) {
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-manara-teal text-sm font-bold text-white">
                       {displayAvatar ? (
-                        <img src={displayAvatar} alt={displayName ?? ""} className="h-full w-full object-cover" />
+                        <Image src={displayAvatar} alt={displayName ?? ""} width={40} height={40} className="h-full w-full object-cover" />
                       ) : (
                         displayName?.charAt(0)?.toUpperCase() ?? "A"
                       )}

@@ -8,6 +8,7 @@ import { useSession } from "@/lib/auth/client";
 import { siteConfig } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
+import Image from "next/image";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -44,7 +45,7 @@ export default function Nav() {
     <header className="sticky top-0 z-40 bg-manara-teal shadow-academic">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3 lg:px-8">
         <Link href="/" className="flex items-center gap-2.5">
-          <img src="/msc.svg" alt="MSC" className="h-9 w-9" />
+          <Image src="/msc.svg" alt="MSC" width={36} height={36} priority className="h-9 w-9" />
           <div>
             <p className="font-display text-lg font-bold leading-none tracking-tight text-white">Manarat</p>
             <p className="font-display text-base font-semibold leading-none text-white">Science Club</p>

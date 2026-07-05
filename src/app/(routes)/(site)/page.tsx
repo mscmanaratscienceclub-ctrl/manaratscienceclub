@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { ArrowRight, GraduationCap, ArrowUpRight, Microscope, CalendarDays, Send } from "lucide-react";
 import { getPublishedPosts } from "@/lib/actions/posts";
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import Image from "next/image";
 import RotatingText from "@/components/ui/rotating-text";
 import { WobbleCard } from "@/components/ui/wobble-card";
+import LottiePlayer from "@/components/ui/LottiePlayer";
 export default async function HomePage() {
   const recentPosts = await getPublishedPosts(4, 0);
 
@@ -100,7 +101,7 @@ export default async function HomePage() {
               className="flex flex-col justify-center h-full"
             >
               <div className="flex flex-row items-center gap-6">
-                <DotLottieReact
+                <LottiePlayer
                   src="https://lottie.host/28b5853e-ed20-4d95-a0aa-0bfe8d2a5fa6/rHHhZUmMFO.lottie"
                   className="w-[140px] h-[140px] shrink-0"
                   loop={false}
@@ -123,7 +124,7 @@ export default async function HomePage() {
               className="flex flex-col justify-center h-full"
             >
               <div className="flex flex-row items-center gap-4">
-                <DotLottieReact
+                <LottiePlayer
                   src="https://lottie.host/7296dff4-19f0-4692-a6fc-6fd27bc22280/GMbkMuCo3o.lottie"
                   className="w-[120px] h-[120px] shrink-0"
                   loop={false}
@@ -146,7 +147,7 @@ export default async function HomePage() {
               className="flex flex-col justify-center h-full"
             >
               <div className="flex flex-row items-center gap-4">
-                <DotLottieReact
+                <LottiePlayer
                   src="https://lottie.host/d248abfd-3b2a-4f7d-8668-45b0bf9d7cad/fHawse3HuY.lottie"
                   className="w-[120px] h-[120px] shrink-0"
                   loop={false}
@@ -178,7 +179,7 @@ export default async function HomePage() {
             <div className="group relative rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,95,107,0.15)] hover:-translate-y-2 border-[3px] border-manara-yellow/40 bg-manara-teal/[0.04]">
               <div className="p-6 md:p-7 bg-surface/90 backdrop-blur-sm h-full flex flex-col justify-between">
                 <div className="flex flex-col items-center text-center">
-                  <img src="/memberimage/maksud.png" alt="Dr. Maksud Alam" className="h-40 w-40 rounded-full object-cover border-4 border-manara-yellow/30 shadow-xl mb-4" />
+                  <Image src="/memberimage/maksud.png" alt="Dr. Maksud Alam" width={160} height={160} className="h-40 w-40 rounded-full object-cover border-4 border-manara-yellow/30 shadow-xl mb-4" />
                   <h3 className="text-2xl md:text-3xl lg:text-4xl font-black mb-1 text-ink drop-shadow-lg">Dr. Maksud Alam</h3>
                   <p className="text-base md:text-lg font-bold text-manara-teal">MCCA Convener and Club In-Charge, MSC</p>
                   <p className="text-sm md:text-base leading-relaxed font-medium mt-6 text-ink/70">
@@ -190,7 +191,7 @@ export default async function HomePage() {
             <div className="group relative rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 hover:shadow-[0_20px_50px_rgba(255,183,3,0.15)] hover:-translate-y-2 border-[3px] border-manara-teal/40 bg-manara-yellow/[0.04]">
               <div className="p-6 md:p-7 bg-surface/90 backdrop-blur-sm h-full flex flex-col justify-between">
                 <div className="flex flex-col items-center text-center">
-                  <img src="/memberimage/roksana.png" alt="Roksana Khanam" className="h-40 w-40 rounded-full object-cover border-4 border-manara-teal/30 shadow-xl mb-4" />
+                  <Image src="/memberimage/roksana.png" alt="Roksana Khanam" width={160} height={160} className="h-40 w-40 rounded-full object-cover border-4 border-manara-teal/30 shadow-xl mb-4" />
                   <h3 className="text-2xl md:text-3xl lg:text-4xl font-black mb-1 text-ink drop-shadow-lg">Roksana Khanam</h3>
                   <p className="text-base md:text-lg font-bold text-manara-yellow">Club In-Charge, MSC</p>
                   <p className="text-sm md:text-base leading-relaxed font-medium mt-6 text-ink/70">

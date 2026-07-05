@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, Camera, Presentation, Code2, Lightbulb, ChevronRight } from "lucide-react";
+import { Users, Camera, Presentation, Code2, Lightbulb, ChevronRight, Palette } from "lucide-react";
 
 interface Role {
   title: string;
@@ -121,6 +121,26 @@ const COMMITTEES: Committee[] = [
       { title: "Technical Documentation Manager" },
     ],
   },
+  {
+    name: "Creative Department",
+    url: "https://docs.google.com/forms/d/e/1FAIpQLScjS4FdPNi03ZcD1ipfh6dP5CU2gjCTy-roqb-ACeiolawE2w/viewform",
+    border: "border-manara-teal/10",
+    iconBg: "bg-manara-teal/10",
+    iconColor: "text-manara-teal",
+    btnBg: "bg-manara-teal",
+    icon: <Palette className="h-6 w-6" />,
+    roles: [
+      {
+        title: "Lead Graphic Designer",
+      },
+      {
+        title: "Deputy Graphic Designer",
+      },
+      {
+        title: "Canvas Artist",
+      },
+    ],
+  },
 ];
 
 export default function JoinPage() {
@@ -138,7 +158,7 @@ export default function JoinPage() {
 
       {/* Committees */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {COMMITTEES.map((committee) => (
             <article
               key={committee.name}

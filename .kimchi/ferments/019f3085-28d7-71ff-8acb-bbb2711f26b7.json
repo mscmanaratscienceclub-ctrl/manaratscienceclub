@@ -1,0 +1,434 @@
+{
+  "id": "019f3085-28d7-71ff-8acb-bbb2711f26b7",
+  "name": "PC and Mobile Optimization",
+  "description": "optimziing the entire codebase for both pc and mobile.",
+  "status": "planned",
+  "worktree": {
+    "path": "/mnt/e/Web Dev/test/manaratscienceclub",
+    "branch": "main",
+    "commit": "e2de2e275326e0cbd1acd5e456beb4c01fa45fb4"
+  },
+  "scoping": {
+    "goal": {
+      "answer": "Make the Manarat Science Club codebase render correctly, performantly, and accessibly across phone (≥390px), tablet, and desktop — meeting Lighthouse mobile ≥ 90 / desktop ≥ 95 and zero axe-core WCAG 2.1 AA violations on every route, with touch targets ≥ 44x44 CSS px, no horizontal overflow at 390px, and no CLS regressions.",
+      "confirmedAt": "2026-07-05T12:28:40.891Z"
+    },
+    "criteria": {
+      "answer": "C1: Lighthouse mobile Performance ≥ 90 and Accessibility = 100 on every public route (home, /blogs, /blogs/[slug], /events, /join, /legacy, /opportunities, /achievements, /profile, /signin, /signup). Method: npx lighthouse run against pnpm start after build, mobile form-factor.\nC2: Lighthouse desktop Performance ≥ 95 and Accessibility = 100 on every public route. Method: same as C1 with --preset=desktop.\nC3: Zero axe-core WCAG 2.1 AA violations on every public route. Method: axe DevTools panel sweep per route at 390px and 1280px, results recorded.\nC4: No horizontal overflow at 390px viewport on any route (documentElement.scrollWidth <= 390). Method: DevTools device toolbar manual check per route, recorded in perf-report.md.\nC5: All interactive elements (links, buttons, inputs) have touch target ≥ 44x44 CSS px on mobile viewports. Method: DevTools device toolbar inspection at 390px, recorded in perf-report.md.\nC6: Core Web Vitals on mobile (Slow 4G): LCP < 2.5s, CLS < 0.1, INP < 200ms on every public route. Method: Lighthouse mobile report, recorded in perf-report.md.\nC7: All <img> and next/image usages set explicit width/height or use fill with a sized parent. Zero layout-shift from missing dimensions. Method: grep audit + Lighthouse CLS confirmation.\nC8: pnpm build and pnpm lint exit 0 with zero errors and zero new warnings introduced by this work.\nC9: CMS dashboard routes (/cms, /cms/posts, /cms/posts/new, /cms/posts/[id]/edit, /cms/tags, /cms/users) are usable on 390px viewports (no overflow, controls reachable, tables become cards or scroll). Method: DevTools device toolbar sweep at 390px, recorded in perf-report.md.\nC10: A before/after Lighthouse report is committed as .kimchi/docs/perf-report.md showing baseline scores, final scores per route, and a per-route changelog of fixes.",
+      "confirmedAt": "2026-07-05T12:28:40.891Z"
+    },
+    "constraints": {
+      "answer": "Verification via Lighthouse only — no Playwright visual tests, no axe automation; axe checks done via DevTools panel., Tiered sequencing: public marketing pages first (home, blogs, events, achievements), then public utility pages (join, legacy, opportunities, profile), then auth + CMS last., 390px minimum baseline (standard phone). 768px tablet and 1280px desktop are also verified but not separately mobile-targeted., WCAG 2.1 AA a11y target — contrast, focus, labels, keyboard nav., Do not change visual design, content, or branding; only behavior, structure, and technical implementation., Do not introduce heavy new UI dependencies. next/dynamic, next/image, next/font, prefers-reduced-motion, existing radix primitives are the toolbox., pnpm build and pnpm lint must remain clean throughout., Lottie, GSAP, motion, TipTap are required design elements — optimize via lazy loading and reduced-motion respect, do not remove.",
+      "confirmedAt": "2026-07-05T12:28:40.891Z"
+    },
+    "assumptions": {
+      "answer": "Lottie/GSAP/motion/TipTap are required design elements, not removable; optimization means lazy loading and prefers-reduced-motion respect, not removal. A Lighthouse mobile score ≥ 90 and desktop ≥ 95 is achievable without rewriting components from scratch. The current codebase has no Playwright setup, and Lighthouse-only verification means I will not add Playwright. Visual design (colors, layout structure, content) is preserved — only code-level performance, responsive correctness, interaction UX, and a11y are in scope. \"Tiered priority\" follows existing route visibility: marketing pages (home, blogs, events, achievements) first; utility pages (join, legacy, opportunities, profile) second; auth + CMS third. The three heavy Lottie files on the homepage are loaded from the lottie.host CDN — I will convert these to next/dynamic imports but keep the same URLs. Raw img tags (e.g. /memberimage/*.png on the homepage editorial) will be converted to next/image with explicit dimensions; existing paths and alt text are preserved. The sentry-example-page route is a Next.js default debug page, not part of the user's product, and will be skipped. CMS Lighthouse thresholds are slightly relaxed (mobile ≥ 85, desktop ≥ 90) because the CMS is admin-only and includes the TipTap editor which inherently carries weight; axe WCAG AA remains strict.",
+      "confirmedAt": "2026-07-05T12:28:40.891Z"
+    },
+    "phases": {
+      "answer": "Foundations & Baseline, Public Marketing Tier (High-Traffic), Public Utility Tier (Long Tail), Auth + CMS Tier, Cross-Cutting Sign-off",
+      "confirmedAt": "2026-07-05T12:28:40.891Z"
+    }
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "index": 1,
+      "name": "Foundations & Baseline",
+      "goal": "Establish Lighthouse + axe baseline and fix issues in the root layout, fonts, and the two global components (nav, footer) that propagate to every page.",
+      "description": "Files: src/app/layout.tsx, src/app/globals.css, src/components/nav.tsx, src/components/footer.tsx. Audit font loading via next/font, viewport meta, theme-color; nav mobile menu focus trap and keyboard nav; footer grid and link touch targets. Reusable utilities (cn, a11y hooks) introduced here so later phases can apply them. Baseline scores recorded for every route.",
+      "budget": "60k tokens",
+      "parallel": false,
+      "status": "planned",
+      "steps": [
+        {
+          "id": "step-1",
+          "index": 1,
+          "description": "Run Lighthouse mobile + desktop against pnpm start on every public + CMS route; record baseline scores to .kimchi/docs/perf-baseline.md",
+          "status": "pending",
+          "verification": {
+            "command": "test -f .kimchi/docs/perf-baseline.md",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-2",
+          "index": 2,
+          "description": "Audit src/app/layout.tsx and src/app/globals.css for font loading (next/font), viewport meta, theme-color, lang attribute",
+          "status": "pending",
+          "verification": {
+            "command": "grep -E 'next/font|viewport|theme-color|<html' src/app/layout.tsx; pnpm build && pnpm lint",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-3",
+          "index": 3,
+          "description": "Audit and fix src/components/nav.tsx: mobile menu a11y (focus trap, Esc-to-close, aria-expanded, aria-controls, aria-label on hamburger), keyboard nav, touch targets (44x44), sticky positioning performance",
+          "status": "pending",
+          "verification": {
+            "command": "Manual DevTools inspection at 390px: hamburger ≥ 44x44, menu opens with aria-expanded=true, Esc closes, Tab cycles within menu; pnpm lint",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-4",
+          "index": 4,
+          "description": "Audit and fix src/components/footer.tsx: responsive grid, link touch targets, semantic structure, aria-labels on social links",
+          "status": "pending",
+          "verification": {
+            "command": "DevTools at 390px: links ≥ 44x44 hit area, grid stacks to single column, social icons aria-labeled; pnpm lint",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-5",
+          "index": 5,
+          "description": "Re-run Lighthouse mobile + desktop on every route; record delta",
+          "status": "pending",
+          "verification": {
+            "command": "npx lighthouse output JSON written for each route",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "index": 2,
+      "name": "Public Marketing Tier (High-Traffic)",
+      "goal": "Optimize the heaviest and most-visited public pages: homepage, blog index, blog [slug], events, and achievements.",
+      "description": "Files: src/app/(routes)/(site)/page.tsx, blogs/page.tsx, blogs/[slug]/page.tsx, events/page.tsx, achievements/page.tsx + sub-components. Convert raw img to next/image, next/dynamic-import heavy components (Lottie, GSAP, wobble-card, rotating-text), respect prefers-reduced-motion, lazy-load below-the-fold, fix 390px overflow, a11y headings/alt/aria-label/contrast.",
+      "budget": "120k tokens",
+      "parallel": false,
+      "status": "planned",
+      "steps": [
+        {
+          "id": "step-1",
+          "index": 1,
+          "description": "Convert raw img to next/image with explicit width/height across homepage, blogs, blog slug, events, achievements. Use priority={true} for above-the-fold LCP images.",
+          "status": "pending",
+          "verification": {
+            "command": "grep -rE '<img ' src/app/(routes)/(site) returns no results; pnpm build",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-2",
+          "index": 2,
+          "description": "next/dynamic-import heavy homepage components: the three DotLottieReact instances, RotatingText, WobbleCard, dot-grid.",
+          "status": "pending",
+          "verification": {
+            "command": "grep shows next/dynamic wrapping heavy imports in homepage; pnpm build succeeds; initial JS reduced",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-3",
+          "index": 3,
+          "description": "Add prefers-reduced-motion respect across homepage animations: RotatingText, WobbleCard, motion reveals. Add reduced-motion CSS.",
+          "status": "pending",
+          "verification": {
+            "command": "grep confirms reduced-motion handling; manual toggle in DevTools rendering panel",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-4",
+          "index": 4,
+          "description": "Audit and fix homepage / blog index / blog slug / events / achievements for 390px overflow",
+          "status": "pending",
+          "verification": {
+            "command": "DevTools at 390px: scrollWidth === 390 on each; pnpm lint",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-5",
+          "index": 5,
+          "description": "Audit and fix a11y on each page: heading hierarchy, alt text, aria-labels on icon buttons, color contrast, focus indicators",
+          "status": "pending",
+          "verification": {
+            "command": "axe DevTools sweep at 390px and 1280px on each route: zero violations; pnpm lint",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-6",
+          "index": 6,
+          "description": "Re-run Lighthouse mobile + desktop on each of these 5 routes; record scores",
+          "status": "pending",
+          "verification": {
+            "command": "Lighthouse JSON written; mobile Performance ≥ 90, Accessibility = 100",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "index": 3,
+      "name": "Public Utility Tier (Long Tail)",
+      "goal": "Optimize the lighter public pages: join, legacy, opportunities, profile.",
+      "description": "Files: src/app/(routes)/(site)/join/page.tsx, legacy/page.tsx, opportunities/page.tsx, profile/page.tsx + profile/profile-form.tsx. Less heavy animation but forms need careful a11y and mobile touch handling.",
+      "budget": "80k tokens",
+      "parallel": false,
+      "status": "planned",
+      "steps": [
+        {
+          "id": "step-1",
+          "index": 1,
+          "description": "Audit and fix horizontal overflow at 390px on /join, /legacy, /opportunities, /profile",
+          "status": "pending",
+          "verification": {
+            "command": "DevTools at 390px: scrollWidth === 390 on each; pnpm lint",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-2",
+          "index": 2,
+          "description": "Audit and fix form a11y on /join and /profile: label association, error message aria-describedby, aria-invalid, focus management on submit, autocomplete, inputmode",
+          "status": "pending",
+          "verification": {
+            "command": "axe DevTools sweep on /join and /profile: zero violations; Tab-through: every input reachable; pnpm lint",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-3",
+          "index": 3,
+          "description": "Audit and fix touch targets (≥ 44x44 CSS px) on all interactive elements on these 4 routes",
+          "status": "pending",
+          "verification": {
+            "command": "DevTools at 390px: each interactive element ≥ 44x44; pnpm lint",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-4",
+          "index": 4,
+          "description": "Lazy-load below-the-fold sections on /legacy, /opportunities via next/dynamic if heavy",
+          "status": "pending",
+          "verification": {
+            "command": "grep below-fold heavy imports in these pages; pnpm build succeeds",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-5",
+          "index": 5,
+          "description": "Re-run Lighthouse mobile + desktop on each of these 4 routes; record scores",
+          "status": "pending",
+          "verification": {
+            "command": "Lighthouse JSON written; mobile Performance ≥ 90, Accessibility = 100",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        }
+      ]
+    },
+    {
+      "id": "phase-4",
+      "index": 4,
+      "name": "Auth + CMS Tier",
+      "goal": "Make /signin, /signup, and the CMS dashboard usable on mobile with proper a11y, including the TipTap editor.",
+      "description": "Files: src/app/(routes)/(auth)/signin/page.tsx, signup/page.tsx, (cms)/cms/page.tsx, cms/posts/page.tsx, cms/posts/new/page.tsx, cms/posts/[id]/page.tsx, cms/tags/page.tsx, cms/users/page.tsx + src/components/cms/* (editor, toolbar, post-form, sidebar). CMS Lighthouse thresholds are slightly relaxed (mobile ≥ 85, desktop ≥ 90) due to TipTap editor weight; axe WCAG AA remains strict.",
+      "budget": "100k tokens",
+      "parallel": false,
+      "status": "planned",
+      "steps": [
+        {
+          "id": "step-1",
+          "index": 1,
+          "description": "Audit and fix /signin and /signup: form a11y (labels, errors, autocomplete, inputmode), password manager support, OAuth button touch targets",
+          "status": "pending",
+          "verification": {
+            "command": "axe DevTools sweep at 390px and 1280px: zero violations; pnpm lint",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-2",
+          "index": 2,
+          "description": "Make CMS tables responsive on mobile: /cms/users and /cms/posts lists become cards below 768px or use horizontally-scrollable container",
+          "status": "pending",
+          "verification": {
+            "command": "DevTools at 390px: no overflow, every row reachable via touch and keyboard; pnpm lint",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-3",
+          "index": 3,
+          "description": "Optimize TipTap editor (src/components/cms/editor.tsx + toolbar.tsx): dynamic-import the editor bundle, lazy-load extensions, collapse toolbar to icon-only below 768px, focus management, reduced-motion",
+          "status": "pending",
+          "verification": {
+            "command": "Editor dynamic-imported; DevTools at 390px: toolbar fits viewport, focus visible; axe zero violations; pnpm build",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-4",
+          "index": 4,
+          "description": "Audit and fix /cms, /cms/posts, /cms/posts/new, /cms/posts/[id], /cms/tags: navigation (sidebar drawer on mobile), form a11y in post-form.tsx, touch targets on action buttons, focus on dialogs",
+          "status": "pending",
+          "verification": {
+            "command": "DevTools at 390px: every interactive element ≥ 44x44, sidebar opens/closes via button with aria-expanded; axe zero violations; pnpm lint",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-5",
+          "index": 5,
+          "description": "Re-run Lighthouse mobile + desktop on every CMS route; record scores (relaxed thresholds: mobile ≥ 85, desktop ≥ 90)",
+          "status": "pending",
+          "verification": {
+            "command": "Lighthouse JSON written",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        }
+      ]
+    },
+    {
+      "id": "phase-5",
+      "index": 5,
+      "name": "Cross-Cutting Sign-off",
+      "goal": "Final verification across every route and write the before/after delivery report.",
+      "description": "Files: .kimchi/docs/perf-report.md (new), .kimchi/docs/perf-baseline.md (read). Run full Lighthouse mobile + desktop sweep on all 16 in-scope routes, full axe DevTools sweep, touch-target check and overflow check at 390px, compile scores, evidence, and per-route changelog into the final report.",
+      "budget": "40k tokens",
+      "parallel": false,
+      "status": "planned",
+      "steps": [
+        {
+          "id": "step-1",
+          "index": 1,
+          "description": "Run full Lighthouse mobile + desktop sweep on every in-scope route (16 routes) and capture JSON",
+          "status": "pending",
+          "verification": {
+            "command": "ls .kimchi/docs/perf-final/ shows 32 files",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-2",
+          "index": 2,
+          "description": "Run full axe DevTools sweep on every in-scope route at 390px and 1280px; record violation counts (must be zero)",
+          "status": "pending",
+          "verification": {
+            "command": "perf-report.md shows zero axe violations",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-3",
+          "index": 3,
+          "description": "Touch-target sweep at 390px on every in-scope route",
+          "status": "pending",
+          "verification": {
+            "command": "Sweep log in perf-report.md confirms pass on all routes",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-4",
+          "index": 4,
+          "description": "Horizontal overflow sweep at 390px on every in-scope route",
+          "status": "pending",
+          "verification": {
+            "command": "Sweep log in perf-report.md confirms pass on all routes",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        },
+        {
+          "id": "step-5",
+          "index": 5,
+          "description": "Compile .kimchi/docs/perf-report.md: executive summary, baseline-vs-final Lighthouse scores table per route, axe violation counts, touch-target and overflow sweep results, per-route changelog, links to commits",
+          "status": "pending",
+          "verification": {
+            "command": "test -f .kimchi/docs/perf-report.md; contains Baseline, Final, Accessibility, Performance sections",
+            "retries": 2,
+            "retryDelayMs": 1000
+          },
+          "parallel": false
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "memories": [],
+  "createdAt": "2026-07-05T04:24:20.951Z",
+  "updatedAt": "2026-07-05T12:28:40.891Z",
+  "goal": "Make the Manarat Science Club codebase render correctly, performantly, and accessibly across phone (≥390px), tablet, and desktop — meeting Lighthouse mobile ≥ 90 / desktop ≥ 95 and zero axe-core WCAG 2.1 AA violations on every route, with touch targets ≥ 44x44 CSS px, no horizontal overflow at 390px, and no CLS regressions.",
+  "successCriteria": [
+    "C1: Lighthouse mobile Performance ≥ 90 and Accessibility = 100 on every public route (home, /blogs, /blogs/[slug], /events, /join, /legacy, /opportunities, /achievements, /profile, /signin, /signup). Method: npx lighthouse run against pnpm start after build, mobile form-factor.",
+    "C2: Lighthouse desktop Performance ≥ 95 and Accessibility = 100 on every public route. Method: same as C1 with --preset=desktop.",
+    "C3: Zero axe-core WCAG 2.1 AA violations on every public route. Method: axe DevTools panel sweep per route at 390px and 1280px, results recorded.",
+    "C4: No horizontal overflow at 390px viewport on any route (documentElement.scrollWidth <= 390). Method: DevTools device toolbar manual check per route, recorded in perf-report.md.",
+    "C5: All interactive elements (links, buttons, inputs) have touch target ≥ 44x44 CSS px on mobile viewports. Method: DevTools device toolbar inspection at 390px, recorded in perf-report.md.",
+    "C6: Core Web Vitals on mobile (Slow 4G): LCP < 2.5s, CLS < 0.1, INP < 200ms on every public route. Method: Lighthouse mobile report, recorded in perf-report.md.",
+    "C7: All <img> and next/image usages set explicit width/height or use fill with a sized parent. Zero layout-shift from missing dimensions. Method: grep audit + Lighthouse CLS confirmation.",
+    "C8: pnpm build and pnpm lint exit 0 with zero errors and zero new warnings introduced by this work.",
+    "C9: CMS dashboard routes (/cms, /cms/posts, /cms/posts/new, /cms/posts/[id]/edit, /cms/tags, /cms/users) are usable on 390px viewports (no overflow, controls reachable, tables become cards or scroll). Method: DevTools device toolbar sweep at 390px, recorded in perf-report.md.",
+    "C10: A before/after Lighthouse report is committed as .kimchi/docs/perf-report.md showing baseline scores, final scores per route, and a per-route changelog of fixes."
+  ],
+  "constraints": [
+    "Verification via Lighthouse only — no Playwright visual tests, no axe automation; axe checks done via DevTools panel.",
+    "Tiered sequencing: public marketing pages first (home, blogs, events, achievements), then public utility pages (join, legacy, opportunities, profile), then auth + CMS last.",
+    "390px minimum baseline (standard phone). 768px tablet and 1280px desktop are also verified but not separately mobile-targeted.",
+    "WCAG 2.1 AA a11y target — contrast, focus, labels, keyboard nav.",
+    "Do not change visual design, content, or branding; only behavior, structure, and technical implementation.",
+    "Do not introduce heavy new UI dependencies. next/dynamic, next/image, next/font, prefers-reduced-motion, existing radix primitives are the toolbox.",
+    "pnpm build and pnpm lint must remain clean throughout.",
+    "Lottie, GSAP, motion, TipTap are required design elements — optimize via lazy loading and reduced-motion respect, do not remove."
+  ]
+}

@@ -213,7 +213,14 @@ export const currentMembers: Member[] = [
     role: "Head of Department — Academics",
     socials: {},
   },
-
+  {
+    id: "current-safwan",
+    name: "Sazid Hasan Safwan",
+    image: "memberimage/safwan.jpg",
+    batch: "2026–2027",
+    role: "Head of Department — Academics",
+    socials: {},
+  },
     {
     id: "current-abrar",
     name: "Abrar Jawad",
