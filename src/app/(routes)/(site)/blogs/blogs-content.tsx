@@ -41,13 +41,16 @@ interface BlogsContentProps {
   posts: Post[];
 }
 
+// Hoist formatter to avoid re-instantiation in loops
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
 function formatDate(date: Date | null): string {
   if (!date) return "";
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(date));
+  return dateFormatter.format(new Date(date));
 }
 
 function estimateReadingTime(text: string | null): number {
