@@ -200,7 +200,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-aarina",
     name: "Aarina Moitry",
-    image: "memberimage/aarina.jpg",
+    image: "/memberimage/aarina.jpg",
     batch: "2026–2027",
     role: "Head of Department — Media",
     socials: {},
@@ -208,7 +208,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-ruhma",
     name: "Ruhma Hossain",
-    image: "memberimage/ruhma.jpg",
+    image: "/memberimage/ruhma.jpg",
     batch: "2026–2027",
     role: "Head of Department — Academics",
     socials: {},
@@ -216,7 +216,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-safwan",
     name: "Sazid Hasan Safwan",
-    image: "memberimage/safwan.jpg",
+    image: "/memberimage/safwan.jpg",
     batch: "2026–2027",
     role: "Head of Department — Academics",
     socials: {},
@@ -224,7 +224,7 @@ export const currentMembers: Member[] = [
     {
     id: "current-abrar",
     name: "Abrar Jawad",
-    image: "memberimage/abrar.png",
+    image: "/memberimage/abrar.png",
     batch: "2026–2027",
     role: "Head of Department — IT",
     socials: {},
@@ -232,7 +232,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-tahiad",
     name: "Mohammad Tahiad Islam",
-    image: "memberimage/tahiad.jpg",
+    image: "/memberimage/tahiad.jpg",
     batch: "2026–2027",
     role: "Head of Department — Engineering & Innovation",
     socials: {},
