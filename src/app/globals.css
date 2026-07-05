@@ -54,6 +54,7 @@
   --manara-pink: #ec4899;
   --manara-blue: #60a5fa;
   --manara-red: #dc2626;
+  --manara-green: #059669;
 
   --sh-academic: 0 18px 50px rgba(0, 95, 107, 0.12);
   --sh-subtle: 0 10px 30px rgba(20, 35, 38, 0.08);
@@ -139,6 +140,7 @@
   --color-manara-pink: var(--manara-pink);
   --color-manara-blue: var(--manara-blue);
   --color-manara-red: var(--manara-red);
+  --color-manara-green: var(--manara-green);
   --color-cream: var(--cream);
   --color-ink: var(--ink);
   --color-surface: var(--surface);

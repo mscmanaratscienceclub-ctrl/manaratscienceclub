@@ -43,10 +43,10 @@ export default async function HomePage() {
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <Link
-                href="/opportunities"
+                href="/blogs"
                 className="inline-flex items-center justify-center gap-3 rounded-full bg-manara-teal px-8 py-4 font-display text-base font-bold text-white shadow-academic transition-all hover:-translate-y-1 hover:bg-manara-yellow hover:text-manara-teal hover:shadow-yellow"
               >
-                View Academic Tracks
+                Check Out Our Research Articles
                 <ArrowUpRight className="h-5 w-5" />
               </Link>
               <Link

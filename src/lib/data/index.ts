@@ -190,6 +190,14 @@ export const currentMembers: Member[] = [
     socials: {},
   },
   {
+    id: "current-omama",
+    name: "Omama Salehin",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/Omama.jpeg",
+    batch: "2026–2027",
+    role: "Head of Department — Activity",
+    socials: {},
+  },
+  {
     id: "current-alfe",
     name: "Shafe Islam Alfe",
     image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/shafe.jpg",
@@ -221,6 +229,7 @@ export const currentMembers: Member[] = [
     role: "Head of Department — Academics",
     socials: {},
   },
+
     {
     id: "current-abrar",
     name: "Abrar Jawad",

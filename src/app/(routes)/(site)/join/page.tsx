@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, Camera, Presentation, Code2, Lightbulb, ChevronRight, Palette } from "lucide-react";
+import { Users, Camera, Presentation, Code2, Lightbulb, ChevronRight, Palette, BookOpen } from "lucide-react";
 
 interface Role {
   title: string;
@@ -38,26 +38,6 @@ const COMMITTEES: Committee[] = [
     ],
   },
   {
-    name: "Media Department",
-    url: "https://docs.google.com/forms/d/e/1FAIpQLSd2OVlBXwdTk-19jX3sfy5ZfUvd8MzGpQ54HaWDSsz6lzUx6g/viewform",
-    border: "border-manara-purple/10",
-    iconBg: "bg-manara-purple/10",
-    iconColor: "text-manara-purple",
-    btnBg: "bg-manara-purple",
-    icon: <Camera className="h-6 w-6" />,
-    roles: [
-      {
-        title: "Chief Media Manager",
-      },
-      {
-        title: "Lead Content Strategist",
-      },
-      {
-        title: "Video Editor",
-      },
-    ],
-  },
-  {
     name: "Activity Department",
     url: "https://docs.google.com/forms/d/e/1FAIpQLSfvCcLV3zJKg7y5tKIuUgho5ulFRGrqOfb6Qe9xHQPRACZ9Tw/viewform",
     border: "border-manara-yellow/10",
@@ -80,6 +60,46 @@ const COMMITTEES: Committee[] = [
       },
       {
         title: "Chief Auditor",
+      },
+    ],
+  },
+  {
+    name: "Creative Department",
+    url: "https://docs.google.com/forms/d/e/1FAIpQLScjS4FdPNi03ZcD1ipfh6dP5CU2gjCTy-roqb-ACeiolawE2w/viewform",
+    border: "border-manara-teal/10",
+    iconBg: "bg-manara-teal/10",
+    iconColor: "text-manara-teal",
+    btnBg: "bg-manara-teal",
+    icon: <Palette className="h-6 w-6" />,
+    roles: [
+      {
+        title: "Lead Graphic Designer",
+      },
+      {
+        title: "Deputy Graphic Designer",
+      },
+      {
+        title: "Canvas Artist",
+      },
+    ],
+  },
+  {
+    name: "Media Department",
+    url: "https://docs.google.com/forms/d/e/1FAIpQLSd2OVlBXwdTk-19jX3sfy5ZfUvd8MzGpQ54HaWDSsz6lzUx6g/viewform",
+    border: "border-manara-purple/10",
+    iconBg: "bg-manara-purple/10",
+    iconColor: "text-manara-purple",
+    btnBg: "bg-manara-purple",
+    icon: <Camera className="h-6 w-6" />,
+    roles: [
+      {
+        title: "Chief Media Manager",
+      },
+      {
+        title: "Lead Content Strategist",
+      },
+      {
+        title: "Video Editor",
       },
     ],
   },
@@ -122,22 +142,28 @@ const COMMITTEES: Committee[] = [
     ],
   },
   {
-    name: "Creative Department",
-    url: "https://docs.google.com/forms/d/e/1FAIpQLScjS4FdPNi03ZcD1ipfh6dP5CU2gjCTy-roqb-ACeiolawE2w/viewform",
-    border: "border-manara-teal/10",
-    iconBg: "bg-manara-teal/10",
-    iconColor: "text-manara-teal",
-    btnBg: "bg-manara-teal",
-    icon: <Palette className="h-6 w-6" />,
+    name: "Academic Department",
+    url: "https://docs.google.com/forms/d/e/1FAIpQLSfzSz9LhnBSbiIEO_eJwS3I69joXj2XYvHxUDb0Hyf8ZSP9tg/viewform?usp=header",
+    border: "border-manara-green/10",
+    iconBg: "bg-manara-green/10",
+    iconColor: "text-manara-green",
+    btnBg: "bg-manara-green",
+    icon: <BookOpen className="h-6 w-6" />,
     roles: [
       {
-        title: "Lead Graphic Designer",
+        title: "Chief Editor",
       },
       {
-        title: "Deputy Graphic Designer",
+        title: "Deputy Editor",
       },
       {
-        title: "Canvas Artist",
+        title: "Lead Researcher",
+      },
+      {
+        title: "Deputy Researcher",
+      },
+      {
+        title: "Curriculum Developer",
       },
     ],
   },
