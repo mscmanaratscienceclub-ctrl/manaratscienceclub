@@ -72,7 +72,21 @@ function sanitizeAndInjectHeadingIds(html: string): string {
       ...sanitizeHtml.defaults.allowedAttributes,
       img: ["src", "alt", "title", "width", "height", "loading"],
       a: ["href", "target", "rel", "title"],
-      "*": ["class", "style"],
+      // Prohibit 'style' attribute globally to prevent UI redressing and data exfiltration via CSS injection.
+      "*": ["class"],
+    },
+    transformTags: {
+      // Security: Append 'noopener noreferrer' to external links to prevent tabnabbing.
+      a: (tagName, attribs) => {
+        if (attribs.target === "_blank") {
+          const rel = attribs.rel ? `${attribs.rel} noopener noreferrer` : "noopener noreferrer";
+          return {
+            tagName,
+            attribs: { ...attribs, rel },
+          };
+        }
+        return { tagName, attribs };
+      },
     },
     disallowedTagsMode: "discard",
   });
