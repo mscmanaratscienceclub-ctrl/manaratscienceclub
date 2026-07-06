@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -62,22 +62,29 @@ function estimateReadingTime(text: string | null): number {
 export default function BlogsContent({ posts }: BlogsContentProps) {
   const [selectedTag, setSelectedTag] = useState<string>("all");
 
-  // Extract all unique tags dynamically
-  const uniqueTagsMap: Record<string, number> = {};
-  posts.forEach((post) => {
-    if (post.tags) {
-      post.tags.forEach((tag) => {
-        if (tag) {
-          const lowerTag = tag.trim().toLowerCase();
-          uniqueTagsMap[lowerTag] = (uniqueTagsMap[lowerTag] || 0) + 1;
-        }
-      });
-    }
-  });
+  // Memoize tag extraction and author count to avoid O(N) operations on every re-render
+  const { sortedTags, authorCount } = useMemo(() => {
+    const tagsMap: Record<string, number> = {};
+    const authorIds = new Set<string>();
 
-  const sortedTags = Object.entries(uniqueTagsMap)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count);
+    posts.forEach((post) => {
+      authorIds.add(post.authorId);
+      if (post.tags) {
+        post.tags.forEach((tag) => {
+          if (tag) {
+            const lowerTag = tag.trim().toLowerCase();
+            tagsMap[lowerTag] = (tagsMap[lowerTag] || 0) + 1;
+          }
+        });
+      }
+    });
+
+    const sorted = Object.entries(tagsMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    return { sortedTags: sorted, authorCount: authorIds.size };
+  }, [posts]);
 
   const featuredPost = posts[0];
 
@@ -153,8 +160,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
                 Publications
               </span>
               <span className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-manara-teal" />{" "}
-                {new Set(posts.map((p) => p.authorId)).size} Authors
+                <Users className="w-4 h-4 text-manara-teal" /> {authorCount} Authors
               </span>
               <span className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-manara-teal" /> {sortedTags.length} Tags
