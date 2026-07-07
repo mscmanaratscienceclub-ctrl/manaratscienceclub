@@ -9,3 +9,8 @@
 **Vulnerability:** Server-side username validation was significantly weaker than client-side validation, only checking for exact matches against restricted words and lacking character set restrictions.
 **Learning:** Discrepancies between client and server validation allow malicious users to bypass security restrictions using tools like Postman or by disabling JS.
 **Prevention:** Always centralize validation logic or ensure strict parity between client-side schemas and server-side checks.
+
+## 2025-05-14 - [Enhancement] Hardened HTML Sanitization
+**Vulnerability:** Potential for UI redressing via the `style` attribute and tabnabbing via `target="_blank"` links in user-provided blog content.
+**Learning:** Default `sanitize-html` settings may still allow attributes that facilitate subtle attacks.
+**Prevention:** Use `transformTags` to enforce `rel="noopener noreferrer"` on external links and explicitly disallow the `style` attribute globally in sanitization configs.

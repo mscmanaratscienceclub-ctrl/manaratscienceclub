@@ -72,7 +72,21 @@ function sanitizeAndInjectHeadingIds(html: string): string {
       ...sanitizeHtml.defaults.allowedAttributes,
       img: ["src", "alt", "title", "width", "height", "loading"],
       a: ["href", "target", "rel", "title"],
-      "*": ["class", "style"],
+      "*": ["class"],
+    },
+    transformTags: {
+      a: (tagName, attribs) => {
+        if (attribs.target === "_blank") {
+          return {
+            tagName,
+            attribs: {
+              ...attribs,
+              rel: "noopener noreferrer",
+            },
+          };
+        }
+        return { tagName, attribs };
+      },
     },
     disallowedTagsMode: "discard",
   });
