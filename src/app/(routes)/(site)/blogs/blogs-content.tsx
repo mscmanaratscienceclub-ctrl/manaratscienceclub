@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -62,33 +62,49 @@ function estimateReadingTime(text: string | null): number {
 export default function BlogsContent({ posts }: BlogsContentProps) {
   const [selectedTag, setSelectedTag] = useState<string>("all");
 
-  // Extract all unique tags dynamically
-  const uniqueTagsMap: Record<string, number> = {};
-  posts.forEach((post) => {
-    if (post.tags) {
-      post.tags.forEach((tag) => {
-        if (tag) {
-          const lowerTag = tag.trim().toLowerCase();
-          uniqueTagsMap[lowerTag] = (uniqueTagsMap[lowerTag] || 0) + 1;
-        }
-      });
-    }
-  });
+  // Memoize tag extraction and sorting (O(N*T) where T is tags per post)
+  const sortedTags = useMemo(() => {
+    const uniqueTagsMap: Record<string, number> = {};
+    posts.forEach((post) => {
+      if (post.tags) {
+        post.tags.forEach((tag) => {
+          if (tag) {
+            const lowerTag = tag.trim().toLowerCase();
+            uniqueTagsMap[lowerTag] = (uniqueTagsMap[lowerTag] || 0) + 1;
+          }
+        });
+      }
+    });
 
-  const sortedTags = Object.entries(uniqueTagsMap)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count);
+    return Object.entries(uniqueTagsMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [posts]);
+
+  // Memoize unique author count (O(N))
+  const authorCount = useMemo(() => {
+    return new Set(posts.map((p) => p.authorId)).size;
+  }, [posts]);
 
   const featuredPost = posts[0];
 
-  // Filter posts based on tag selection
-  const isPostVisible = (post: Post) => {
-    if (selectedTag === "all") return true;
-    if (!post.tags) return false;
-    return post.tags.some((tag) => tag.trim().toLowerCase() === selectedTag);
-  };
+  // Memoize visibility check function
+  const isPostVisible = useCallback(
+    (post: Post) => {
+      if (selectedTag === "all") return true;
+      if (!post.tags) return false;
+      return post.tags.some((tag) => tag.trim().toLowerCase() === selectedTag);
+    },
+    [selectedTag]
+  );
 
-  const visiblePostsCount = posts.filter(isPostVisible).length;
+  // Memoize visible posts array (O(N))
+  const visiblePosts = useMemo(
+    () => posts.filter(isPostVisible),
+    [posts, isPostVisible]
+  );
+
+  const visiblePostsCount = visiblePosts.length;
 
   const trendingItems = [
     {
@@ -153,8 +169,8 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
                 Publications
               </span>
               <span className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-manara-teal" />{" "}
-                {new Set(posts.map((p) => p.authorId)).size} Authors
+                <Users className="w-4 h-4 text-manara-teal" /> {authorCount}{" "}
+                Authors
               </span>
               <span className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-manara-teal" /> {sortedTags.length} Tags
@@ -331,7 +347,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
 
               {visiblePostsCount > 0 ? (
                 <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-6">
-                  {posts.map((post) => {
+                  {visiblePosts.map((post) => {
                     const firstTag = post.tags && post.tags[0] ? post.tags[0] : "article";
                     const tagConf = getTagConfig(firstTag);
                     const isVisible = isPostVisible(post);
