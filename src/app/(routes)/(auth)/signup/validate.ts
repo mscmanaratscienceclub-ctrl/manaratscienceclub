@@ -11,6 +11,7 @@ export const SignUpSchema = z
     username: z
     .string()
     .min(4, { message: "Must be at least 4 characters" })
+    .max(10, { message: "Username must be max 10 characters" })
     .regex(/^[a-zA-Z0-9]+$/, "Only letters and numbers allowed")
     .refine(
       (username) => {
