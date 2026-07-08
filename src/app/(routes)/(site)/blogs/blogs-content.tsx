@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -63,32 +63,37 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
   const [selectedTag, setSelectedTag] = useState<string>("all");
 
   // Extract all unique tags dynamically
-  const uniqueTagsMap: Record<string, number> = {};
-  posts.forEach((post) => {
-    if (post.tags) {
-      post.tags.forEach((tag) => {
-        if (tag) {
-          const lowerTag = tag.trim().toLowerCase();
-          uniqueTagsMap[lowerTag] = (uniqueTagsMap[lowerTag] || 0) + 1;
-        }
-      });
-    }
-  });
+  const sortedTags = useMemo(() => {
+    const uniqueTagsMap: Record<string, number> = {};
+    posts.forEach((post) => {
+      if (post.tags) {
+        post.tags.forEach((tag) => {
+          if (tag) {
+            const lowerTag = tag.trim().toLowerCase();
+            uniqueTagsMap[lowerTag] = (uniqueTagsMap[lowerTag] || 0) + 1;
+          }
+        });
+      }
+    });
 
-  const sortedTags = Object.entries(uniqueTagsMap)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count);
+    return Object.entries(uniqueTagsMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [posts]);
 
   const featuredPost = posts[0];
 
   // Filter posts based on tag selection
-  const isPostVisible = (post: Post) => {
-    if (selectedTag === "all") return true;
-    if (!post.tags) return false;
-    return post.tags.some((tag) => tag.trim().toLowerCase() === selectedTag);
-  };
+  const isPostVisible = useCallback(
+    (post: Post) => {
+      if (selectedTag === "all") return true;
+      if (!post.tags) return false;
+      return post.tags.some((tag) => tag.trim().toLowerCase() === selectedTag);
+    },
+    [selectedTag]
+  );
 
-  const visiblePostsCount = posts.filter(isPostVisible).length;
+  const visiblePostsCount = useMemo(() => posts.filter(isPostVisible).length, [posts, isPostVisible]);
 
   const trendingItems = [
     {

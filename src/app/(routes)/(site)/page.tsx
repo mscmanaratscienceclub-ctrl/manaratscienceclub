@@ -5,6 +5,13 @@ import Image from "next/image";
 import RotatingText from "@/components/ui/rotating-text";
 import { WobbleCard } from "@/components/ui/wobble-card";
 import LottiePlayer from "@/components/ui/LottiePlayer";
+
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
 export default async function HomePage() {
   const recentPosts = await getPublishedPosts(4, 0);
 
@@ -235,7 +242,7 @@ export default async function HomePage() {
                     <div className="mt-5 flex items-center justify-between border-t border-manara-teal/5 pt-4">
                       <p className="text-xs font-medium text-ink/80">{post.customAuthorName ?? post.authorName}</p>
                       <span className="text-xs text-ink/40">
-                        {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : ""}
+                        {post.publishedAt ? dateFormatter.format(new Date(post.publishedAt)) : ""}
                       </span>
                     </div>
                   </div>
