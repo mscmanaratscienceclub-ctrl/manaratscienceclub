@@ -62,7 +62,7 @@ function MemberGrid({ members, label }: { members: Member[]; label: string }) {
         <h2 className="font-display text-3xl font-bold text-ink">{label}</h2>
       </div>
       <ScrollReveal>
-        <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid gap-6 md:gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {members.map((member) => (
             <MemberCard key={member.id} member={member} />
           ))}

@@ -15,13 +15,13 @@ export default async function HomePage() {
         <div className="absolute inset-0 diagram-grid opacity-40" />
         <div className="absolute -top-48 -right-48 h-[500px] w-[500px] rounded-full bg-manara-teal/3 blur-3xl" />
         <div className="absolute -bottom-32 -left-32 h-[350px] w-[350px] rounded-full bg-manara-yellow/5 blur-3xl" />
-        <div className="relative mx-auto max-w-7xl px-5 py-24 lg:px-8 lg:py-36">
+        <div className="relative mx-auto max-w-7xl px-5 py-16 sm:py-24 lg:px-8 lg:py-36">
           <div className="max-w-4xl">
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-manara-teal/10 bg-surface px-4 py-2 font-display text-sm font-bold text-manara-teal shadow-subtle">
               <GraduationCap className="h-4 w-4 text-manara-yellow" />
               Evidence-based science learning for young innovators
             </div>
-            <h1 className="font-display text-5xl font-bold leading-[1.05] tracking-tight text-ink sm:text-6xl lg:text-7xl">
+            <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight text-ink sm:text-6xl lg:text-7xl">
               Opportunities on<br />
               <span className="text-manara-red">
                 <RotatingText
@@ -100,7 +100,7 @@ export default async function HomePage() {
               containerClassName="lg:row-span-2 bg-gradient-to-br from-pink-500 to-rose-600"
               className="flex flex-col justify-center h-full"
             >
-              <div className="flex flex-row items-center gap-6">
+              <div className="flex flex-col items-center text-center gap-6 sm:flex-row sm:text-left">
                 <LottiePlayer
                   src="https://lottie.host/28b5853e-ed20-4d95-a0aa-0bfe8d2a5fa6/rHHhZUmMFO.lottie"
                   className="w-[140px] h-[140px] shrink-0"
@@ -123,7 +123,7 @@ export default async function HomePage() {
               containerClassName="bg-gradient-to-br from-purple-500 to-indigo-600"
               className="flex flex-col justify-center h-full"
             >
-              <div className="flex flex-row items-center gap-4">
+              <div className="flex flex-col items-center text-center gap-4 sm:flex-row sm:text-left">
                 <LottiePlayer
                   src="https://lottie.host/7296dff4-19f0-4692-a6fc-6fd27bc22280/GMbkMuCo3o.lottie"
                   className="w-[120px] h-[120px] shrink-0"
@@ -146,7 +146,7 @@ export default async function HomePage() {
               containerClassName="bg-gradient-to-br from-blue-500 to-blue-600"
               className="flex flex-col justify-center h-full"
             >
-              <div className="flex flex-row items-center gap-4">
+              <div className="flex flex-col items-center text-center gap-4 sm:flex-row sm:text-left">
                 <LottiePlayer
                   src="https://lottie.host/d248abfd-3b2a-4f7d-8668-45b0bf9d7cad/fHawse3HuY.lottie"
                   className="w-[120px] h-[120px] shrink-0"
@@ -183,7 +183,10 @@ export default async function HomePage() {
                   <h3 className="text-2xl md:text-3xl lg:text-4xl font-black mb-1 text-ink drop-shadow-lg">Dr. Maksud Alam</h3>
                   <p className="text-base md:text-lg font-bold text-manara-teal">MCCA Convener and Club In-Charge, MSC</p>
                   <p className="text-sm md:text-base leading-relaxed font-medium mt-6 text-ink/70">
-                    The Manarat Science Club continues to shine as a vibrant center of creativity, curiosity, and scientific enthusiasm. This year, our students have achieved remarkable success, earning awards in science fairs, quiz competitions, and Olympiads. Their research projects and innovative models—ranging from environmental solutions to technological prototypes—have been widely appreciated for their originality and practical value.
+                    The Manarat Science Club continues to shine as a vibrant center of creativity, curiosity, and scientific enthusiasm. This year, our students have achieved remarkable success, earning awards in science fairs, quiz competitions, and Olympiads. Their research projects and innovative models ranging from environmental solutions to technological prototypes have been widely appreciated for their originality and practical value. Our hands-on workshops, experiments, and project-based activities have further strengthened students' analytical thinking and teamwork skills. Participation in exhibitions and science festivals has given our young learners the opportunity to showcase their talents with confidence, receiving recognition for both their scientific understanding and presentation skills.
+                    We are also proud of the new collaborations established with academic and scientific organizations. Through expert-led seminars and mentorship sessions, students have gained valuable insights that inspire them to aim higher and think beyond the classroom. I express my heartfelt gratitude to our respected Principal and Vice Principal for their constant encouragement and guidance. Their support has played a vital role in the club's continued growth and success.
+                    As we look ahead, we remain committed to nurturing curiosity and empowering our students to become future thinkers, innovators, and problem-solvers. Let science lead the way.
+
                   </p>
                 </div>
               </div>
@@ -195,7 +198,9 @@ export default async function HomePage() {
                   <h3 className="text-2xl md:text-3xl lg:text-4xl font-black mb-1 text-ink drop-shadow-lg">Roksana Khanam</h3>
                   <p className="text-base md:text-lg font-bold text-manara-yellow">Club In-Charge, MSC</p>
                   <p className="text-sm md:text-base leading-relaxed font-medium mt-6 text-ink/70">
-                    It gives me immense pleasure to share a few words on behalf of Manarat Science Club. Science is not just a subject learned in classrooms—it is a mindset of inquiry, observation, and discovery. Our club is committed to nurturing this curiosity and empowering our students to think critically and creatively about the world around them.
+                    It gives me immense pleasure to share a few words on behalf of Manarat Science Club. Science is not just a subject learned in classrooms it is a mindset of inquiry, observation, and discovery. Our club is committed to nurturing this curiosity and empowering our students to think critically and creatively about the world around them. This year, we have introduced several new initiatives to inspire scientific engagement among our learners. One of our key activities is "Science Talk," a platform where students confidently present scientific concepts, innovations, and real-world applications. This initiative has strengthened their communication skills and enhanced peer learning. We are also proud to begin publishing our own student-led science journals, showcasing research articles, experiment findings, creative scientific writing, and innovative ideas from our young scientists. This publication will serve as a space for students to express curiosity and develop academic writing skills with a scientific outlook.
+                    In addition to these, our workshops, exhibitions, experiments, and collaborative projects continue to make the Science Club a hub of exploration and hands-on learning. We remain dedicated to creating opportunities that help students grow as thinkers, innovators, and problem-solvers. I extend my heartfelt appreciation to our respected Principal and Vice Principal for their continuous encouragement, visionary leadership, and unwavering support. Their guidance has shaped the club's success and motivated our students to reach greater heights.
+
                   </p>
                 </div>
               </div>
@@ -249,9 +254,9 @@ export default async function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative overflow-hidden bg-surface px-5 py-24 lg:px-8">
+      <section className="relative overflow-hidden bg-surface px-5 py-16 sm:py-24 lg:px-8">
         <div className="absolute inset-0 dot-grid opacity-50"></div>
-        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[3rem] bg-cream p-8 shadow-academic md:p-12 lg:p-16 border border-manara-red/10">
+        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] sm:rounded-[3rem] bg-cream p-5 sm:p-8 shadow-academic md:p-12 lg:p-16 border border-manara-red/10">
           <div className="grid gap-10 lg:grid-cols-[1fr_.8fr] lg:items-center">
             <div>
               <p className="font-display text-base font-bold text-manara-red">Enrollment process</p>

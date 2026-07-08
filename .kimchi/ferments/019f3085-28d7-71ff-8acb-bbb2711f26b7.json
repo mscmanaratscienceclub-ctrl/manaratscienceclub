@@ -2,7 +2,7 @@
   "id": "019f3085-28d7-71ff-8acb-bbb2711f26b7",
   "name": "PC and Mobile Optimization",
   "description": "optimziing the entire codebase for both pc and mobile.",
-  "status": "planned",
+  "status": "paused",
   "worktree": {
     "path": "/mnt/e/Web Dev/test/manaratscienceclub",
     "branch": "main",
@@ -21,12 +21,12 @@
       "answer": "Verification via Lighthouse only — no Playwright visual tests, no axe automation; axe checks done via DevTools panel., Tiered sequencing: public marketing pages first (home, blogs, events, achievements), then public utility pages (join, legacy, opportunities, profile), then auth + CMS last., 390px minimum baseline (standard phone). 768px tablet and 1280px desktop are also verified but not separately mobile-targeted., WCAG 2.1 AA a11y target — contrast, focus, labels, keyboard nav., Do not change visual design, content, or branding; only behavior, structure, and technical implementation., Do not introduce heavy new UI dependencies. next/dynamic, next/image, next/font, prefers-reduced-motion, existing radix primitives are the toolbox., pnpm build and pnpm lint must remain clean throughout., Lottie, GSAP, motion, TipTap are required design elements — optimize via lazy loading and reduced-motion respect, do not remove.",
       "confirmedAt": "2026-07-05T12:28:40.891Z"
     },
-    "assumptions": {
-      "answer": "Lottie/GSAP/motion/TipTap are required design elements, not removable; optimization means lazy loading and prefers-reduced-motion respect, not removal. A Lighthouse mobile score ≥ 90 and desktop ≥ 95 is achievable without rewriting components from scratch. The current codebase has no Playwright setup, and Lighthouse-only verification means I will not add Playwright. Visual design (colors, layout structure, content) is preserved — only code-level performance, responsive correctness, interaction UX, and a11y are in scope. \"Tiered priority\" follows existing route visibility: marketing pages (home, blogs, events, achievements) first; utility pages (join, legacy, opportunities, profile) second; auth + CMS third. The three heavy Lottie files on the homepage are loaded from the lottie.host CDN — I will convert these to next/dynamic imports but keep the same URLs. Raw img tags (e.g. /memberimage/*.png on the homepage editorial) will be converted to next/image with explicit dimensions; existing paths and alt text are preserved. The sentry-example-page route is a Next.js default debug page, not part of the user's product, and will be skipped. CMS Lighthouse thresholds are slightly relaxed (mobile ≥ 85, desktop ≥ 90) because the CMS is admin-only and includes the TipTap editor which inherently carries weight; axe WCAG AA remains strict.",
-      "confirmedAt": "2026-07-05T12:28:40.891Z"
-    },
     "phases": {
       "answer": "Foundations & Baseline, Public Marketing Tier (High-Traffic), Public Utility Tier (Long Tail), Auth + CMS Tier, Cross-Cutting Sign-off",
+      "confirmedAt": "2026-07-05T12:28:40.891Z"
+    },
+    "assumptions": {
+      "answer": "Lottie/GSAP/motion/TipTap are required design elements, not removable; optimization means lazy loading and prefers-reduced-motion respect, not removal. A Lighthouse mobile score ≥ 90 and desktop ≥ 95 is achievable without rewriting components from scratch. The current codebase has no Playwright setup, and Lighthouse-only verification means I will not add Playwright. Visual design (colors, layout structure, content) is preserved — only code-level performance, responsive correctness, interaction UX, and a11y are in scope. \"Tiered priority\" follows existing route visibility: marketing pages (home, blogs, events, achievements) first; utility pages (join, legacy, opportunities, profile) second; auth + CMS third. The three heavy Lottie files on the homepage are loaded from the lottie.host CDN — I will convert these to next/dynamic imports but keep the same URLs. Raw img tags (e.g. /memberimage/*.png on the homepage editorial) will be converted to next/image with explicit dimensions; existing paths and alt text are preserved. The sentry-example-page route is a Next.js default debug page, not part of the user's product, and will be skipped. CMS Lighthouse thresholds are slightly relaxed (mobile ≥ 85, desktop ≥ 90) because the CMS is admin-only and includes the TipTap editor which inherently carries weight; axe WCAG AA remains strict.",
       "confirmedAt": "2026-07-05T12:28:40.891Z"
     }
   },
@@ -407,7 +407,7 @@
   "decisions": [],
   "memories": [],
   "createdAt": "2026-07-05T04:24:20.951Z",
-  "updatedAt": "2026-07-05T12:28:40.891Z",
+  "updatedAt": "2026-07-08T14:21:43.972Z",
   "goal": "Make the Manarat Science Club codebase render correctly, performantly, and accessibly across phone (≥390px), tablet, and desktop — meeting Lighthouse mobile ≥ 90 / desktop ≥ 95 and zero axe-core WCAG 2.1 AA violations on every route, with touch targets ≥ 44x44 CSS px, no horizontal overflow at 390px, and no CLS regressions.",
   "successCriteria": [
     "C1: Lighthouse mobile Performance ≥ 90 and Accessibility = 100 on every public route (home, /blogs, /blogs/[slug], /events, /join, /legacy, /opportunities, /achievements, /profile, /signin, /signup). Method: npx lighthouse run against pnpm start after build, mobile form-factor.",

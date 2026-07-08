@@ -15,9 +15,6 @@ import {
   CalendarDays,
   Clock,
   Hash,
-  TrendingUp,
-  Send,
-  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getTagConfig } from "@/lib/tag-styles";
@@ -89,44 +86,6 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
   };
 
   const visiblePostsCount = posts.filter(isPostVisible).length;
-
-  const trendingItems = [
-    {
-      id: "1",
-      num: "01",
-      title: "Mapping Sunspot Cycles with a Backyard Telescope",
-      topic: "Astronomy",
-      read: "8 min",
-    },
-    {
-      id: "2",
-      num: "02",
-      title: "CRISPR Explained for High Schoolers",
-      topic: "Biology",
-      read: "5 min",
-    },
-    {
-      id: "3",
-      num: "03",
-      title: "Building a Line-Following Robot in a Weekend",
-      topic: "Robotics",
-      read: "7 min",
-    },
-    {
-      id: "4",
-      num: "04",
-      title: "The Chemistry of Color-Changing Reactions",
-      topic: "Chemistry",
-      read: "4 min",
-    },
-    {
-      id: "5",
-      num: "05",
-      title: "Why Prime Numbers Never Stop",
-      topic: "Mathematics",
-      read: "6 min",
-    },
-  ];
 
   return (
     <div className="font-body min-h-screen bg-cream text-ink">
@@ -268,7 +227,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
                       ).dot,
                     }}
                   ></div>
-                  <div className="p-8 flex flex-col md:flex-row gap-6 items-start justify-between">
+                  <div className="p-5 sm:p-8 flex flex-col md:flex-row gap-6 items-start justify-between">
                     <div className="flex-1 space-y-3">
                       <div className="flex gap-2">
                         {featuredPost.tags &&
@@ -447,59 +406,6 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
               </div>
             </div>
 
-            {/* Trending Panel */}
-            <div className="rounded-2xl bg-surface border border-manara-teal/10 shadow-subtle p-6">
-              <h4 className="font-display font-bold text-lg mb-4 flex items-center gap-2 text-ink">
-                <TrendingUp className="w-4.5 h-4.5 text-manara-teal" /> Trending
-              </h4>
-              <div className="space-y-4">
-                {trendingItems.map((item) => (
-                  <a
-                    key={item.id}
-                    href="#"
-                    onClick={(e) => e.preventDefault()}
-                    className="flex gap-3 group"
-                  >
-                    <span className="font-display font-bold text-lg text-manara-teal/40 group-hover:text-manara-teal transition-colors">
-                      {item.num}
-                    </span>
-                    <div>
-                      <div className="font-display font-semibold text-sm leading-snug text-ink group-hover:text-manara-teal transition-colors line-clamp-2">
-                        {item.title}
-                      </div>
-                      <div className="text-xs mt-0.5 text-ink/40 font-body">
-                        {item.topic} &middot; {item.read}
-                      </div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {/* Submit CTA */}
-            <div className="rounded-2xl p-6 relative overflow-hidden bg-manara-teal text-white">
-              <div className="absolute inset-0 dot-grid opacity-20"></div>
-              <div className="relative space-y-4">
-                <div className="w-11 h-11 rounded-xl bg-surface/15 flex items-center justify-center">
-                  <Send className="w-5.5 h-5.5 text-white" />
-                </div>
-                <div>
-                  <h4 className="font-display font-bold text-lg text-white">
-                    Submit your research
-                  </h4>
-                  <p className="text-sm mt-1.5 text-white/75 leading-relaxed font-body">
-                    Have a project or paper to share? Get featured in the club
-                    journal.
-                  </p>
-                </div>
-                <Link
-                  href="/submit-research"
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-display font-bold text-sm bg-manara-yellow text-manara-teal transition-all hover:translate-y-[-2px] hover:shadow-yellow"
-                >
-                  Submit now <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
           </aside>
         </div>
       </section>

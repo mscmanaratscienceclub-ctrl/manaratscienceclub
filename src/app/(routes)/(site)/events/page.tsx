@@ -40,22 +40,22 @@ export default function EventsPage() {
             <span>Status</span>
           </div>
           
-          <div className="divide-y divide-manara-teal/10">
-            <div className="grid gap-3 px-6 py-5 md:grid-cols-[1fr_1fr_1.2fr_.8fr] items-center hover:bg-cream/40 transition-colors">
+          <div className="flex flex-col gap-4 p-4 md:p-0 md:gap-0 md:divide-y md:divide-manara-teal/10">
+            <div className="grid gap-3 px-5 py-5 rounded-2xl border border-manara-teal/5 bg-manara-teal/[0.02] shadow-sm md:shadow-none md:border-none md:bg-transparent md:rounded-none md:px-6 md:py-5 md:grid-cols-[1fr_1fr_1.2fr_.8fr] items-center hover:bg-cream/40 transition-colors">
               <span className="font-bold text-ink">Sat, Jan 18</span>
               <span className="font-semibold text-ink">Experimental Lab Sprint</span>
               <span className="text-sm text-ink/60">Variables, measurement, controlled testing</span>
               <span className="w-fit rounded-full bg-manara-yellow/20 px-3 py-1 text-xs font-bold text-manara-teal">Open</span>
             </div>
             
-            <div className="grid gap-3 px-6 py-5 md:grid-cols-[1fr_1fr_1.2fr_.8fr] items-center hover:bg-cream/40 transition-colors">
+            <div className="grid gap-3 px-5 py-5 rounded-2xl border border-manara-teal/5 bg-manara-teal/[0.02] shadow-sm md:shadow-none md:border-none md:bg-transparent md:rounded-none md:px-6 md:py-5 md:grid-cols-[1fr_1fr_1.2fr_.8fr] items-center hover:bg-cream/40 transition-colors">
               <span className="font-bold text-ink">Fri, Jan 24</span>
               <span className="font-semibold text-ink">Robot Rescue Challenge</span>
               <span className="text-sm text-ink/60">Sensors, logic, path optimization</span>
               <span className="w-fit rounded-full bg-manara-red/10 px-3 py-1 text-xs font-bold text-manara-red">Few seats</span>
             </div>
             
-            <div className="grid gap-3 px-6 py-5 md:grid-cols-[1fr_1fr_1.2fr_.8fr] items-center hover:bg-cream/40 transition-colors">
+            <div className="grid gap-3 px-5 py-5 rounded-2xl border border-manara-teal/5 bg-manara-teal/[0.02] shadow-sm md:shadow-none md:border-none md:bg-transparent md:rounded-none md:px-6 md:py-5 md:grid-cols-[1fr_1fr_1.2fr_.8fr] items-center hover:bg-cream/40 transition-colors">
               <span className="font-bold text-ink">Thu, Jan 30</span>
               <span className="font-semibold text-ink">Young Innovators Forum</span>
               <span className="text-sm text-ink/60">Presentation, critique, project defense</span>

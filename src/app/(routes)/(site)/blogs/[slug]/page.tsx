@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getPostBySlug, getRelatedPosts } from "@/lib/actions/posts";
-import { ArrowLeft, Calendar, Clock, Share2 } from "lucide-react";
+import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import TocSidebar from "../_components/toc-sidebar";
 import sanitizeHtml from "sanitize-html";
 import Image from "next/image";
@@ -104,7 +104,7 @@ export default async function BlogPostPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-cream">
       {/* Header */}
-      <section className="bg-surface px-4 py-12 sm:px-6 lg:py-16">
+      <section className="bg-surface px-4 py-8 sm:py-12 sm:px-6 lg:py-16">
         <div className="mx-auto max-w-6xl">
           <Link
             href="/blogs"
@@ -140,7 +140,7 @@ export default async function BlogPostPage({ params }: PageProps) {
 
       {/* Content + Sidebar */}
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:py-14">
-        <div className="flex flex-col-reverse gap-10 lg:flex-row lg:gap-14">
+        <div className="flex flex-col gap-10 lg:flex-row lg:gap-14">
           {/* Main Content */}
           <div className="min-w-0 flex-1">
             <div
@@ -197,19 +197,6 @@ export default async function BlogPostPage({ params }: PageProps) {
 
               {/* Table of Contents with scroll-spy */}
               <TocSidebar items={toc} />
-
-              {/* Share card */}
-              <div className="rounded-2xl border border-manara-teal/10 bg-surface p-5 shadow-subtle">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Share2 className="h-4 w-4 text-manara-teal" />
-                    <span className="font-display text-sm font-bold text-ink">Share</span>
-                  </div>
-                  <span className="rounded-full bg-manara-teal/10 px-3 py-1.5 font-display text-xs font-bold text-manara-teal transition-colors hover:bg-manara-teal hover:text-white">
-                    Copy Link
-                  </span>
-                </div>
-              </div>
             </div>
           </aside>
         </div>

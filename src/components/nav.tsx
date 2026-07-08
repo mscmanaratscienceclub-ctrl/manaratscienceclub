@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
-import { Menu, X, Bug, User } from "lucide-react";
-import { useSession } from "@/lib/auth/client";
+import { Menu, X, Bug } from "lucide-react";
 import { siteConfig } from "@/lib/data";
 import { cn } from "@/lib/utils";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import Image from "next/image";
 
 const navLinks = [
@@ -22,7 +21,6 @@ function isActiveLink(href: string, pathname: string) {
 
 export default function Nav() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { data: session } = useSession();
   const pathname = usePathname();
   const navRef = useRef<HTMLDivElement>(null);
   const [underline, setUnderline] = useState({ left: 0, width: 0, visible: false });
@@ -77,13 +75,6 @@ export default function Nav() {
         </nav>
 
         <div className="hidden items-center gap-4 lg:flex">
-          <Link
-            href={session ? "/profile" : "/signup"}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-white transition-colors hover:bg-white/10 hover:text-white"
-            title={session ? "Profile" : "Sign Up"}
-          >
-            <User className="size-4" />
-          </Link>
           <a href={siteConfig.bugReportUrl} className="flex items-center gap-1.5 text-xs text-white transition-colors hover:text-white">
             <Bug className="size-3.5" />Report a bug
           </a>
@@ -92,43 +83,56 @@ export default function Nav() {
           </Link>
         </div>
 
-        <div className="flex items-center gap-2 lg:hidden">
-          <Link
-            href={session ? "/profile" : "/signup"}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-white"
-            title={session ? "Profile" : "Sign Up"}
-          >
-            <User className="size-4" />
-          </Link>
-          <Link href="/join" className="rounded-full bg-manara-yellow px-4 py-2 font-display text-xs font-bold text-manara-teal">Join</Link>
-          <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-manara-yellow/10 text-manara-yellow" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
+        <div className="flex items-center lg:hidden">
+          <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-manara-yellow/10 text-manara-yellow transition-transform active:scale-90" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
             {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
       </div>
 
-      {menuOpen && (
-        <div className="border-t border-white/10 bg-manara-teal px-5 pb-5 pt-4 lg:hidden">
-          <nav className="flex flex-col gap-1">
-            {navLinks.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                onClick={() => setMenuOpen(false)}
-                className={cn(
-                  "rounded-xl px-3 py-2.5 font-display text-sm font-semibold transition-colors hover:bg-white/10 hover:text-white",
-                  isActiveLink(l.href, pathname) ? "bg-white/10 text-white" : "text-white/60",
-                )}
-              >
-                {l.label}
-              </Link>
-            ))}
-            <div className="mt-3 border-t border-white/10 pt-3">
-              <a href={siteConfig.bugReportUrl} className="flex items-center gap-1.5 px-3 py-2 text-xs text-white"><Bug className="size-3" />Report a bug</a>
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden border-t border-white/10 bg-manara-teal lg:hidden"
+          >
+            <div className="px-5 pb-6 pt-4">
+              <nav className="flex flex-col gap-1.5">
+                {navLinks.map((l) => (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    onClick={() => setMenuOpen(false)}
+                    className={cn(
+                      "rounded-xl px-3 py-2.5 font-display text-sm font-semibold transition-colors hover:bg-white/10 hover:text-white",
+                      isActiveLink(l.href, pathname) ? "bg-white/10 text-white" : "text-white/60",
+                    )}
+                  >
+                    {l.label}
+                  </Link>
+                ))}
+
+                <div className="mt-4">
+                  <Link
+                    href="/join"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex w-full items-center justify-center rounded-xl bg-manara-yellow px-4 py-3 font-display text-sm font-bold text-manara-teal shadow-subtle transition active:scale-95"
+                  >
+                    Join MSC
+                  </Link>
+                </div>
+
+                <div className="mt-3 border-t border-white/10 pt-3">
+                  <a href={siteConfig.bugReportUrl} className="flex items-center gap-1.5 px-3 py-2 text-xs text-white/60 transition-colors hover:text-white"><Bug className="size-3" />Report a bug</a>
+                </div>
+              </nav>
             </div>
-          </nav>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

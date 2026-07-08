@@ -139,6 +139,8 @@ const COMMITTEES: Committee[] = [
       { title: "Innovation Strategist" },
       { title: "Workshop & Training Coordinator" },
       { title: "Technical Documentation Manager" },
+      { title: "General Engineering Member" },
+
     ],
   },
   {
