@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -59,33 +59,48 @@ function estimateReadingTime(text: string | null): number {
 export default function BlogsContent({ posts }: BlogsContentProps) {
   const [selectedTag, setSelectedTag] = useState<string>("all");
 
-  // Extract all unique tags dynamically
-  const uniqueTagsMap: Record<string, number> = {};
-  posts.forEach((post) => {
-    if (post.tags) {
-      post.tags.forEach((tag) => {
+  // Memoize tags extraction and author counting to avoid O(N) work on every render
+  const { sortedTags, authorCount } = useMemo(() => {
+    const tagsMap: Record<string, number> = {};
+    const authors = new Set<string>();
+
+    posts.forEach((post) => {
+      authors.add(post.authorId);
+      post.tags?.forEach((tag) => {
         if (tag) {
           const lowerTag = tag.trim().toLowerCase();
-          uniqueTagsMap[lowerTag] = (uniqueTagsMap[lowerTag] || 0) + 1;
+          tagsMap[lowerTag] = (tagsMap[lowerTag] || 0) + 1;
         }
       });
-    }
-  });
+    });
 
-  const sortedTags = Object.entries(uniqueTagsMap)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count);
+    const sorted = Object.entries(tagsMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    return { sortedTags: sorted, authorCount: authors.size };
+  }, [posts]);
 
   const featuredPost = posts[0];
 
-  // Filter posts based on tag selection
+  // Memoize visible posts to avoid re-filtering the entire array on every render
+  const visiblePostIds = useMemo(() => {
+    if (selectedTag === "all") return null;
+    return new Set(
+      posts
+        .filter((post) =>
+          post.tags?.some((tag) => tag.trim().toLowerCase() === selectedTag)
+        )
+        .map((p) => p.id)
+    );
+  }, [posts, selectedTag]);
+
   const isPostVisible = (post: Post) => {
-    if (selectedTag === "all") return true;
-    if (!post.tags) return false;
-    return post.tags.some((tag) => tag.trim().toLowerCase() === selectedTag);
+    if (!visiblePostIds) return true;
+    return visiblePostIds.has(post.id);
   };
 
-  const visiblePostsCount = posts.filter(isPostVisible).length;
+  const visiblePostsCount = visiblePostIds ? visiblePostIds.size : posts.length;
 
   return (
     <div className="font-body min-h-screen bg-cream text-ink">
@@ -112,8 +127,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
                 Publications
               </span>
               <span className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-manara-teal" />{" "}
-                {new Set(posts.map((p) => p.authorId)).size} Authors
+                <Users className="w-4 h-4 text-manara-teal" /> {authorCount} Authors
               </span>
               <span className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-manara-teal" /> {sortedTags.length} Tags
