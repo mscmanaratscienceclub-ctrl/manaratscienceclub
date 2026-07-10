@@ -14,3 +14,8 @@
 **Vulnerability:** The HTML sanitizer in the blog post rendering logic allowed the 'style' attribute globally and did not enforce 'rel="noopener noreferrer"' on external links ('target="_blank"').
 **Learning:** Loosely configured sanitizers can leave the application vulnerable to UI redressing and tabnabbing. Allowing 'style' is particularly risky as it can be used to overlay malicious elements or hide legitimate ones.
 **Prevention:** Use strict attribute whitelists and implement transformers in the sanitization process to automatically inject security headers like 'rel="noopener noreferrer"' for all external links.
+
+## 2025-05-14 - [Medium] Information Leakage and Insecure File Handling
+**Vulnerability:** The upload API leaked internal provider error messages and only validated client-provided MIME types, ignoring file extensions.
+**Learning:** Internal error messages can expose infrastructure details (e.g., Supabase bucket names or DB constraints). Relying on `file.type` alone is insufficient as it is easily spoofed.
+**Prevention:** Always return generic error messages to the client while logging detailed errors internally. Validate both MIME types and file extensions against a strict whitelist.
