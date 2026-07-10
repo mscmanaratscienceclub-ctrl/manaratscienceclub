@@ -20,7 +20,7 @@ import { SignUpSchema, SignUpValues } from "./validate";
 import InputStartIcon from "../components/input-start-icon";
 import InputPasswordContainer from "../components/input-password";
 import { cn } from "@/lib/utils";
-import { AtSign, MailIcon, UserIcon } from "lucide-react";
+import { AtSign, Loader2, MailIcon, UserIcon } from "lucide-react";
 import { GenderRadioGroup } from "../components/gender-radio-group";
 import { trackEvent } from "@/lib/analytics";
 
@@ -184,7 +184,14 @@ export default function SignUpForm({ redirect }: { redirect?: string }) {
         />
 
         <Button type="submit" disabled={isPending} className="mt-5 w-full rounded-full bg-manara-teal font-display text-sm font-bold normal-case tracking-normal text-white shadow-subtle hover:bg-manara-teal/90 hover:-translate-y-0.5">
-          Sign Up
+          {isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Signing Up...
+            </>
+          ) : (
+            "Sign Up"
+          )}
         </Button>
       </form>
     </Form>

@@ -19,7 +19,7 @@ import { SignInSchema, SignInValues } from "./validate";
 import InputStartIcon from "../components/input-start-icon";
 import InputPasswordContainer from "../components/input-password";
 import { cn } from "@/lib/utils";
-import { AtSign } from "lucide-react";
+import { AtSign, Loader2 } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 
 export default function SignInForm({ redirect }: { redirect?: string }) {
@@ -104,7 +104,14 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
           )}
         />
         <Button type="submit" disabled={isPending} className="mt-5 w-full rounded-full bg-manara-teal font-display text-sm font-bold normal-case tracking-normal text-white shadow-subtle hover:bg-manara-teal/90 hover:-translate-y-0.5">
-          Sign In with Username
+          {isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Signing In...
+            </>
+          ) : (
+            "Sign In with Username"
+          )}
         </Button>
       </form>
     </Form>
