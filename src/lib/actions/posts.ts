@@ -55,13 +55,13 @@ export const getPublishedPosts = cache(async (limit = 10, offset = 0) => {
     .offset(offset);
 });
 
-export async function getRelatedPosts(currentSlug: string, limit = 3) {
+export const getRelatedPosts = cache(async (currentSlug: string, limit = 3) => {
   return db.select(postFields).from(posts)
     .leftJoin(user, eq(posts.authorId, user.id))
     .where(and(eq(posts.status, "published"), ne(posts.slug, currentSlug)))
     .orderBy(desc(posts.publishedAt))
     .limit(limit);
-}
+});
 
 export const getPostBySlug = cache(async (slug: string) => {
   const result = await db

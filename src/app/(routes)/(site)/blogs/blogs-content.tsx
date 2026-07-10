@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -59,33 +59,39 @@ function estimateReadingTime(text: string | null): number {
 export default function BlogsContent({ posts }: BlogsContentProps) {
   const [selectedTag, setSelectedTag] = useState<string>("all");
 
-  // Extract all unique tags dynamically
-  const uniqueTagsMap: Record<string, number> = {};
-  posts.forEach((post) => {
-    if (post.tags) {
-      post.tags.forEach((tag) => {
+  // Memoize tag extraction and sorting to avoid O(N*T) work on every render
+  const sortedTags = useMemo(() => {
+    const uniqueTagsMap: Record<string, number> = {};
+    posts.forEach((post) => {
+      post.tags?.forEach((tag) => {
         if (tag) {
           const lowerTag = tag.trim().toLowerCase();
           uniqueTagsMap[lowerTag] = (uniqueTagsMap[lowerTag] || 0) + 1;
         }
       });
-    }
-  });
+    });
+    return Object.entries(uniqueTagsMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [posts]);
 
-  const sortedTags = Object.entries(uniqueTagsMap)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count);
+  // Memoize author count calculation
+  const authorCount = useMemo(() => new Set(posts.map((p) => p.authorId)).size, [posts]);
+
+  // Memoize visible post IDs for O(1) lookup during render loop
+  const visiblePostIds = useMemo(() => {
+    const ids = new Set<string>();
+    posts.forEach((post) => {
+      const isVisible =
+        selectedTag === "all" ||
+        (post.tags?.some((tag) => tag.trim().toLowerCase() === selectedTag) ?? false);
+      if (isVisible) ids.add(post.id);
+    });
+    return ids;
+  }, [posts, selectedTag]);
 
   const featuredPost = posts[0];
-
-  // Filter posts based on tag selection
-  const isPostVisible = (post: Post) => {
-    if (selectedTag === "all") return true;
-    if (!post.tags) return false;
-    return post.tags.some((tag) => tag.trim().toLowerCase() === selectedTag);
-  };
-
-  const visiblePostsCount = posts.filter(isPostVisible).length;
+  const visiblePostsCount = visiblePostIds.size;
 
   return (
     <div className="font-body min-h-screen bg-cream text-ink">
@@ -112,8 +118,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
                 Publications
               </span>
               <span className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-manara-teal" />{" "}
-                {new Set(posts.map((p) => p.authorId)).size} Authors
+                <Users className="w-4 h-4 text-manara-teal" /> {authorCount} Authors
               </span>
               <span className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-manara-teal" /> {sortedTags.length} Tags
@@ -206,7 +211,12 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
 
             {/* Featured Post */}
             {featuredPost && (
-              <div className={cn("transition-all duration-350", !isPostVisible(featuredPost) && "opacity-30 saturate-40")}>
+              <div
+                className={cn(
+                  "transition-all duration-350",
+                  !visiblePostIds.has(featuredPost.id) && "opacity-30 saturate-40"
+                )}
+              >
                 <div className="flex items-center gap-2 mb-4">
                   <Star className="w-4 h-4 text-manara-yellow fill-manara-yellow" />
                   <h3 className="font-display font-bold text-sm uppercase tracking-wider text-ink/50">
@@ -293,13 +303,12 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
                   {posts.map((post) => {
                     const firstTag = post.tags && post.tags[0] ? post.tags[0] : "article";
                     const tagConf = getTagConfig(firstTag);
-                    const isVisible = isPostVisible(post);
+                    const isVisible = visiblePostIds.has(post.id);
 
                     return (
                       <Link
                         key={post.id}
                         href={`/blogs/${post.slug}`}
-                       
                         className={cn(
                           "group relative flex flex-col rounded-2xl bg-surface border border-manara-teal/10 shadow-subtle hover:shadow-academic p-6 overflow-hidden transition-all duration-300",
                           !isVisible && "opacity-30 saturate-40 pointer-events-none"
