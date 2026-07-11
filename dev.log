@@ -1,0 +1,43 @@
+
+> nextjs-15@0.1.0 dev /app
+> next dev --turbopack
+
+▲ Next.js 16.2.9 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+✓ Ready in 581ms
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+- Experiments (use with caution):
+  · clientTraceMetadata
+
+○ Compiling /blogs ...
+[2m2026-07-11T01:11:13.496Z[0m [33mWARN[0m [1m[Better Auth]:[0m [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+⨯ Error: Failed query: select "posts"."id", "posts"."title", "posts"."slug", "posts"."excerpt", "posts"."tags", "posts"."status", "posts"."author_id", "posts"."published_at", "posts"."created_at", "posts"."updated_at", "user"."name", "posts"."custom_author_name", "posts"."custom_author_avatar", "posts"."custom_author_bio" from "posts" left join "user" on "posts"."author_id" = "user"."id" where "posts"."status" = $1 order by "posts"."published_at" desc limit $2
+params: published,50
+    at async BlogsPage (src/app/(routes)/(site)/blogs/page.tsx:15:17)
+  13 |
+  14 | export default async function BlogsPage() {
+> 15 |   const posts = await getPublishedPosts(50, 0);
+     |                 ^
+  16 |
+  17 |   return <BlogsContent posts={posts as any} />;
+  18 | } {
+  query: 'select "posts"."id", "posts"."title", "posts"."slug", "posts"."excerpt", "posts"."tags", "posts"."status", "posts"."author_id", "posts"."published_at", "posts"."created_at", "posts"."updated_at", "user"."name", "posts"."custom_author_name", "posts"."custom_author_avatar", "posts"."custom_author_bio" from "posts" left join "user" on "posts"."author_id" = "user"."id" where "posts"."status" = $1 order by "posts"."published_at" desc limit $2',
+  params: [ 'published', 50 ],
+  digest: '1119185140',
+  [cause]: AggregateError:
+      at ignore-listed frames {
+    code: 'ECONNREFUSED',
+    [errors]: [ [Error], [Error] ]
+  }
+}
+ GET /blogs 500 in 23.7s (next.js: 18.7s, proxy.ts: 641ms, application-code: 4.4s)
+○ Compiling /signin ...
+ POST /signin 200 in 3.5s (next.js: 2.8s, proxy.ts: 23ms, application-code: 680ms)
+ POST /signin 200 in 3.9s (next.js: 3.4s, proxy.ts: 12ms, application-code: 497ms)
+ POST /signin 200 in 3.6s (next.js: 2.9s, proxy.ts: 42ms, application-code: 598ms)
+ POST /signin 200 in 3.9s (next.js: 3.3s, proxy.ts: 12ms, application-code: 547ms)
