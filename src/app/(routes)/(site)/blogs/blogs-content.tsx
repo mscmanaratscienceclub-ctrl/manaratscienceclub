@@ -85,14 +85,20 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
 
   const featuredPost = posts[0];
 
-  // Filter posts based on tag selection
-  const isPostVisible = (post: Post) => {
-    if (selectedTag === "all") return true;
-    if (!post.tags) return false;
-    return post.tags.some((tag) => tag.trim().toLowerCase() === selectedTag);
-  };
+  // Memoize visible posts set for O(1) lookups during the render loop
+  const visiblePostIds = useMemo(() => {
+    const ids = new Set<string>();
+    posts.forEach((post) => {
+      if (selectedTag === "all") {
+        ids.add(post.id);
+      } else if (post.tags && post.tags.some((tag) => tag.trim().toLowerCase() === selectedTag)) {
+        ids.add(post.id);
+      }
+    });
+    return ids;
+  }, [posts, selectedTag]);
 
-  const visiblePostsCount = posts.filter(isPostVisible).length;
+  const visiblePostsCount = visiblePostIds.size;
 
   return (
     <div className="font-body min-h-screen bg-cream text-ink">
@@ -212,7 +218,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
 
             {/* Featured Post */}
             {featuredPost && (
-              <div className={cn("transition-all duration-350", !isPostVisible(featuredPost) && "opacity-30 saturate-40")}>
+              <div className={cn("transition-all duration-350", !visiblePostIds.has(featuredPost.id) && "opacity-30 saturate-40")}>
                 <div className="flex items-center gap-2 mb-4">
                   <Star className="w-4 h-4 text-manara-yellow fill-manara-yellow" />
                   <h3 className="font-display font-bold text-sm uppercase tracking-wider text-ink/50">
@@ -299,7 +305,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
                   {posts.map((post) => {
                     const firstTag = post.tags && post.tags[0] ? post.tags[0] : "article";
                     const tagConf = getTagConfig(firstTag);
-                    const isVisible = isPostVisible(post);
+                    const isVisible = visiblePostIds.has(post.id);
 
                     return (
                       <Link
