@@ -28,12 +28,18 @@ export async function POST(request: NextRequest) {
   }
 
   const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
-  if (!allowedTypes.includes(file.type)) {
+  const allowedExtensions = ["png", "jpg", "jpeg", "webp", "gif"];
+
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+
+  if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(ext)) {
     trackEvent("file_upload_failed", { reason: "invalid_type" });
-    return NextResponse.json({ error: "Invalid file type. Allowed: PNG, JPG, JPEG, WebP, GIF" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid file type or extension. Allowed: PNG, JPG, JPEG, WebP, GIF" },
+      { status: 400 },
+    );
   }
 
-  const ext = file.name.split(".").pop() || "png";
   const fileName = `${session.user.id}/${crypto.randomUUID()}.${ext}`;
 
   const arrayBuffer = await file.arrayBuffer();
@@ -49,7 +55,8 @@ export async function POST(request: NextRequest) {
   if (uploadError) {
     captureException(uploadError, { route: "upload", step: "supabase_upload" });
     trackEvent("file_upload_failed", { reason: "supabase_upload_failed" });
-    return NextResponse.json({ error: uploadError.message }, { status: 500 });
+    // Don't leak Supabase/PostgreSQL error details to the client to prevent info leakage
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 
   const publicUrl = getPublicImageUrl(AVATARS_BUCKET, fileName);
