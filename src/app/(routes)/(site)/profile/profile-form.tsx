@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient } from "@/lib/auth/client";
+import { restrictedUsernames } from "@/lib/auth/usernames";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,23 @@ import { ImagePlus, X, Loader2 } from "lucide-react";
 
 const ProfileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  username: z.string().min(4, "Username must be at least 4 characters").max(10, "Username must be max 10 characters"),
+  username: z
+    .string()
+    .min(4, "Username must be at least 4 characters")
+    .max(10, "Username must be max 10 characters")
+    .regex(/^[a-zA-Z0-9]+$/, "Only letters and numbers allowed")
+    .refine(
+      (username) => {
+        const normalized = username.toLowerCase();
+        for (const pattern of restrictedUsernames) {
+          if (normalized.includes(pattern.toLowerCase())) {
+            return false;
+          }
+        }
+        return true;
+      },
+      { message: "Username contains disallowed words" }
+    ),
   description: z.string().max(200, "Description max 200 characters").optional(),
 });
 
@@ -86,9 +103,9 @@ export default function ProfileForm({ user }: { user: any }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const maxSize = 10 * 1024 * 1024;
+    const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error("File too large (max 10MB)");
+      toast.error("File too large (max 5MB)");
       return;
     }
 
