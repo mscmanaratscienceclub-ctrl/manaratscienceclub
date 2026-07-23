@@ -5,8 +5,7 @@ import "./globals.css";
 import Providers from "@/providers";
 import { Fredoka, Rubik } from "next/font/google";
 import { cn } from "@/lib/utils";
-        <SpeedInsights />
-        {/* Google Analytics (gtag.js) */}
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const fredoka = Fredoka({
   subsets: ["latin"],
@@ -88,7 +87,6 @@ export default function RootLayout({
       >
         <Providers>{children}</Providers>
         <SpeedInsights />
-        <Analytics />
         {/* Google Analytics (gtag.js) */}
         <Script
           async
