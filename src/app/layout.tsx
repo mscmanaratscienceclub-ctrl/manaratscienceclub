@@ -5,8 +5,8 @@ import "./globals.css";
 import Providers from "@/providers";
 import { Fredoka, Rubik } from "next/font/google";
 import { cn } from "@/lib/utils";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Analytics } from "@vercel/analytics/next";
+        <SpeedInsights />
+        {/* Google Analytics (gtag.js) */}
 
 const fredoka = Fredoka({
   subsets: ["latin"],
