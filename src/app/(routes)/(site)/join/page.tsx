@@ -18,26 +18,6 @@ interface Committee {
 
 const COMMITTEES: Committee[] = [
   {
-    name: "Executives",
-    url: "https://docs.google.com/forms/d/e/1FAIpQLSeuPwt3kv3jMuHF0yDtyOyxVPSLTGgjgaBVH3IgHEahNda7Mg/viewform",
-    border: "border-manara-red/10",
-    iconBg: "bg-manara-red/10",
-    iconColor: "text-manara-red",
-    btnBg: "bg-manara-red",
-    icon: <Users className="h-6 w-6" />,
-    roles: [
-      {
-        title: "2 Vice Presidents (Male & Female)",
-      },
-      {
-        title: "2 Assistant Secretary (Male & Female)",
-      },
-      {
-        title: "Coordinator",
-      },
-    ],
-  },
-  {
     name: "Activity Department",
     url: "https://docs.google.com/forms/d/e/1FAIpQLSfvCcLV3zJKg7y5tKIuUgho5ulFRGrqOfb6Qe9xHQPRACZ9Tw/viewform",
     border: "border-manara-yellow/10",
