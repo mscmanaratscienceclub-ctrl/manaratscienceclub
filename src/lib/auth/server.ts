@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth";
 import { username, admin } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { restrictedUsernames } from "./usernames";
+import { sendVerificationEmail } from "@/lib/email/resend";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -32,6 +33,28 @@ export const auth = betterAuth({
   ],
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: false,
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user, url }, _request) => {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+      // Ensure the verification redirect lands on /verify-email?verified=true after verifying the token
+      const verificationUrl = url.includes("callbackURL=")
+        ? url
+        : `${url}&callbackURL=${encodeURIComponent(`${baseUrl}/verify-email?verified=true`)}`;
+
+      try {
+        await sendVerificationEmail({
+          to: user.email,
+          name: user.name,
+          url: verificationUrl,
+        });
+      } catch (error) {
+        console.error("Failed to send verification email:", error);
+      }
+    },
   },
   user: {
     additionalFields: {

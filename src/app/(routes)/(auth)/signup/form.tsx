@@ -51,7 +51,8 @@ export default function SignUpForm({ redirect }: { redirect?: string }) {
         // which sets the Sentry user, so PostHog identity will eventually be
         // attached via the server-side setSentryUser flow.
         trackEvent("user_signed_up");
-        router.push(redirect || "/");
+        toast.success("Account created! Please check your email to verify your account.");
+        router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
       }
     });
   }

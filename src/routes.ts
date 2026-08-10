@@ -6,6 +6,7 @@ export const publicRoutes: string[] = [
   "/events",
   "/opportunities",
   "/join",
+  "/register",
 ];
 
 // Patterns for dynamic public routes
