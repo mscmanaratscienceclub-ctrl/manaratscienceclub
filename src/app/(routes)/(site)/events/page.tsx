@@ -5,62 +5,86 @@ export const metadata = {
   description: "Upcoming academic sessions, labs, and science events.",
 };
 
+const sessions = [
+  {
+    date: "Sat, Jan 18",
+    session: "Experimental Lab Sprint",
+    focus: "Variables, measurement, controlled testing",
+    status: "Open",
+    statusClass: "border-ion-line text-ion",
+  },
+  {
+    date: "Fri, Jan 24",
+    session: "Robot Rescue Challenge",
+    focus: "Sensors, logic, path optimization",
+    status: "Few seats",
+    statusClass: "border-space-amber/40 text-space-amber",
+  },
+  {
+    date: "Thu, Jan 30",
+    session: "Young Innovators Forum",
+    focus: "Presentation, critique, project defense",
+    status: "Register",
+    statusClass: "border-space-amber-bright/40 text-space-amber-bright",
+  },
+];
+
 export default function EventsPage() {
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Hero Section */}
-      <section className="bg-cream px-4 py-20 text-center">
-        <h1 className="font-display text-4xl font-bold text-ink md:text-5xl">
-          Events & Sessions
-        </h1>
-        <p className="mx-auto mt-4 max-w-2xl font-body text-lg text-ink/60">
-          Our academic calendar featuring upcoming workshops, experimental labs, and project defenses.
-        </p>
+    <div className="min-h-screen bg-space-deep">
+      <section className="border-b border-space-line-soft">
+        <div className="mx-auto w-full max-w-[1440px] px-5 py-20 sm:px-8 lg:px-16">
+          <p className="font-mono text-[0.64rem] font-medium uppercase tracking-[0.24em] text-ion">
+            {"// 01 — Calendar"}
+          </p>
+          <h1 className="mt-4 max-w-[46rem] font-voyage text-3xl font-bold uppercase leading-[1.08] tracking-tight text-space-ivory sm:text-4xl lg:text-5xl">
+            Events & Sessions
+          </h1>
+          <p className="mt-5 max-w-[38rem] text-lg leading-relaxed text-space-muted">
+            Our academic calendar featuring upcoming workshops, experimental labs, and project defenses.
+          </p>
+        </div>
       </section>
 
-      {/* Events Table Section */}
-      <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mb-8 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+      <section className="mx-auto w-full max-w-[1440px] px-5 py-16 sm:px-8 lg:px-16">
+        <div className="mb-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
           <div>
-            <p className="font-display text-base font-bold text-manara-pink">Academic calendar</p>
-            <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-ink lg:text-4xl">
+            <p className="font-mono text-[0.64rem] font-medium uppercase tracking-[0.24em] text-ion">
+              Academic calendar
+            </p>
+            <h2 className="mt-3 font-voyage text-2xl font-bold uppercase tracking-tight text-space-ivory lg:text-3xl">
               Upcoming sessions
             </h2>
           </div>
-          <button className="inline-flex w-fit items-center gap-2 rounded-full bg-manara-yellow px-6 py-3 font-display text-sm font-bold text-manara-teal transition hover:-translate-y-1 hover:bg-manara-red hover:text-white">
-            Request calendar <CalendarDays className="h-4 w-4" />
+          <button type="button" className="signal-btn-ghost w-fit">
+            Request calendar <CalendarDays className="size-4" />
           </button>
         </div>
 
-        <div className="overflow-hidden rounded-[2rem] border border-manara-teal/10 bg-surface shadow-subtle">
-          <div className="hidden grid-cols-[1fr_1fr_1.2fr_.8fr] bg-manara-teal px-6 py-4 text-sm font-bold uppercase tracking-wide text-white md:grid">
+        <div className="border border-space-line-soft">
+          <div className="hidden grid-cols-[1fr_1fr_1.4fr_0.8fr] border-b border-space-line-soft bg-space-deep/60 px-6 py-4 font-mono text-[0.64rem] font-medium uppercase tracking-[0.24em] text-space-muted md:grid">
             <span>Date</span>
             <span>Session</span>
             <span>Learning focus</span>
             <span>Status</span>
           </div>
-          
-          <div className="flex flex-col gap-4 p-4 md:p-0 md:gap-0 md:divide-y md:divide-manara-teal/10">
-            <div className="grid gap-3 px-5 py-5 rounded-2xl border border-manara-teal/5 bg-manara-teal/[0.02] shadow-sm md:shadow-none md:border-none md:bg-transparent md:rounded-none md:px-6 md:py-5 md:grid-cols-[1fr_1fr_1.2fr_.8fr] items-center hover:bg-cream/40 transition-colors">
-              <span className="font-bold text-ink">Sat, Jan 18</span>
-              <span className="font-semibold text-ink">Experimental Lab Sprint</span>
-              <span className="text-sm text-ink/60">Variables, measurement, controlled testing</span>
-              <span className="w-fit rounded-full bg-manara-yellow/20 px-3 py-1 text-xs font-bold text-manara-teal">Open</span>
-            </div>
-            
-            <div className="grid gap-3 px-5 py-5 rounded-2xl border border-manara-teal/5 bg-manara-teal/[0.02] shadow-sm md:shadow-none md:border-none md:bg-transparent md:rounded-none md:px-6 md:py-5 md:grid-cols-[1fr_1fr_1.2fr_.8fr] items-center hover:bg-cream/40 transition-colors">
-              <span className="font-bold text-ink">Fri, Jan 24</span>
-              <span className="font-semibold text-ink">Robot Rescue Challenge</span>
-              <span className="text-sm text-ink/60">Sensors, logic, path optimization</span>
-              <span className="w-fit rounded-full bg-manara-red/10 px-3 py-1 text-xs font-bold text-manara-red">Few seats</span>
-            </div>
-            
-            <div className="grid gap-3 px-5 py-5 rounded-2xl border border-manara-teal/5 bg-manara-teal/[0.02] shadow-sm md:shadow-none md:border-none md:bg-transparent md:rounded-none md:px-6 md:py-5 md:grid-cols-[1fr_1fr_1.2fr_.8fr] items-center hover:bg-cream/40 transition-colors">
-              <span className="font-bold text-ink">Thu, Jan 30</span>
-              <span className="font-semibold text-ink">Young Innovators Forum</span>
-              <span className="text-sm text-ink/60">Presentation, critique, project defense</span>
-              <span className="w-fit rounded-full bg-manara-yellow/10 px-3 py-1 text-xs font-bold text-manara-yellow">Register</span>
-            </div>
+
+          <div className="flex flex-col gap-3 p-4 md:gap-0 md:divide-y md:divide-space-line-soft md:p-0">
+            {sessions.map((row) => (
+              <div
+                key={row.session}
+                className="grid items-center gap-3 border border-space-line-soft bg-space-deep/40 px-5 py-5 transition-colors hover:border-ion-line md:grid-cols-[1fr_1fr_1.4fr_0.8fr] md:border-none md:bg-transparent md:px-6 md:py-5 md:hover:bg-ion/5"
+              >
+                <span className="font-mono text-sm text-ion-bright">{row.date}</span>
+                <span className="font-medium text-space-ivory">{row.session}</span>
+                <span className="text-sm text-space-muted">{row.focus}</span>
+                <span
+                  className={`w-fit border px-3 py-1 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] ${row.statusClass}`}
+                >
+                  {row.status}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </section>

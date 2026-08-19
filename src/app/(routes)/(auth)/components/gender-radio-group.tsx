@@ -24,10 +24,10 @@ export function GenderRadioGroup({
         <div
           key={opt.id}
           className={cn(
-            "mt-2 flex items-center space-x-2 rounded-lg px-4 py-2 ring transition-all duration-300",
+            "mt-2 flex items-center space-x-2 border px-4 py-2 transition-all duration-300",
             value === opt.value
-              ? "ring-primary/10 bg-muted text-foreground"
-              : "ring-muted hover:bg-muted text-muted-foreground",
+              ? "border-ion bg-ion/10 text-space-ivory"
+              : "border-space-line-soft text-space-muted hover:border-ion-line",
           )}
         >
           <RadioGroupItem

@@ -9,7 +9,7 @@ export const user = pgTable("user", {
   emailVerified: boolean("emailVerified").notNull(),
   image: text("image"),
   role: text("role").default("member").notNull(),
-  gender: boolean("gender").notNull(),
+  gender: boolean("gender"),
   description: text("description"),
   banned: boolean("banned"),
   banReason: text("ban_reason"),
@@ -18,6 +18,6 @@ export const user = pgTable("user", {
   updatedAt: timestamp("updatedAt")
     .defaultNow()
     .$onUpdate(() => new Date()),
-}).enableRLS();
+});
 
 export type UserType = typeof user.$inferSelect;

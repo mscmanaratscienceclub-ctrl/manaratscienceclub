@@ -9,4 +9,4 @@ export const verification = pgTable("verification", {
   updatedAt: timestamp("updatedAt")
     .defaultNow()
     .$onUpdate(() => new Date()),
-}).enableRLS();
+});

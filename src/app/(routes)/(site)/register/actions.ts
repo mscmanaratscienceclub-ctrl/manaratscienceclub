@@ -45,7 +45,7 @@ export async function submitAmbassadorForm(
     console.error("[AmbassadorForm] Supabase error:", error);
     return {
       success: false,
-      error: error.message || "Failed to submit. Please try again.",
+      error: "Failed to submit. Please try again.",
     };
   }
 

@@ -13,8 +13,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signUp } from "@/lib/auth/client";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { SignUpSchema, SignUpValues } from "./validate";
 import InputStartIcon from "../components/input-start-icon";
@@ -24,7 +22,7 @@ import { AtSign, Loader2, MailIcon, UserIcon } from "lucide-react";
 import { GenderRadioGroup } from "../components/gender-radio-group";
 import { trackEvent } from "@/lib/analytics";
 
-export default function SignUpForm({ redirect }: { redirect?: string }) {
+export default function SignUpForm() {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const form = useForm<SignUpValues>({
@@ -76,9 +74,10 @@ export default function SignUpForm({ redirect }: { redirect?: string }) {
             <FormItem>
               <FormControl>
                 <InputStartIcon icon={UserIcon}>
-                  <Input
+                  <input
+                    type="text"
                     placeholder="Name"
-                    className={cn("peer ps-9", getInputClassName("name"))}
+                    className={cn("signal-input peer ps-9 disabled:opacity-50", getInputClassName("name"))}
                     disabled={isPending}
                     {...field}
                   />
@@ -95,9 +94,10 @@ export default function SignUpForm({ redirect }: { redirect?: string }) {
             <FormItem>
               <FormControl>
                 <InputStartIcon icon={MailIcon}>
-                  <Input
+                  <input
+                    type="email"
                     placeholder="Email"
-                    className={cn("peer ps-9", getInputClassName("email"))}
+                    className={cn("signal-input peer ps-9 disabled:opacity-50", getInputClassName("email"))}
                     disabled={isPending}
                     {...field}
                   />
@@ -115,9 +115,10 @@ export default function SignUpForm({ redirect }: { redirect?: string }) {
             <FormItem>
               <FormControl>
                 <InputStartIcon icon={AtSign}>
-                  <Input
+                  <input
+                    type="text"
                     placeholder="Username"
-                    className={cn("peer ps-9", getInputClassName("username"))}
+                    className={cn("signal-input peer ps-9 disabled:opacity-50", getInputClassName("username"))}
                     disabled={isPending}
                     {...field}
                   />
@@ -135,8 +136,9 @@ export default function SignUpForm({ redirect }: { redirect?: string }) {
             <FormItem>
               <FormControl>
                 <InputPasswordContainer>
-                  <Input
-                    className={cn("pe-9", getInputClassName("password"))}
+                  <input
+                    type="password"
+                    className={cn("signal-input pe-9 disabled:opacity-50", getInputClassName("password"))}
                     placeholder="Password"
                     disabled={isPending}
                     {...field}
@@ -155,8 +157,9 @@ export default function SignUpForm({ redirect }: { redirect?: string }) {
             <FormItem>
               <FormControl>
                 <InputPasswordContainer>
-                  <Input
-                    className={cn("pe-9", getInputClassName("confirmPassword"))}
+                  <input
+                    type="password"
+                    className={cn("signal-input pe-9 disabled:opacity-50", getInputClassName("confirmPassword"))}
                     placeholder="Confirm Password"
                     disabled={isPending}
                     {...field}
@@ -174,7 +177,7 @@ export default function SignUpForm({ redirect }: { redirect?: string }) {
           name="gender"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-display text-sm font-bold text-ink">Gender</FormLabel>
+              <FormLabel className="signal-label">Gender</FormLabel>
               <GenderRadioGroup
                 value={field.value}
                 onChange={field.onChange}
@@ -184,7 +187,11 @@ export default function SignUpForm({ redirect }: { redirect?: string }) {
           )}
         />
 
-        <Button type="submit" disabled={isPending} className="mt-5 w-full rounded-full bg-manara-teal font-display text-sm font-bold normal-case tracking-normal text-white shadow-subtle hover:bg-manara-teal/90 hover:-translate-y-0.5">
+        <button
+          type="submit"
+          disabled={isPending}
+          className="signal-btn-primary mt-5 w-full disabled:pointer-events-none disabled:opacity-60"
+        >
           {isPending ? (
             <>
               <Loader2 className="mr-2 size-4 animate-spin" />
@@ -193,7 +200,7 @@ export default function SignUpForm({ redirect }: { redirect?: string }) {
           ) : (
             "Sign Up"
           )}
-        </Button>
+        </button>
       </form>
     </Form>
   );

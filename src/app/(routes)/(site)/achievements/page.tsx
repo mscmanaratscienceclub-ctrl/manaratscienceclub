@@ -1,4 +1,5 @@
 import { Trophy, Medal, Star } from "lucide-react";
+import ScrollReveal from "@/components/animations/ScrollReveal";
 
 export const metadata = {
   title: "Achievements & Accolades | Manarat Science Club",
@@ -14,8 +15,7 @@ const achievements = [
     tier: "Gold Medalist",
     category: "Physics",
     icon: Trophy,
-    color: "text-manara-red",
-    bg: "bg-manara-red/10",
+    iconClass: "text-space-amber border-space-amber/30",
   },
   {
     id: 2,
@@ -25,8 +25,7 @@ const achievements = [
     tier: "First Runner-Up",
     category: "Robotics",
     icon: Medal,
-    color: "text-manara-yellow",
-    bg: "bg-manara-yellow/10",
+    iconClass: "text-ion border-ion-line",
   },
   {
     id: 3,
@@ -36,8 +35,7 @@ const achievements = [
     tier: "Best Project Award",
     category: "Research",
     icon: Star,
-    color: "text-manara-purple",
-    bg: "bg-manara-purple/10",
+    iconClass: "text-space-sage border-space-sage/30",
   },
   {
     id: 4,
@@ -47,58 +45,53 @@ const achievements = [
     tier: "Grand Prize",
     category: "Biology",
     icon: Trophy,
-    color: "text-manara-red",
-    bg: "bg-manara-red/10",
+    iconClass: "text-space-amber border-space-amber/30",
   },
 ];
 
 export default function AchievementsPage() {
   return (
-    <div className="min-h-screen bg-cream">
-      {/* Hero Section */}
-      <section className="bg-cream px-4 py-20 text-center">
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-manara-yellow shadow-yellow">
-            <Trophy className="h-8 w-8 text-white" />
-          </div>
+    <div className="min-h-screen bg-space-deep">
+      <section className="border-b border-space-line-soft">
+        <div className="mx-auto w-full max-w-[1440px] px-5 py-20 sm:px-8 lg:px-16">
+          <p className="font-mono text-[0.64rem] font-medium uppercase tracking-[0.24em] text-ion">
+            {"// 01 — Honors log"}
+          </p>
+          <h1 className="mt-4 max-w-[46rem] font-voyage text-3xl font-bold uppercase leading-[1.08] tracking-tight text-space-ivory sm:text-4xl lg:text-5xl">
+            Achievements & Accolades
+          </h1>
+          <p className="mt-5 max-w-[38rem] text-lg leading-relaxed text-space-muted">
+            Celebrating our institutional victories, Olympiad successes, and innovative prototype exhibitions.
+          </p>
         </div>
-        <h1 className="font-display text-4xl font-bold text-ink md:text-5xl">
-          Achievements & Accolades
-        </h1>
-        <p className="mx-auto mt-4 max-w-2xl font-body text-lg text-ink/60">
-          Celebrating our institutional victories, Olympiad successes, and innovative prototype exhibitions.
-        </p>
       </section>
 
-      {/* Grid Section */}
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <section className="mx-auto w-full max-w-[1440px] px-5 py-16 sm:px-8 lg:px-16">
+        <ScrollReveal stagger={0.08} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {achievements.map((item) => (
-            <div
-              key={item.id}
-              className="group flex flex-col overflow-hidden rounded-2xl border border-manara-teal/10 bg-surface shadow-subtle transition-all duration-300 hover:-translate-y-1 hover:shadow-academic p-6"
-            >
-              <div className={`mb-5 flex h-12 w-12 items-center justify-center rounded-xl ${item.bg} ${item.color}`}>
-                <item.icon className="h-6 w-6" />
-              </div>
-              <h3 className="font-display text-xl font-bold text-ink group-hover:text-manara-teal transition-colors">
-                {item.title}
-              </h3>
-              <p className="mt-2 text-sm font-semibold text-ink/70">
-                {item.event}
-              </p>
-              
-              <div className="mt-auto pt-6 flex items-center justify-between border-t border-manara-teal/5">
-                <span className="inline-flex rounded-full bg-cream px-2.5 py-1 text-xs font-bold text-ink/60">
-                  {item.year}
-                </span>
-                <span className="font-display text-sm font-bold text-manara-yellow">
-                  {item.tier}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+              <article
+                key={item.id}
+                className="group flex flex-col border border-space-line-soft bg-space-deep/60 p-6 transition-colors hover:border-ion-line"
+              >
+                <div className={`mb-5 flex size-12 items-center justify-center border ${item.iconClass}`}>
+                  <item.icon className="size-6" />
+                </div>
+                <h3 className="font-voyage text-lg font-bold uppercase leading-snug tracking-tight text-space-ivory transition-colors group-hover:text-ion-bright">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm text-space-muted">{item.event}</p>
+
+                <div className="mt-auto flex items-center justify-between border-t border-space-line-soft pt-6">
+                  <span className="border border-space-line-soft px-2.5 py-1 font-mono text-[0.6rem] uppercase tracking-[0.2em] text-space-muted">
+                    {item.year}
+                  </span>
+                  <span className="font-mono text-[0.64rem] font-semibold uppercase tracking-[0.18em] text-space-amber">
+                    {item.tier}
+                  </span>
+                </div>
+              </article>
+            ))}
+        </ScrollReveal>
       </section>
     </div>
   );

@@ -16,8 +16,10 @@ import {
   Loader2,
   RefreshCw,
   ChevronRight,
+  Save,
 } from "lucide-react";
 import { submitAmbassadorForm } from "./actions";
+import { useReducedMotion } from "@/lib/hooks/use-reduced-motion";
 
 // ── Schema ──────────────────────────────────────────────────────────────────
 const schema = z.object({
@@ -117,9 +119,9 @@ function Field({
     <div className="group space-y-1.5">
       <label
         htmlFor={id}
-        className="flex items-center gap-2 font-display text-sm font-semibold text-ink"
+        className="flex items-center gap-2 font-mono text-[0.64rem] font-semibold uppercase tracking-[0.24em] text-space-ivory/90"
       >
-        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-manara-teal/10 text-manara-teal">
+        <span className="flex size-6 items-center justify-center border border-ion-line text-ion">
           {icon}
         </span>
         {label}
@@ -132,9 +134,9 @@ function Field({
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
-            className="flex items-center gap-1.5 font-body text-xs text-red-500"
+            className="flex items-center gap-1.5 text-xs text-space-amber"
           >
-            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <AlertCircle className="size-3.5 shrink-0" />
             {error}
           </motion.p>
         ) : hint ? (
@@ -143,7 +145,7 @@ function Field({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="font-body text-xs text-ink/40"
+            className="text-xs text-space-muted"
           >
             {hint}
           </motion.p>
@@ -153,11 +155,11 @@ function Field({
   );
 }
 
-const inputClass =
-  "w-full rounded-xl border border-manara-teal/15 bg-white px-4 py-3 font-body text-sm text-ink placeholder-ink/30 shadow-sm outline-none ring-0 transition-all focus:border-manara-teal focus:ring-2 focus:ring-manara-teal/20";
+const inputClass = "signal-input";
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function CampusAmbassadorForm() {
+  const reducedMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -170,7 +172,7 @@ export default function CampusAmbassadorForm() {
     handleSubmit,
     watch,
     reset,
-    formState: { errors, isSubmitSuccessful },
+    formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { name: "", class: "", school: "", experience: "" },
@@ -250,7 +252,7 @@ export default function CampusAmbassadorForm() {
   if (!mounted) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-manara-teal/40" />
+        <Loader2 className="size-8 animate-spin text-ion" />
       </div>
     );
   }
@@ -259,75 +261,72 @@ export default function CampusAmbassadorForm() {
   if (previousSubmission && !showForm) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={reducedMotion ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="overflow-hidden rounded-3xl border border-manara-teal/10 bg-white shadow-academic"
+        className="overflow-hidden border border-space-line-soft bg-space-deep/60"
       >
-        {/* Green header banner */}
-        <div className="bg-manara-teal px-8 py-8 text-center">
+        {/* Confirmation banner */}
+        <div className="border-b border-space-line-soft bg-ion-deep px-8 py-8 text-center">
           <motion.div
-            initial={{ scale: 0 }}
+            initial={reducedMotion ? false : { scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 280, damping: 22 }}
-            className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20"
+            className="mx-auto mb-4 flex size-16 items-center justify-center border border-ion-line bg-ion/10"
           >
-            <CheckCircle2 className="h-8 w-8 text-white" />
+            <CheckCircle2 className="size-8 text-ion-bright" />
           </motion.div>
-          <h2 className="font-display text-2xl font-bold text-white">
+          <h2 className="font-voyage text-xl font-bold uppercase tracking-tight text-space-ivory">
             Application Submitted!
           </h2>
-          <p className="mt-1 font-body text-sm text-white/70">
+          <p className="mt-1 text-sm text-space-muted">
             You have already applied as a Campus Ambassador.
           </p>
         </div>
 
         {/* Details */}
         <div className="space-y-5 px-8 py-8">
-          <div className="flex items-center gap-2.5 font-body text-xs text-ink/40">
-            <Clock className="h-3.5 w-3.5 shrink-0" />
+          <div className="flex items-center gap-2.5 font-mono text-[0.64rem] uppercase tracking-[0.16em] text-space-muted">
+            <Clock className="size-3.5 shrink-0 text-ion" />
             Submitted on {formatDate(previousSubmission.submittedAt)}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             {[
-              { label: "Full Name", value: previousSubmission.name, icon: <User className="h-3.5 w-3.5" /> },
-              { label: "Class / Grade", value: previousSubmission.class, icon: <GraduationCap className="h-3.5 w-3.5" /> },
-              { label: "School", value: previousSubmission.school, icon: <Building2 className="h-3.5 w-3.5" />, full: true },
+              { label: "Full Name", value: previousSubmission.name, icon: <User className="size-3.5" /> },
+              { label: "Class / Grade", value: previousSubmission.class, icon: <GraduationCap className="size-3.5" /> },
+              { label: "School", value: previousSubmission.school, icon: <Building2 className="size-3.5" />, full: true },
             ].map((item) => (
               <div
                 key={item.label}
-                className={`rounded-xl bg-manara-teal/5 px-4 py-3 ${item.full ? "sm:col-span-2" : ""}`}
+                className={`border border-space-line-soft bg-space-deep px-4 py-3 ${item.full ? "sm:col-span-2" : ""}`}
               >
-                <div className="flex items-center gap-1.5 font-display text-xs font-semibold text-manara-teal">
+                <div className="flex items-center gap-1.5 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-ion">
                   {item.icon}
                   {item.label}
                 </div>
-                <p className="mt-1 font-body text-sm text-ink">{item.value}</p>
+                <p className="mt-1 text-sm text-space-ivory">{item.value}</p>
               </div>
             ))}
 
-            <div className="sm:col-span-2 rounded-xl bg-manara-teal/5 px-4 py-3">
-              <div className="flex items-center gap-1.5 font-display text-xs font-semibold text-manara-teal">
-                <Sparkles className="h-3.5 w-3.5" />
+            <div className="border border-space-line-soft bg-space-deep px-4 py-3 sm:col-span-2">
+              <div className="flex items-center gap-1.5 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-ion">
+                <Sparkles className="size-3.5" />
                 Experience / Motivation
               </div>
-              <p className="mt-1 font-body text-sm leading-relaxed text-ink/80">
+              <p className="mt-1 text-sm leading-relaxed text-space-ivory/80">
                 {previousSubmission.experience}
               </p>
             </div>
           </div>
 
-          <div className="border-t border-manara-teal/10 pt-5">
-            <p className="mb-4 font-body text-sm text-ink/50">
+          <div className="border-t border-space-line-soft pt-5">
+            <p className="mb-4 text-sm text-space-muted">
               Need to update your application? You can resubmit below — this
               will create a new entry.
             </p>
-            <button
-              onClick={handleResubmit}
-              className="inline-flex items-center gap-2 rounded-xl border border-manara-teal/20 bg-white px-5 py-2.5 font-display text-sm font-semibold text-manara-teal shadow-sm transition-all hover:-translate-y-0.5 hover:border-manara-teal/40 hover:shadow-academic"
-            >
-              <RefreshCw className="h-4 w-4" />
+            <button onClick={handleResubmit} className="signal-btn-ghost">
+              <RefreshCw className="size-4" />
               Submit a new application
             </button>
           </div>
@@ -339,23 +338,23 @@ export default function CampusAmbassadorForm() {
   // ── Form ──────────────────────────────────────────────────────────────────
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={reducedMotion ? false : { opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
       {/* Card */}
-      <div className="overflow-hidden rounded-3xl border border-manara-teal/10 bg-white shadow-academic">
+      <div className="overflow-hidden border border-space-line-soft bg-space-deep/60">
         {/* Header */}
-        <div className="border-b border-manara-teal/10 bg-gradient-to-r from-manara-teal to-manara-teal/80 px-8 py-7">
+        <div className="border-b border-space-line-soft bg-ion-deep/70 px-8 py-7">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/20">
-              <Sparkles className="h-5 w-5 text-white" />
+            <div className="flex size-11 items-center justify-center border border-ion-line bg-ion/10">
+              <Sparkles className="size-5 text-ion-bright" />
             </div>
             <div>
-              <h2 className="font-display text-xl font-bold text-white">
+              <h2 className="font-voyage text-lg font-bold uppercase tracking-tight text-space-ivory">
                 Campus Ambassador Form
               </h2>
-              <p className="font-body text-sm text-white/60">
+              <p className="text-sm text-space-muted">
                 Fill in all fields — your draft is saved automatically.
               </p>
             </div>
@@ -368,7 +367,7 @@ export default function CampusAmbassadorForm() {
           <Field
             id="name"
             label="Full Name"
-            icon={<User className="h-3.5 w-3.5" />}
+            icon={<User className="size-3.5" />}
             error={errors.name?.message}
           >
             <input
@@ -385,7 +384,7 @@ export default function CampusAmbassadorForm() {
             <Field
               id="class"
               label="Class / Grade"
-              icon={<GraduationCap className="h-3.5 w-3.5" />}
+              icon={<GraduationCap className="size-3.5" />}
               error={errors.class?.message}
               hint="e.g. Grade 10, Class XI"
             >
@@ -401,7 +400,7 @@ export default function CampusAmbassadorForm() {
             <Field
               id="school"
               label="School"
-              icon={<Building2 className="h-3.5 w-3.5" />}
+              icon={<Building2 className="size-3.5" />}
               error={errors.school?.message}
             >
               <input
@@ -418,7 +417,7 @@ export default function CampusAmbassadorForm() {
           <Field
             id="experience"
             label="Experience & Motivation"
-            icon={<Sparkles className="h-3.5 w-3.5" />}
+            icon={<Sparkles className="size-3.5" />}
             error={errors.experience?.message}
             hint="Tell us about any clubs, leadership roles, or why you want to be an ambassador."
           >
@@ -433,10 +432,10 @@ export default function CampusAmbassadorForm() {
               <span
                 className={`absolute bottom-3 right-3 font-mono text-xs tabular-nums ${
                   experienceLen > 1800
-                    ? "text-red-400"
+                    ? "text-space-amber"
                     : experienceLen > 1400
-                    ? "text-manara-yellow"
-                    : "text-ink/30"
+                    ? "text-space-amber-bright"
+                    : "text-space-muted"
                 }`}
               >
                 {experienceLen}/2000
@@ -448,37 +447,38 @@ export default function CampusAmbassadorForm() {
           <AnimatePresence>
             {serverError && (
               <motion.div
-                initial={{ opacity: 0, y: -6 }}
+                initial={reducedMotion ? false : { opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
-                className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3.5"
+                className="flex items-start gap-3 border border-space-amber/40 bg-space-amber/10 px-4 py-3.5"
               >
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
-                <p className="font-body text-sm text-red-600">{serverError}</p>
+                <AlertCircle className="mt-0.5 size-4 shrink-0 text-space-amber" />
+                <p className="text-sm text-space-amber-bright">{serverError}</p>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* Auto-save indicator */}
-          <p className="font-body text-xs text-ink/35">
-            💾 Your progress is automatically saved to this device.
+          <p className="flex items-center gap-1.5 text-xs text-space-muted">
+            <Save className="size-3.5 text-ion" />
+            Your progress is automatically saved to this device.
           </p>
 
           {/* Submit */}
           <button
             type="submit"
             disabled={submitting}
-            className="group flex w-full items-center justify-center gap-2.5 rounded-xl bg-manara-teal px-6 py-3.5 font-display text-base font-bold text-white shadow-academic transition-all hover:-translate-y-0.5 hover:bg-manara-teal/90 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+            className="signal-btn-primary group w-full disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="size-5 animate-spin" />
                 Submitting…
               </>
             ) : (
               <>
                 Submit Application
-                <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+                <ChevronRight className="size-5 transition-transform group-hover:translate-x-0.5" />
               </>
             )}
           </button>
@@ -486,7 +486,7 @@ export default function CampusAmbassadorForm() {
       </div>
 
       {/* Disclaimer */}
-      <p className="mt-6 text-center font-body text-xs text-ink/35">
+      <p className="mt-6 text-center text-xs text-space-muted">
         By submitting, you agree to be contacted by the Manarat Science Club
         regarding your application. We never share your data with third parties.
       </p>

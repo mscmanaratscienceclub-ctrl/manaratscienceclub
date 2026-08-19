@@ -8,16 +8,18 @@ import "./dot-grid.css";
 
 gsap.registerPlugin(InertiaPlugin);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T {
+function throttle<A extends unknown[]>(
+  func: (...args: A) => void,
+  limit: number,
+): (...args: A) => void {
   let lastCall = 0;
-  return function (this: unknown, ...args: Parameters<T>) {
+  return function (this: unknown, ...args: A) {
     const now = performance.now();
     if (now - lastCall >= limit) {
       lastCall = now;
       func.apply(this, args);
     }
-  } as T;
+  };
 }
 
 function hexToRgb(hex: string) {

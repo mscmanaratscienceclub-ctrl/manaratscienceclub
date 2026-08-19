@@ -14,4 +14,5 @@ export const session = pgTable("session", {
   userId: text("userId")
     .notNull()
     .references(() => user.id),
-}).enableRLS();
+  impersonatedBy: text("impersonatedBy"),
+});

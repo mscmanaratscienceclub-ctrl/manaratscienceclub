@@ -2,7 +2,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
 import {
-  apiAuthPrefix,
   authRoutes,
   DEFAULT_LOGIN_REDIRECT,
   publicRoutes,
@@ -12,7 +11,8 @@ import {
 export async function proxy(request: NextRequest) {
   const session = getSessionCookie(request);
 
-  const isApiAuth = request.nextUrl.pathname.startsWith(apiAuthPrefix);
+  const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
+  const isMonitoringRoute = request.nextUrl.pathname.startsWith("/monitoring");
 
   const isPublicRoute =
     publicRoutes.includes(request.nextUrl.pathname) ||
@@ -24,7 +24,7 @@ export async function proxy(request: NextRequest) {
     return authRoutes.some((path) => request.nextUrl.pathname.startsWith(path));
   };
 
-  if (isApiAuth) {
+  if (isApiRoute || isMonitoringRoute) {
     return NextResponse.next();
   }
 

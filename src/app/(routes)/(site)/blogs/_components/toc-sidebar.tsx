@@ -65,13 +65,13 @@ export default function TocSidebar({ items }: { items: TocItem[] }) {
   if (items.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-manara-teal/10 bg-surface shadow-subtle">
-      <div className="border-b border-manara-teal/10 px-5 py-3">
-        <h3 className="flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wider text-ink/50">
-          <ListTree className="h-4 w-4" /> On this page
+    <div className="border border-space-line-soft bg-space-deep/60">
+      <div className="border-b border-space-line-soft px-5 py-3">
+        <h3 className="flex items-center gap-1.5 font-mono text-[0.64rem] font-semibold uppercase tracking-[0.24em] text-space-muted">
+          <ListTree className="size-4 text-ion" /> On this page
         </h3>
       </div>
-      <nav ref={navRef} className="px-5 py-4 max-h-[60vh] overflow-y-auto">
+      <nav ref={navRef} className="max-h-[60vh] overflow-y-auto px-5 py-4">
         <ul className="space-y-1.5">
           {items.map((item, i) => (
             <li key={i}>
@@ -79,13 +79,13 @@ export default function TocSidebar({ items }: { items: TocItem[] }) {
                 href={`#${item.id}`}
                 onClick={(e) => handleClick(e, item.id)}
                 className={cn(
-                  "block text-xs leading-relaxed transition-colors rounded py-0.5",
+                  "block border-l py-0.5 pl-3 text-xs leading-relaxed transition-colors",
                   activeId === item.id
-                    ? "text-manara-teal font-bold"
-                    : "text-ink/50 hover:text-manara-teal",
+                    ? "border-ion font-semibold text-ion-bright"
+                    : "border-space-line-soft text-space-muted hover:text-ion",
                   item.level === 1 ? "font-medium" : "",
-                  item.level === 2 ? "pl-3" : "",
-                  item.level === 3 ? "pl-6 text-[11px]" : ""
+                  item.level === 2 ? "pl-5" : "",
+                  item.level === 3 ? "pl-7 text-[11px]" : ""
                 )}
               >
                 {item.text}

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Shield, PenSquare, User } from "lucide-react";
-import { authClient } from "@/lib/auth/client";
+import { updateUserRole } from "@/lib/actions/users";
 import { cn } from "@/lib/utils";
 
 interface UserRow {
@@ -38,6 +38,12 @@ const roleConfig: Record<string, { icon: typeof Shield; colorClass: string; bgCl
   },
 };
 
+type UserRole = "admin" | "writer" | "member";
+
+function isUserRole(value: string): value is UserRole {
+  return value === "admin" || value === "writer" || value === "member";
+}
+
 // Hoist formatter to avoid re-instantiation in loops
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -56,13 +62,12 @@ export default function UsersTable({ users }: UsersTableProps) {
   const [isPending, startTransition] = useTransition();
 
   function handleRoleChange(userId: string, newRole: string) {
-    if (newRole !== "admin" && newRole !== "writer" && newRole !== "member") return;
+    if (!isUserRole(newRole)) return;
 
     setPendingUserId(userId);
     startTransition(async () => {
       try {
-        const res = await authClient.admin.setRole({ userId, role: newRole as any });
-        if (res.error) throw new Error(res.error.message);
+        await updateUserRole(userId, newRole);
         toast.success("Role updated successfully");
         router.refresh();
       } catch (error) {

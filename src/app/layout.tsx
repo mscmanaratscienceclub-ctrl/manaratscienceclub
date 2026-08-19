@@ -3,7 +3,7 @@ import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
 import Providers from "@/providers";
-import { Fredoka, Rubik } from "next/font/google";
+import { Cormorant_Garamond, DM_Sans, Fredoka, Rubik, Unbounded } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -16,6 +16,21 @@ const rubik = Rubik({
   subsets: ["latin"],
   variable: "--font-rubik",
   weight: ["400", "500", "600", "700", "800", "900"],
+});
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  variable: "--font-cormorant",
+  weight: ["400", "500", "600", "700"],
+});
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+  weight: ["400", "500", "600", "700"],
+});
+const unbounded = Unbounded({
+  subsets: ["latin"],
+  variable: "--font-unbounded",
+  weight: ["400", "500", "600", "700"],
 });
 
 const geistSans = localFont({
@@ -80,6 +95,9 @@ export default function RootLayout({
         "font-sans",
         fredoka.variable,
         rubik.variable,
+        cormorant.variable,
+        dmSans.variable,
+        unbounded.variable,
       )}
     >
       <body
@@ -90,7 +108,7 @@ export default function RootLayout({
         {/* Google Analytics (gtag.js) */}
         <Script
           async
-          src="https://www.googletagmanager.com/gtag/js?id=G-XH5R8YBGX6"
+          src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "G-XH5R8YBGX6"}`}
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
@@ -98,7 +116,7 @@ export default function RootLayout({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-XH5R8YBGX6');
+            gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "G-XH5R8YBGX6"}');
           `}
         </Script>
       </body>

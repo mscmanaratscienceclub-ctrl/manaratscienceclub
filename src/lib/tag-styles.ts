@@ -7,13 +7,13 @@ export interface TagConfig {
 }
 
 const tagStyles: Omit<TagConfig, "name">[] = [
-  { dot: "var(--color-manara-blue)", text: "var(--color-manara-blue)", bg: "color-mix(in srgb, var(--color-manara-blue) 15%, transparent)", accent: "var(--color-manara-blue)" },
-  { dot: "var(--color-manara-purple)", text: "var(--color-manara-purple)", bg: "color-mix(in srgb, var(--color-manara-purple) 13%, transparent)", accent: "var(--color-manara-purple)" },
-  { dot: "var(--color-manara-pink)", text: "var(--color-manara-pink)", bg: "color-mix(in srgb, var(--color-manara-pink) 13%, transparent)", accent: "var(--color-manara-pink)" },
-  { dot: "var(--color-manara-red)", text: "var(--color-manara-red)", bg: "color-mix(in srgb, var(--color-manara-red) 10%, transparent)", accent: "var(--color-manara-red)" },
-  { dot: "var(--color-manara-yellow)", text: "var(--color-manara-yellow)", bg: "color-mix(in srgb, var(--color-manara-yellow) 18%, transparent)", accent: "var(--color-manara-yellow)" },
-  { dot: "var(--color-manara-teal)", text: "var(--color-manara-teal)", bg: "color-mix(in srgb, var(--color-manara-teal) 10%, transparent)", accent: "var(--color-manara-teal)" },
-  { dot: "#16a34a", text: "#16a34a", bg: "color-mix(in srgb, #16a34a 12%, transparent)", accent: "#16a34a" },
+  { dot: "var(--ion)", text: "var(--ion)", bg: "color-mix(in srgb, var(--ion) 12%, transparent)", accent: "var(--ion)" },
+  { dot: "var(--space-sage)", text: "var(--space-sage)", bg: "color-mix(in srgb, var(--space-sage) 12%, transparent)", accent: "var(--space-sage)" },
+  { dot: "var(--space-amber)", text: "var(--space-amber)", bg: "color-mix(in srgb, var(--space-amber) 12%, transparent)", accent: "var(--space-amber)" },
+  { dot: "var(--space-ivory)", text: "var(--space-ivory)", bg: "color-mix(in srgb, var(--space-ivory) 9%, transparent)", accent: "var(--space-ivory)" },
+  { dot: "var(--ion)", text: "var(--ion-bright)", bg: "color-mix(in srgb, var(--ion) 18%, transparent)", accent: "var(--ion)" },
+  { dot: "var(--space-amber-bright)", text: "var(--space-amber-bright)", bg: "color-mix(in srgb, var(--space-amber) 9%, transparent)", accent: "var(--space-amber)" },
+  { dot: "var(--ion-bright)", text: "var(--ion-bright)", bg: "color-mix(in srgb, var(--space-plum) 70%, transparent)", accent: "var(--ion-bright)" },
 ];
 
 export function getTagConfig(tag: string): TagConfig {

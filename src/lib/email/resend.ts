@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { getVerificationEmailHtml } from "./templates/verification-email";
+import { getResetPasswordEmailHtml } from "./templates/reset-password";
 
 const apiKey = process.env.RESEND_API_KEY;
 export const resend = apiKey ? new Resend(apiKey) : null;
@@ -7,25 +8,30 @@ export const resend = apiKey ? new Resend(apiKey) : null;
 export const EMAIL_FROM =
   process.env.EMAIL_FROM || "Manara Science Club <onboarding@resend.dev>";
 
-interface SendVerificationParams {
+interface EmailRecipient {
   to: string;
   name: string;
   url: string;
 }
 
-export async function sendVerificationEmail({
-  to,
-  name,
-  url,
-}: SendVerificationParams) {
-  // If no Resend API key or placeholder key, log the verification link to dev console
+interface SendOptions {
+  subject: string;
+  html: string;
+  label: string;
+  recipient: EmailRecipient;
+}
+
+async function sendEmail({ subject, html, label, recipient }: SendOptions) {
+  const { to, name, url } = recipient;
+
+  // No Resend API key (or placeholder key) → log the link for local dev.
   if (!apiKey || apiKey.startsWith("re_xxx") || apiKey.trim() === "") {
-    console.log(
+    console.info(
       "\n=======================================================\n" +
-        "  [DEV EMAIL VERIFICATION LINK]\n" +
+        `  [DEV ${label} LINK]\n` +
         `  To: ${to}\n` +
         `  Name: ${name}\n` +
-        `  Verification Link: ${url}\n` +
+        `  Link: ${url}\n` +
         "=======================================================\n"
     );
     return { success: true, simulated: true };
@@ -35,8 +41,8 @@ export async function sendVerificationEmail({
     const { data, error } = await resend!.emails.send({
       from: EMAIL_FROM,
       to,
-      subject: "Verify your email address - Manara Science Club",
-      html: getVerificationEmailHtml({ name, url }),
+      subject,
+      html,
     });
 
     if (error) {
@@ -46,7 +52,7 @@ export async function sendVerificationEmail({
           "  (Note: Resend free testing keys can only send to your account owner email).\n" +
           `  To: ${to}\n` +
           `  Name: ${name}\n` +
-          `  Verification Link: ${url}\n` +
+          `  Link: ${url}\n` +
           "=======================================================\n"
       );
       if (process.env.NODE_ENV !== "production") {
@@ -63,7 +69,7 @@ export async function sendVerificationEmail({
         `  [RESEND EXCEPTION]: ${message}\n` +
         `  To: ${to}\n` +
         `  Name: ${name}\n` +
-        `  Verification Link: ${url}\n` +
+        `  Link: ${url}\n` +
         "=======================================================\n"
     );
     if (process.env.NODE_ENV !== "production") {
@@ -71,4 +77,22 @@ export async function sendVerificationEmail({
     }
     throw err;
   }
+}
+
+export async function sendVerificationEmail(recipient: EmailRecipient) {
+  return sendEmail({
+    subject: "Verify your email address - Manara Science Club",
+    html: getVerificationEmailHtml({ name: recipient.name, url: recipient.url }),
+    label: "EMAIL VERIFICATION",
+    recipient,
+  });
+}
+
+export async function sendResetPasswordEmail(recipient: EmailRecipient) {
+  return sendEmail({
+    subject: "Reset your password - Manara Science Club",
+    html: getResetPasswordEmailHtml({ name: recipient.name, url: recipient.url }),
+    label: "PASSWORD RESET",
+    recipient,
+  });
 }

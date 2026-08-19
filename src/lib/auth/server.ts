@@ -2,44 +2,72 @@ import { db } from "@/db";
 import { betterAuth } from "better-auth";
 import { username, admin } from "better-auth/plugins";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { restrictedUsernames } from "./usernames";
-import { sendVerificationEmail } from "@/lib/email/resend";
+import { isValidUsername, USERNAME_MAX_LENGTH, USERNAME_MIN_LENGTH } from "./usernames";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./password";
+import { sendResetPasswordEmail, sendVerificationEmail } from "@/lib/email/resend";
+
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
   }),
+  // Explicit rate limiting — better-auth's default special rules already cap
+  // /sign-in, /sign-up, /change-password etc. (3 req / 10s); enabling here
+  // makes protection explicit and active in dev too. NOTE: the store is
+  // in-memory (resets per instance). For multi-instance deployments add
+  // `secondaryStorage` (e.g. Redis/Upstash) so counters are shared.
+  rateLimit: {
+    enabled: true,
+  },
+  // Lock CORS to our own origin for the state-changing POST endpoints.
+  trustedOrigins: [baseUrl],
+  session: {
+    // Sessions live a week; endpoints considered sensitive (change password,
+    // change email) require a "fresh" sign-in if the session is older than a day.
+    expiresIn: 60 * 60 * 24 * 7,
+    freshAge: 60 * 60 * 24,
+    // Short-lived signed cache cookie so getSession doesn't hit the DB on
+    // every request.
+    cookieCache: {
+      enabled: true,
+      maxAge: 60 * 5,
+    },
+  },
   plugins: [
     username({
-      minUsernameLength: 4,
-      maxUsernameLength: 10,
-      usernameValidator: (value) => {
-        const normalized = value.toLowerCase();
-        // Regex check matching client-side (only letters and numbers)
-        if (!/^[a-zA-Z0-9]+$/.test(value)) {
-          return false;
-        }
-        // Partial match check for restricted usernames
-        for (const pattern of restrictedUsernames) {
-          if (normalized.includes(pattern.toLowerCase())) {
-            return false;
-          }
-        }
-        return true;
-      },
+      minUsernameLength: USERNAME_MIN_LENGTH,
+      maxUsernameLength: USERNAME_MAX_LENGTH,
+      // Shared with the client zod schemas — single source of truth.
+      usernameValidator: (value) => isValidUsername(value),
       usernameNormalization: (value) => value.toLowerCase(),
     }),
     admin(),
   ],
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
+    // Users must verify their email before they can sign in.
+    requireEmailVerification: true,
+    minPasswordLength: PASSWORD_MIN_LENGTH,
+    maxPasswordLength: PASSWORD_MAX_LENGTH,
+    // Reset links expire quickly; the email instructs the same.
+    resetPasswordTokenExpiresIn: 60 * 15,
+    sendResetPassword: async ({ user, url }, _request) => {
+      try {
+        await sendResetPasswordEmail({
+          to: user.email,
+          name: user.name,
+          url,
+        });
+      } catch (error) {
+        console.error("Failed to send reset password email:", error);
+      }
+    },
   },
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }, _request) => {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
       // Ensure the verification redirect lands on /verify-email?verified=true after verifying the token
       const verificationUrl = url.includes("callbackURL=")
         ? url
@@ -52,6 +80,8 @@ export const auth = betterAuth({
           url: verificationUrl,
         });
       } catch (error) {
+        // Account exists but the email failed to send — the /verify-email
+        // page's resend button is the recovery path.
         console.error("Failed to send verification email:", error);
       }
     },
@@ -60,7 +90,7 @@ export const auth = betterAuth({
     additionalFields: {
       role: {
         type: "string",
-        defaultValue: "user",
+        defaultValue: "member",
         required: false,
         input: false,
       },

@@ -1,19 +1,15 @@
 import z from "zod/v4";
 
+// Length-based policy (NIST SP 800-63B): length beats composition rules.
+// 72-char cap stays safely under common hashing input limits.
+export const PASSWORD_MIN_LENGTH = 12;
+export const PASSWORD_MAX_LENGTH = 72;
+
 export const passwordSchema = z
   .string()
-  .min(8, {
-    message: "Password must be at least 8 characters long.",
+  .min(PASSWORD_MIN_LENGTH, {
+    message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`,
   })
-  .regex(/[A-Z]/, {
-    message: "Password must contain at least one uppercase letter.",
-  })
-  .regex(/[a-z]/, {
-    message: "Password must contain at least one lowercase letter.",
-  })
-  .regex(/[0-9]/, {
-    message: "Password must contain at least one number.",
-  })
-  .regex(/[^A-Za-z0-9]/, {
-    message: "Password must contain at least one symbol.",
+  .max(PASSWORD_MAX_LENGTH, {
+    message: `Password must be at most ${PASSWORD_MAX_LENGTH} characters.`,
   });

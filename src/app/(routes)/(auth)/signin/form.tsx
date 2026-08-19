@@ -12,8 +12,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "@/lib/auth/client";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { SignInSchema, SignInValues } from "./validate";
 import InputStartIcon from "../components/input-start-icon";
@@ -70,9 +68,10 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
             <FormItem>
               <FormControl>
                 <InputStartIcon icon={AtSign}>
-                  <Input
+                  <input
+                    type="text"
                     placeholder="Username"
-                    className={cn("peer ps-9", getInputClassName("username"))}
+                    className={cn("signal-input peer ps-9 disabled:opacity-50", getInputClassName("username"))}
                     disabled={isPending}
                     {...field}
                   />
@@ -90,9 +89,10 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
             <FormItem>
               <FormControl>
                 <InputPasswordContainer>
-                  <Input
+                  <input
+                    type="password"
                     id="input-23"
-                    className={cn("pe-9", getInputClassName("password"))}
+                    className={cn("signal-input pe-9 disabled:opacity-50", getInputClassName("password"))}
                     placeholder="Password"
                     disabled={isPending}
                     {...field}
@@ -103,7 +103,11 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isPending} className="mt-5 w-full rounded-full bg-manara-teal font-display text-sm font-bold normal-case tracking-normal text-white shadow-subtle hover:bg-manara-teal/90 hover:-translate-y-0.5">
+        <button
+          type="submit"
+          disabled={isPending}
+          className="signal-btn-primary mt-5 w-full disabled:pointer-events-none disabled:opacity-60"
+        >
           {isPending ? (
             <>
               <Loader2 className="mr-2 size-4 animate-spin" />
@@ -112,7 +116,7 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
           ) : (
             "Sign In with Username"
           )}
-        </Button>
+        </button>
       </form>
     </Form>
   );

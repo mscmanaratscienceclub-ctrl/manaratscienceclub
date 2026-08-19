@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import "tailwindcss" source("../");
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -55,6 +55,28 @@
   --manara-blue: #60a5fa;
   --manara-red: #dc2626;
   --manara-green: #059669;
+  --manara-teal-deep: #002f36;
+  --manara-teal-bright: #007a8a;
+
+  /* ── Interstellar home tokens ─────────────────────────────────── */
+  --space-black: #0c0705;
+  --space-deep: #0a0605;
+  --space-blue: #241619;
+  --space-ink: #17100b;
+  --space-ivory: #f5ece3;
+  --space-muted: #b7a99e;
+  --space-amber: #e0a468;
+  --space-amber-bright: #ffe3bd;
+  --space-sage: #a9b28c;
+  --space-plum: #33181f;
+  --space-line: #ffffff2b;
+  --space-line-soft: #ffffff18;
+
+  /* ── Signal console tokens (tesseract home) ─────────────────── */
+  --ion: #ff7053;
+  --ion-bright: #ffd9cd;
+  --ion-deep: #26100a;
+  --ion-line: #ff705340;
 
   --sh-academic: 0 18px 50px rgba(0, 95, 107, 0.12);
   --sh-subtle: 0 10px 30px rgba(20, 35, 38, 0.08);
@@ -144,6 +166,25 @@
   --color-cream: var(--cream);
   --color-ink: var(--ink);
   --color-surface: var(--surface);
+  --color-space-black: var(--space-black);
+  --color-space-deep: var(--space-deep);
+  --color-space-blue: var(--space-blue);
+  --color-space-ink: var(--space-ink);
+  --color-space-ivory: var(--space-ivory);
+  --color-space-muted: var(--space-muted);
+  --color-space-amber: var(--space-amber);
+  --color-space-amber-bright: var(--space-amber-bright);
+  --color-space-sage: var(--space-sage);
+  --color-space-plum: var(--space-plum);
+  --color-space-line: var(--space-line);
+  --color-space-line-soft: var(--space-line-soft);
+  --color-ion: var(--ion);
+  --color-ion-bright: var(--ion-bright);
+  --color-ion-deep: var(--ion-deep);
+  --color-ion-line: var(--ion-line);
+  --font-space-display: var(--font-cormorant);
+  --font-space-body: var(--font-dm-sans);
+  --font-voyage: var(--font-unbounded);
 
   --shadow-academic: var(--sh-academic);
   --shadow-subtle: var(--sh-subtle);
@@ -189,6 +230,61 @@ html {
   .fade-up-delay {
     animation: fadeUp 0.7s ease 0.12s both;
   }
+  .space-canvas canvas {
+    display: block;
+    height: 100%;
+    width: 100%;
+  }
+  .space-canvas canvas[data-webgl="fallback"] {
+    background:
+      radial-gradient(circle at 75% 48%, var(--space-amber-bright) 0 1%, var(--space-amber) 5%, transparent 18%),
+      radial-gradient(ellipse at 73% 49%, transparent 0 18%, color-mix(in srgb, var(--space-amber) 72%, transparent) 19%, transparent 31%),
+      radial-gradient(circle at 70% 50%, var(--space-deep) 0 13%, transparent 14%),
+      var(--space-deep);
+  }
+  .space-hero-wash {
+    background:
+      linear-gradient(90deg, var(--space-deep) 0%, color-mix(in srgb, var(--space-deep) 90%, transparent) 30%, transparent 76%),
+      linear-gradient(0deg, var(--space-deep) 0%, transparent 25%, transparent 78%, var(--space-deep) 100%);
+  }
+  .space-grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+    mix-blend-mode: screen;
+    opacity: 0.05;
+  }
+  .signal-atmosphere {
+    background:
+      radial-gradient(52rem 36rem at 68% 40%, color-mix(in srgb, var(--ion) 15%, transparent), transparent 72%),
+      radial-gradient(72rem 48rem at 8% 94%, color-mix(in srgb, var(--space-plum) 62%, transparent), transparent 70%),
+      radial-gradient(46rem 32rem at 22% 8%, color-mix(in srgb, var(--space-amber) 9%, transparent), transparent 66%),
+      radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--ion-deep) 92%, transparent), transparent 62%);
+  }
+  .signal-vignette {
+    background: radial-gradient(130% 100% at 50% 42%, transparent 52%, color-mix(in srgb, var(--space-deep) 85%, transparent) 100%);
+  }
+  .space-fallback {
+    background:
+      radial-gradient(circle at 75% 48%, var(--space-amber-bright) 0 1%, var(--space-amber) 5%, transparent 18%),
+      radial-gradient(ellipse at 73% 49%, transparent 0 18%, color-mix(in srgb, var(--space-amber) 72%, transparent) 19%, transparent 31%),
+      radial-gradient(circle at 70% 50%, var(--space-deep) 0 13%, transparent 14%),
+      var(--space-deep);
+  }
+}
+
+/* ── Signal form helpers (registered utilities so ps-9/h-auto etc. can override) ── */
+@utility signal-label {
+  @apply font-mono text-[0.64rem] font-medium tracking-[0.24em] text-space-muted uppercase;
+}
+@utility signal-input {
+  @apply w-full border border-space-line-soft bg-space-deep px-4 py-3 text-sm text-space-ivory transition-colors placeholder:text-space-muted/60 focus:border-ion focus:outline-none;
+}
+@utility signal-btn-primary {
+  @apply inline-flex items-center justify-center gap-2 border border-ion px-6 py-3 font-mono text-[0.68rem] font-semibold tracking-[0.24em] text-space-black uppercase transition-all active:translate-y-px hover:brightness-110;
+  background: linear-gradient(120deg, var(--ion) 15%, color-mix(in srgb, var(--ion) 45%, var(--space-amber)) 90%);
+}
+@utility signal-btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 border border-ion-line px-6 py-3 font-mono text-[0.68rem] font-semibold tracking-[0.24em] text-ion uppercase transition-colors hover:border-ion hover:text-ion-bright active:translate-y-px;
 }
 
 /* ── TipTap editor ──────────────────────────────────────────────── */
@@ -207,86 +303,168 @@ html {
 
 /* ── Blog / CMS prose content ───────────────────────────────────── */
 .blog-content {
-  @apply font-body text-ink/80;
   overflow-wrap: break-word;
 }
-.blog-content h1 {
-  @apply font-display text-ink mt-12 mb-5 text-4xl font-bold leading-tight sm:text-5xl;
+
+/* Dark SIGNAL reading surface — public article page */
+.blog-content:not(.editor) {
+  @apply font-space-body text-space-ivory/80;
 }
-.blog-content h2 {
-  @apply font-display text-ink mt-12 mb-4 text-3xl font-bold leading-tight sm:text-4xl;
+.blog-content:not(.editor) h1 {
+  @apply font-voyage mt-12 mb-5 text-3xl leading-tight font-bold tracking-tight text-space-ivory uppercase sm:text-4xl;
 }
-.blog-content h2:first-of-type {
+.blog-content:not(.editor) h2 {
+  @apply font-voyage mt-12 mb-4 text-2xl leading-tight font-bold tracking-tight text-space-ivory uppercase sm:text-3xl;
+}
+.blog-content:not(.editor) h2:first-of-type {
   @apply mt-0;
 }
-.blog-content h3 {
-  @apply font-display text-ink mt-10 mb-3 text-2xl font-bold leading-tight sm:text-3xl;
+.blog-content:not(.editor) h3 {
+  @apply font-voyage mt-10 mb-3 text-xl leading-tight font-bold tracking-tight text-space-ivory uppercase sm:text-2xl;
 }
-.blog-content h4 {
-  @apply font-display text-ink mt-8 mb-3 text-xl font-bold leading-tight;
+.blog-content:not(.editor) h4 {
+  @apply font-voyage mt-8 mb-3 text-lg leading-tight font-bold tracking-tight text-space-ivory uppercase;
 }
-.blog-content p {
-  @apply text-ink/75 mt-5 text-lg leading-8;
+.blog-content:not(.editor) p {
+  @apply mt-5 text-lg leading-8 text-space-ivory/75;
 }
-.blog-content p:first-of-type {
+.blog-content:not(.editor) p:first-of-type {
   @apply mt-0;
 }
-.blog-content ul {
+.blog-content:not(.editor) ul {
   @apply mt-5 list-none space-y-3;
 }
-.blog-content ul li {
-  @apply text-ink/75 flex gap-3 leading-7;
+.blog-content:not(.editor) ul li {
+  @apply flex gap-3 leading-7 text-space-ivory/75;
 }
-.blog-content ul li::before {
+.blog-content:not(.editor) ul li::before {
+  content: "●";
+  @apply mt-1 shrink-0 text-xs text-ion;
+}
+.blog-content:not(.editor) ol {
+  @apply mt-5 list-inside list-decimal space-y-3;
+}
+.blog-content:not(.editor) ol li {
+  @apply leading-7 text-space-ivory/75;
+}
+.blog-content:not(.editor) ol li::marker {
+  @apply text-ion;
+}
+.blog-content:not(.editor) blockquote {
+  @apply my-8 border-l border-ion pl-5 leading-8 text-space-muted italic;
+}
+.blog-content:not(.editor) blockquote p {
+  @apply mt-0;
+}
+.blog-content:not(.editor) blockquote p::first-letter {
+  @apply float-none text-inherit;
+}
+.blog-content:not(.editor) pre {
+  @apply bg-ion-deep my-8 overflow-x-auto border border-space-line-soft p-5 text-sm leading-6 text-ion-bright;
+}
+.blog-content:not(.editor) code {
+  @apply bg-ion/10 px-1.5 py-0.5 font-mono text-sm text-ion;
+}
+.blog-content:not(.editor) pre code {
+  @apply bg-transparent p-0 text-ion-bright;
+}
+.blog-content:not(.editor) strong {
+  @apply font-bold text-space-ivory;
+}
+.blog-content:not(.editor) a {
+  @apply text-ion decoration-ion-line underline underline-offset-2 transition-all hover:text-ion-bright hover:decoration-ion;
+}
+.blog-content:not(.editor) hr {
+  @apply my-10 border-space-line-soft;
+}
+.blog-content:not(.editor) img {
+  @apply my-8 max-w-full border border-space-line-soft;
+}
+.blog-content:not(.editor) iframe {
+  @apply my-8 aspect-video w-full border border-space-line-soft;
+}
+
+/* Light editing surface — CMS TipTap editor */
+.blog-content.editor {
+  @apply font-body text-ink/80;
+}
+.blog-content.editor h1 {
+  @apply font-display text-ink mt-12 mb-5 text-4xl leading-tight font-bold sm:text-5xl;
+}
+.blog-content.editor h2 {
+  @apply font-display text-ink mt-12 mb-4 text-3xl leading-tight font-bold sm:text-4xl;
+}
+.blog-content.editor h2:first-of-type {
+  @apply mt-0;
+}
+.blog-content.editor h3 {
+  @apply font-display text-ink mt-10 mb-3 text-2xl leading-tight font-bold sm:text-3xl;
+}
+.blog-content.editor h4 {
+  @apply font-display text-ink mt-8 mb-3 text-xl leading-tight font-bold;
+}
+.blog-content.editor p {
+  @apply mt-5 text-lg leading-8 text-ink/75;
+}
+.blog-content.editor p:first-of-type {
+  @apply mt-0;
+}
+.blog-content.editor ul {
+  @apply mt-5 list-none space-y-3;
+}
+.blog-content.editor ul li {
+  @apply flex gap-3 leading-7 text-ink/75;
+}
+.blog-content.editor ul li::before {
   content: "●";
   @apply text-manara-teal mt-1 shrink-0 text-xs;
 }
-.blog-content ol {
+.blog-content.editor ol {
   @apply mt-5 list-inside list-decimal space-y-3;
 }
-.blog-content ol li {
-  @apply text-ink/75 leading-7;
+.blog-content.editor ol li {
+  @apply leading-7 text-ink/75;
 }
-.blog-content blockquote {
-  @apply border-manara-teal text-ink/60 my-8 border-l-4 pl-5 italic leading-8;
+.blog-content.editor blockquote {
+  @apply border-manara-teal my-8 border-l-4 pl-5 leading-8 text-ink/60 italic;
 }
-.blog-content blockquote p {
+.blog-content.editor blockquote p {
   @apply mt-0;
 }
-.blog-content blockquote p::first-letter {
+.blog-content.editor blockquote p::first-letter {
   @apply float-none text-inherit;
 }
-.blog-content pre {
+.blog-content.editor pre {
   @apply bg-ink my-8 overflow-x-auto rounded-2xl p-5 text-sm leading-6 text-white shadow-lg;
 }
-.blog-content code {
+.blog-content.editor code {
   @apply bg-manara-teal/10 text-manara-teal rounded-lg px-1.5 py-0.5 font-mono text-sm;
 }
-.blog-content pre code {
+.blog-content.editor pre code {
   @apply bg-transparent p-0 text-white;
 }
-.blog-content strong {
+.blog-content.editor strong {
   @apply text-ink font-bold;
 }
-.blog-content a {
-  @apply text-manara-teal hover:text-manara-teal/80 underline underline-offset-2 decoration-manara-teal/30 hover:decoration-manara-teal/60 transition-all;
+.blog-content.editor a {
+  @apply text-manara-teal decoration-manara-teal/30 underline underline-offset-2 transition-all hover:text-manara-teal/80 hover:decoration-manara-teal/60;
 }
-.blog-content hr {
+.blog-content.editor hr {
   @apply my-10 border-manara-teal/10;
 }
-.blog-content img {
-  @apply my-8 max-w-full rounded-2xl shadow-subtle;
+.blog-content.editor img {
+  @apply shadow-subtle my-8 max-w-full rounded-2xl;
 }
-.blog-content iframe {
-  @apply my-8 aspect-video w-full rounded-2xl shadow-subtle;
+.blog-content.editor iframe {
+  @apply shadow-subtle my-8 aspect-video w-full rounded-2xl;
 }
 
 /* ── Footer ──────────────────────────────────────────────────── */
 .bg-footer {
-  background: linear-gradient(135deg, #002f36 0%, #005f6b 60%, #007a8a 100%);
+  background: linear-gradient(135deg, var(--manara-teal-deep) 0%, var(--manara-teal) 60%, var(--manara-teal-bright) 100%);
 }
 .bg-footer-accent {
-  background: linear-gradient(90deg, #ffb703, #ec4899, #7c3aed, #005f6b);
+  background: linear-gradient(90deg, var(--manara-yellow), var(--manara-pink), var(--manara-purple), var(--manara-teal));
 }
 @keyframes fadeUp {
   from {

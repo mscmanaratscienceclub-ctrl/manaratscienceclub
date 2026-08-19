@@ -6,9 +6,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient } from "@/lib/auth/client";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
@@ -28,7 +25,14 @@ const ProfileSchema = z.object({
 
 type ProfileValues = z.infer<typeof ProfileSchema>;
 
-export default function ProfileForm({ user }: { user: any }) {
+export type ProfileUser = {
+  name?: string | null;
+  username?: string | null;
+  description?: string | null;
+  image?: string | null;
+};
+
+export default function ProfileForm({ user }: { user: ProfileUser }) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -150,19 +154,18 @@ export default function ProfileForm({ user }: { user: any }) {
       if (response.error) {
         toast.error(response.error.message);
       } else {
-        const usernameResponse = await authClient.updateUser({
-          username: data.username,
-        } as any);
-
+        // "description" is a server-side additionalField (input: true) that the
+        // auth client cannot infer, so the payload is cast to the known shape.
         await authClient.updateUser({
-          description: data.description,
-        } as any);
+          username: data.username,
+          description: data.description ?? "",
+        } as Parameters<typeof authClient.updateUser>[0]);
 
         toast.success("Profile updated successfully");
         setImageFile(null);
         router.refresh();
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to update profile");
     } finally {
       setIsPending(false);
@@ -174,20 +177,20 @@ export default function ProfileForm({ user }: { user: any }) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="flex flex-col items-center gap-4 sm:flex-row">
           <div className="relative">
-            <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-manara-teal/20 bg-cream">
+            <div className="flex size-24 items-center justify-center overflow-hidden border border-dashed border-space-line-soft bg-space-deep">
               {imagePreview ? (
                 <img src={imagePreview} alt="Profile" className="h-full w-full object-cover" />
               ) : (
-                <ImagePlus className="h-8 w-8 text-manara-teal/40" />
+                <ImagePlus className="size-8 text-space-muted/60" />
               )}
             </div>
             {imagePreview && (
               <button
                 type="button"
                 onClick={removeImage}
-                className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white shadow-sm hover:bg-red-600"
+                className="absolute -right-1 -top-1 flex size-6 items-center justify-center border border-space-amber/40 bg-space-deep text-space-amber transition-colors hover:border-space-amber"
               >
-                <X className="h-3 w-3" />
+                <X className="size-3" />
               </button>
             )}
           </div>
@@ -202,12 +205,12 @@ export default function ProfileForm({ user }: { user: any }) {
             />
             <label
               htmlFor="profile-image-input"
-              className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-manara-teal/20 bg-surface px-5 py-2 text-sm font-semibold text-manara-teal transition-colors hover:bg-manara-teal/5"
+              className="signal-btn-ghost cursor-pointer"
             >
-              <ImagePlus className="h-4 w-4" />
+              <ImagePlus className="size-4" />
               {user.image ? "Change Photo" : "Upload Photo"}
             </label>
-            <p className="mt-1.5 text-xs text-ink/40">PNG, JPG, WebP or GIF (max 5MB)</p>
+            <p className="mt-1.5 text-xs text-space-muted">PNG, JPG, WebP or GIF (max 5MB)</p>
           </div>
         </div>
 
@@ -216,9 +219,9 @@ export default function ProfileForm({ user }: { user: any }) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Full Name</FormLabel>
+              <FormLabel className="signal-label">Full Name</FormLabel>
               <FormControl>
-                <Input placeholder="John Doe" disabled={isPending} {...field} />
+                <input placeholder="John Doe" className="signal-input disabled:opacity-50" disabled={isPending} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -229,9 +232,9 @@ export default function ProfileForm({ user }: { user: any }) {
           name="username"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Username</FormLabel>
+              <FormLabel className="signal-label">Username</FormLabel>
               <FormControl>
-                <Input placeholder="johndoe" disabled={isPending} {...field} />
+                <input placeholder="johndoe" className="signal-input disabled:opacity-50" disabled={isPending} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -242,22 +245,26 @@ export default function ProfileForm({ user }: { user: any }) {
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Bio / Description</FormLabel>
+              <FormLabel className="signal-label">Bio / Description</FormLabel>
               <FormControl>
-                <Textarea placeholder="Tell us about yourself..." className="resize-none h-24" disabled={isPending} {...field} />
+                <textarea placeholder="Tell us about yourself..." className="signal-input h-24 resize-none disabled:opacity-50" disabled={isPending} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         <div className="pt-4">
-          <Button type="submit" disabled={isPending || isUploading} className="bg-manara-teal hover:bg-manara-teal/90 text-white font-bold py-2 px-8 rounded-full shadow-subtle transition-all">
+          <button
+            type="submit"
+            disabled={isPending || isUploading}
+            className="signal-btn-primary disabled:pointer-events-none disabled:opacity-60"
+          >
             {isPending || isUploading ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+              <><Loader2 className="mr-2 size-4 animate-spin" /> Saving...</>
             ) : (
               "Save Changes"
             )}
-          </Button>
+          </button>
         </div>
       </form>
     </Form>

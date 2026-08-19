@@ -119,34 +119,34 @@ export default async function BlogPostPage({ params }: PageProps) {
   const displayAvatar = post.customAuthorAvatar ?? null;
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-space-deep">
       {/* Header */}
-      <section className="bg-surface px-4 py-8 sm:py-12 sm:px-6 lg:py-16">
+      <section className="border-b border-space-line-soft px-4 py-8 sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-6xl">
           <Link
             href="/blogs"
-            className="group mb-6 inline-flex items-center gap-1.5 rounded-full border border-manara-teal/10 bg-cream px-4 py-2 text-sm font-medium text-manara-teal transition-all hover:bg-manara-teal hover:text-white"
+            className="group mb-6 inline-flex items-center gap-1.5 border border-ion-line px-4 py-2 font-mono text-[0.64rem] font-medium uppercase tracking-[0.2em] text-ion transition-colors hover:border-ion hover:text-ion-bright"
           >
-            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+            <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
             Back to articles
           </Link>
-          <h1 className="mt-4 font-display text-4xl font-bold leading-tight text-ink sm:text-5xl lg:text-6xl">
+          <h1 className="mt-4 font-voyage text-3xl font-bold uppercase leading-[1.12] tracking-tight text-space-ivory sm:text-4xl lg:text-5xl">
             {post.title}
           </h1>
-          <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-ink/50">
+          <div className="mt-4 flex flex-wrap items-center gap-4 font-mono text-[0.64rem] uppercase tracking-[0.16em] text-space-muted">
             <span className="inline-flex items-center gap-1.5">
-              <Calendar className="h-4 w-4" />
+              <Calendar className="size-4 text-ion" />
               {formatDate(post.publishedAt)}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Clock className="h-4 w-4" />
+              <Clock className="size-4 text-ion" />
               {readingTime} min read
             </span>
           </div>
           {post.tags && post.tags.length > 0 && (
             <div className="mt-5 flex flex-wrap gap-2">
               {post.tags.map((tag: string) => (
-                <span key={tag} className="rounded-full bg-manara-teal/10 px-3 py-1 font-display text-xs font-bold text-manara-teal">
+                <span key={tag} className="border border-ion-line bg-ion/10 px-3 py-1 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-ion">
                   {tag}
                 </span>
               ))}
@@ -170,13 +170,13 @@ export default async function BlogPostPage({ params }: PageProps) {
           <aside className="w-full shrink-0 lg:w-72 xl:w-80">
             <div className="space-y-6 lg:sticky lg:top-24">
               {/* Author card — table style */}
-              <div className="rounded-2xl border border-manara-teal/10 bg-surface shadow-subtle">
-                <div className="border-b border-manara-teal/10 px-5 py-3">
-                  <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink/50">Author</h3>
+              <div className="border border-space-line-soft bg-space-deep/60">
+                <div className="border-b border-space-line-soft px-5 py-3">
+                  <h3 className="font-mono text-[0.64rem] font-semibold uppercase tracking-[0.24em] text-space-muted">Author</h3>
                 </div>
                 <div className="px-5 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-manara-teal text-sm font-bold text-white">
+                    <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden border border-ion-line bg-ion-deep font-mono text-sm font-bold text-ion-bright">
                       {displayAvatar ? (
                         <Image src={displayAvatar} alt={displayName ?? ""} width={40} height={40} className="h-full w-full object-cover" />
                       ) : (
@@ -184,28 +184,28 @@ export default async function BlogPostPage({ params }: PageProps) {
                       )}
                     </div>
                     <div>
-                      <p className="font-display text-base font-bold text-ink">{displayName}</p>
-                      <p className="text-xs text-manara-teal">Author, MSC</p>
+                      <p className="font-voyage text-sm font-bold uppercase tracking-tight text-space-ivory">{displayName}</p>
+                      <p className="font-mono text-[0.6rem] uppercase tracking-[0.16em] text-ion">Author, MSC</p>
                       {post.customAuthorBio && (
-                        <p className="mt-0.5 text-[11px] leading-tight text-ink/50">{post.customAuthorBio}</p>
+                        <p className="mt-0.5 text-[11px] leading-tight text-space-muted">{post.customAuthorBio}</p>
                       )}
                     </div>
                   </div>
                 </div>
-                <div className="border-t border-manara-teal/10">
+                <div className="border-t border-space-line-soft">
                   <table className="w-full text-sm">
                     <tbody>
-                      <tr className="border-b border-manara-teal/5">
-                        <td className="px-5 py-2.5 font-medium text-ink/50">Published</td>
-                        <td className="px-5 py-2.5 text-ink/70">{formatDate(post.publishedAt)}</td>
+                      <tr className="border-b border-space-line-soft">
+                        <td className="px-5 py-2.5 font-mono text-[0.6rem] uppercase tracking-[0.16em] text-space-muted">Published</td>
+                        <td className="px-5 py-2.5 text-space-ivory/75">{formatDate(post.publishedAt)}</td>
                       </tr>
-                      <tr className="border-b border-manara-teal/5">
-                        <td className="px-5 py-2.5 font-medium text-ink/50">Read time</td>
-                        <td className="px-5 py-2.5 text-ink/70">{readingTime} min</td>
+                      <tr className="border-b border-space-line-soft">
+                        <td className="px-5 py-2.5 font-mono text-[0.6rem] uppercase tracking-[0.16em] text-space-muted">Read time</td>
+                        <td className="px-5 py-2.5 text-space-ivory/75">{readingTime} min</td>
                       </tr>
                       <tr>
-                        <td className="px-5 py-2.5 font-medium text-ink/50">Type</td>
-                        <td className="px-5 py-2.5 text-ink/70">Research Article</td>
+                        <td className="px-5 py-2.5 font-mono text-[0.6rem] uppercase tracking-[0.16em] text-space-muted">Type</td>
+                        <td className="px-5 py-2.5 text-space-ivory/75">Research Article</td>
                       </tr>
                     </tbody>
                   </table>
@@ -221,15 +221,12 @@ export default async function BlogPostPage({ params }: PageProps) {
 
       {/* Related */}
       {relatedPosts.length > 0 && (
-        <section className="border-t border-manara-teal/10 bg-surface py-16">
+        <section className="border-t border-space-line-soft bg-space-ink/60 py-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="mb-8 flex items-center justify-between">
-              <h2 className="font-display text-xl font-bold text-ink">Related Articles</h2>
-              <Link
-                href="/blogs"
-                className="inline-flex items-center gap-1.5 rounded-full bg-manara-teal px-4 py-2 font-display text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:shadow-academic"
-              >
-                View All <ArrowLeft className="h-4 w-4 rotate-180" />
+              <h2 className="font-voyage text-xl font-bold uppercase tracking-tight text-space-ivory">Related Articles</h2>
+              <Link href="/blogs" className="signal-btn-ghost !px-4 !py-2">
+                View All <ArrowLeft className="size-4 rotate-180" />
               </Link>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -237,17 +234,17 @@ export default async function BlogPostPage({ params }: PageProps) {
                 <Link
                   key={related.id}
                   href={`/blogs/${related.slug}`}
-                  className="group rounded-2xl border border-manara-teal/10 bg-cream p-6 transition-all hover:-translate-y-1 hover:shadow-academic"
+                  className="group border border-space-line-soft bg-space-deep/60 p-6 transition-colors hover:border-ion-line"
                 >
-                  <h3 className="font-display text-lg font-bold text-ink transition-colors group-hover:text-manara-teal line-clamp-2">
+                  <h3 className="line-clamp-2 font-voyage text-base font-bold uppercase leading-snug tracking-tight text-space-ivory transition-colors group-hover:text-ion-bright">
                     {related.title}
                   </h3>
-                  <p className="mt-2 font-body text-sm leading-relaxed text-ink/60 line-clamp-2">
+                  <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-space-muted">
                     {related.excerpt}
                   </p>
-                  <div className="mt-4 flex items-center gap-3 text-xs text-ink/40">
+                  <div className="mt-4 flex items-center gap-3 font-mono text-[0.6rem] uppercase tracking-[0.14em] text-space-muted">
                     <span>{related.customAuthorName ?? related.authorName}</span>
-                    <span className="text-ink/20">&middot;</span>
+                    <span className="text-space-line">&middot;</span>
                     <span>{related.publishedAt ? formatDate(related.publishedAt) : ""}</span>
                   </div>
                 </Link>

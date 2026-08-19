@@ -14,5 +14,5 @@ export const metadata = {
 export default async function BlogsPage() {
   const posts = await getPublishedPosts(50, 0);
 
-  return <BlogsContent posts={posts as any} />;
+  return <BlogsContent posts={posts} />;
 }

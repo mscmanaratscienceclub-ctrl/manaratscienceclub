@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Sparkles } from "lucide-react";
 import CampusAmbassadorForm from "./campus-ambassador-form";
 
 export const metadata: Metadata = {
@@ -9,21 +10,19 @@ export const metadata: Metadata = {
 
 export default function RegisterPage() {
   return (
-    <main className="min-h-screen bg-cream">
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-manara-teal/10 bg-cream px-4 py-16 text-center">
-        {/* Background decoration */}
-        <div className="pointer-events-none absolute inset-0 dot-grid opacity-40" />
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-manara-teal/5 blur-3xl" />
+    <main className="min-h-screen bg-space-deep">
+      <section className="relative overflow-hidden border-b border-space-line-soft">
+        <div aria-hidden="true" className="signal-atmosphere pointer-events-none absolute inset-0" />
+        <div aria-hidden="true" className="space-grain pointer-events-none absolute inset-0" />
 
-        <div className="relative">
-          <span className="inline-flex items-center gap-2 rounded-full bg-manara-teal/10 px-4 py-1.5 font-display text-sm font-semibold text-manara-teal">
-            🌟 Open Applications
+        <div className="relative mx-auto w-full max-w-[1440px] px-5 py-16 sm:px-8 lg:px-16">
+          <span className="inline-flex items-center gap-2 border border-ion-line px-4 py-1.5 font-mono text-[0.64rem] font-semibold uppercase tracking-[0.24em] text-ion">
+            <Sparkles className="size-3.5" /> Open Applications
           </span>
-          <h1 className="mt-4 font-display text-4xl font-bold text-ink md:text-5xl lg:text-6xl">
+          <h1 className="mt-5 max-w-[40rem] font-voyage text-3xl font-bold uppercase leading-[1.08] tracking-tight text-space-ivory sm:text-4xl lg:text-5xl">
             Campus Ambassador
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl font-body text-base leading-relaxed text-ink/60 md:text-lg">
+          <p className="mt-5 max-w-[36rem] text-base leading-relaxed text-space-muted md:text-lg">
             Represent Manarat Science Club at your school — inspire fellow
             students, organise activities, and be the bridge between curiosity
             and discovery.
@@ -31,8 +30,7 @@ export default function RegisterPage() {
         </div>
       </section>
 
-      {/* Form section */}
-      <section className="mx-auto max-w-2xl px-4 py-14 sm:px-6">
+      <section className="mx-auto w-full max-w-2xl px-4 py-14 sm:px-6">
         <CampusAmbassadorForm />
       </section>
     </main>

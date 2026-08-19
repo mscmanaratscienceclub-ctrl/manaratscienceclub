@@ -4,7 +4,6 @@ import { useSearchParams } from "next/navigation";
 import { useState, useEffect, useTransition, Suspense } from "react";
 import Link from "next/link";
 import { sendVerificationEmail } from "@/lib/auth/client";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { CheckCircle2, Mail, Loader2, ArrowRight, RefreshCw } from "lucide-react";
 
@@ -48,24 +47,19 @@ function VerifyEmailContent() {
   if (verifiedParam) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-12">
-        <div className="flex w-full max-w-md flex-col items-center text-center rounded-2xl border border-manara-teal/10 bg-surface p-8 shadow-subtle">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
-            <CheckCircle2 className="h-10 w-10" />
+        <div className="flex w-full max-w-md flex-col items-center border border-space-line-soft bg-space-deep/70 p-8 text-center backdrop-blur-sm">
+          <div className="mb-4 flex size-16 items-center justify-center border border-ion-line bg-ion/10 text-ion-bright">
+            <CheckCircle2 className="size-10" />
           </div>
-          <h1 className="font-display text-2xl font-bold text-ink">Email Verified!</h1>
-          <p className="mt-2 font-body text-sm text-ink/70">
+          <h1 className="font-voyage text-xl font-bold uppercase tracking-tight text-space-ivory">Email Verified!</h1>
+          <p className="mt-2 text-sm text-space-muted">
             Thank you for verifying your email address. Your account is now fully active.
           </p>
           <div className="mt-6 w-full">
-            <Button
-              asChild
-              className="w-full rounded-full bg-manara-teal font-display text-sm font-bold text-white shadow-subtle hover:bg-manara-teal/90"
-            >
-              <Link href="/">
-                Go to Homepage
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
+            <Link href="/" className="signal-btn-primary w-full">
+              Go to Homepage
+              <ArrowRight className="ml-2 size-4" />
+            </Link>
           </div>
         </div>
       </div>
@@ -74,16 +68,16 @@ function VerifyEmailContent() {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4 py-12">
-      <div className="flex w-full max-w-md flex-col items-center text-center rounded-2xl border border-manara-teal/10 bg-surface p-8 shadow-subtle">
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-manara-teal/10 text-manara-teal">
-          <Mail className="h-9 w-9" />
+      <div className="flex w-full max-w-md flex-col items-center border border-space-line-soft bg-space-deep/70 p-8 text-center backdrop-blur-sm">
+        <div className="mb-4 flex size-16 items-center justify-center border border-ion-line bg-ion/10 text-ion">
+          <Mail className="size-9" />
         </div>
 
-        <h1 className="font-display text-2xl font-bold text-ink">Check Your Email</h1>
-        <p className="mt-2 font-body text-sm text-ink/70">
+        <h1 className="font-voyage text-xl font-bold uppercase tracking-tight text-space-ivory">Check Your Email</h1>
+        <p className="mt-2 text-sm text-space-muted">
           We have sent a verification link to{" "}
           {emailParam ? (
-            <span className="font-semibold text-ink">{emailParam}</span>
+            <span className="font-semibold text-space-ivory">{emailParam}</span>
           ) : (
             "your registered email address"
           )}
@@ -91,31 +85,31 @@ function VerifyEmailContent() {
         </p>
 
         <div className="mt-6 flex w-full flex-col gap-3">
-          <Button
+          <button
+            type="button"
             onClick={handleResendEmail}
             disabled={isPending || resendCooldown > 0 || !emailParam}
-            variant="outline"
-            className="w-full rounded-full border-manara-teal/20 font-display text-sm font-bold text-manara-teal hover:bg-manara-teal/5"
+            className="signal-btn-ghost w-full disabled:pointer-events-none disabled:opacity-60"
           >
             {isPending ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 size-4 animate-spin" />
                 Resending...
               </>
             ) : resendCooldown > 0 ? (
               `Resend link in ${resendCooldown}s`
             ) : (
               <>
-                <RefreshCw className="mr-2 h-4 w-4" />
+                <RefreshCw className="mr-2 size-4" />
                 Resend Verification Email
               </>
             )}
-          </Button>
+          </button>
 
           <div className="pt-2 text-center">
             <Link
               href="/signin"
-              className="font-display text-xs text-ink/50 hover:text-manara-teal"
+              className="font-mono text-xs uppercase tracking-[0.14em] text-space-muted transition-colors hover:text-ion"
             >
               Return to Sign In
             </Link>
@@ -131,7 +125,7 @@ export default function VerifyEmailPage() {
     <Suspense
       fallback={
         <div className="flex flex-1 items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-manara-teal" />
+          <Loader2 className="size-8 animate-spin text-ion" />
         </div>
       }
     >

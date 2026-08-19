@@ -1,31 +1,27 @@
 import { passwordSchema } from "@/lib/auth/password";
-import { restrictedUsernames } from "@/lib/auth/usernames";
+import {
+  isValidUsername,
+  USERNAME_MAX_LENGTH,
+} from "@/lib/auth/usernames";
 import { z } from "zod";
 
 export const SignUpSchema = z
   .object({
     email: z
-    .email({ message: "Invalid email address" })
-    .min(1, { message: "Email is required" }),
+      .email({ message: "Invalid email address" })
+      .min(1, { message: "Email is required" }),
     name: z.string().min(4, { message: "Must be at least 4 characters" }),
     username: z
-    .string()
-    .min(4, { message: "Must be at least 4 characters" })
-    .regex(/^[a-zA-Z0-9]+$/, "Only letters and numbers allowed")
-    .refine(
-      (username) => {
-        for (const pattern of restrictedUsernames) {
-          if (username.toLowerCase().includes(pattern)) {
-            return false;
-          }
-        }
-        return true;
-      },
-      { message: "Username contains disallowed words" }
-    ),
+      .string()
+      .max(USERNAME_MAX_LENGTH, {
+        message: `Must be at most ${USERNAME_MAX_LENGTH} characters`,
+      })
+      .refine(isValidUsername, {
+        message: "4-20 letters/numbers only; reserved words aren't allowed",
+      }),
     password: passwordSchema,
-    confirmPassword: z.string().min(8, {
-      message: "Must be at least 8 characters",
+    confirmPassword: z.string().min(1, {
+      message: "Please confirm your password",
     }),
     gender: z.boolean().nonoptional(),
   })
