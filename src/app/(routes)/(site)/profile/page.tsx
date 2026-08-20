@@ -14,7 +14,7 @@ export default async function ProfilePage() {
   return (
     <div className="container mx-auto max-w-4xl px-5 py-16 lg:px-8">
       <p className="font-mono text-[0.64rem] font-medium uppercase tracking-[0.24em] text-ion">
-        {"// Operator file"}
+        {"Operator file"}
       </p>
       <h1 className="mb-8 mt-3 font-voyage text-3xl font-bold uppercase tracking-tight text-space-ivory">
         Your Profile

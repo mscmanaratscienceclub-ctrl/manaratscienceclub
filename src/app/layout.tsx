@@ -45,7 +45,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://manaratscience.club"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://manaratscience.club"),
   title: {
     default: "Manarat Science Club",
     template: "%s | Manarat Science Club",
@@ -65,10 +65,10 @@ export const metadata: Metadata = {
     siteName: "Manarat Science Club",
     images: [
       {
-        url: "/msc.svg",
-        width: 1200,
-        height: 630,
-        alt: "Manarat Science Club",
+        url: "/og.png",
+        width: 1792,
+        height: 1024,
+        alt: "Manarat Science Club — where curiosity meets creativity",
       },
     ],
     locale: "en_US",
@@ -79,7 +79,7 @@ export const metadata: Metadata = {
     title: "Manarat Science Club",
     description:
       "A prestigious high school science club where curiosity meets creativity — featuring robotics, astronomy, chemistry, biology, and student research.",
-    images: ["/msc.svg"],
+    images: ["/og.png"],
   },
 };
 

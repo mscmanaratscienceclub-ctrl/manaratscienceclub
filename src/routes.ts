@@ -5,11 +5,16 @@ export const publicRoutes: string[] = [
   "/blogs",
   "/events",
   "/opportunities",
+  "/robotics",
   "/join",
   "/register",
   "/verify-email",
   "/forgot-password",
   "/reset-password",
+  "/privacy-policy",
+  "/terms",
+  "/robots.txt",
+  "/sitemap.xml",
 ];
 
 // Patterns for dynamic public routes

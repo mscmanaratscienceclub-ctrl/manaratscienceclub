@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, FileText, Users, ExternalLink, LogOut, Atom, PenSquare, Tag } from "lucide-react";
+import { LayoutDashboard, FileText, Users, ExternalLink, LogOut, Atom, PenSquare, Tag, ShieldCheck } from "lucide-react";
 import { signOut } from "@/lib/auth/client";
 import { trackEvent, resetAnalytics } from "@/lib/analytics";
 import { clearSentryUser } from "@/lib/sentry-helpers";
@@ -15,7 +15,10 @@ const navItems = [
   { href: "/cms/posts", label: "Posts", icon: FileText, exact: false },
   { href: "/cms/tags", label: "Tags", icon: Tag, exact: false },
 ];
-const adminItems = [{ href: "/cms/users", label: "Users", icon: Users, exact: false }];
+const adminItems = [
+  { href: "/cms/users", label: "Users", icon: Users, exact: false },
+  { href: "/admin", label: "Admin Panel", icon: ShieldCheck, exact: false },
+];
 
 export default function CmsSidebar({ user }: SidebarProps) {
   const pathname = usePathname();

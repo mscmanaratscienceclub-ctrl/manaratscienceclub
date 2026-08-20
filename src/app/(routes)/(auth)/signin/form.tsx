@@ -18,7 +18,7 @@ import InputStartIcon from "../components/input-start-icon";
 import InputPasswordContainer from "../components/input-password";
 import { cn } from "@/lib/utils";
 import { AtSign, Loader2 } from "lucide-react";
-import { trackEvent } from "@/lib/analytics";
+import { identifyUser, trackEvent } from "@/lib/analytics";
 
 export default function SignInForm({ redirect }: { redirect?: string }) {
   const [isPending, startTransition] = useTransition();
@@ -39,10 +39,10 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
       if (response.error) {
         toast.error(response.error.message);
       } else {
-        // TODO: call identifyUser(...) once we confirm the Better Auth response
-        // shape exposes the user id. The next page load calls getServerSession
-        // which sets the Sentry user, so PostHog identity will eventually be
-        // attached via the server-side setSentryUser flow.
+        const user = response.data?.user;
+        if (user) {
+          identifyUser({ id: user.id, email: user.email ?? undefined });
+        }
         trackEvent("user_signed_in", { method: "password" });
         router.push(redirect || "/");
       }

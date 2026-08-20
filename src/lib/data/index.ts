@@ -7,7 +7,7 @@ export const siteConfig = {
   address: "Manarat Dhaka International School & College, Gulshan, Dhaka-1212",
   email: "manaratscienceclub@gmail.com",
   phone: "+8801920522197",
-  bugReportUrl: "mailto:manaratscienceclub@gmail.com?subject=Bug%20Report%20%7C%20MSC%20Website",
+  bugReportUrl: "mailto:info@manaratscience.club?subject=Bug%20Report%20%7C%20MSC%20Website",
   social: {
     instagram: "https://www.instagram.com/manaratscience",
     discord: " https://discord.gg/FTHAkQcSHJ",
@@ -21,7 +21,7 @@ export const siteConfig = {
 
 // ─── Metrics ──────────────────────────────────────────────────────────────────
 
-export const metrics = { members: 500, activeTeams: 6, completedProjects: 43, accolades: 18 };
+export const metrics = { members: 300, activeTeams: 3, completedProjects: 43, accolades: 18 };
 
 // ─── Leadership ───────────────────────────────────────────────────────────────
 
@@ -38,23 +38,23 @@ export interface LeadershipMember {
 export const leadership: LeadershipMember[] = [
   {
     id: "advisor-1",
-    name: "Dr. Fahmida Islam",
-    designation: "Senior Physics Lecturer & Club In-Charge",
+    name: "Dr. Maksud Alam",
+    designation: "MCCA Convener and Club In-Charge, MSC",
     role: "faculty-advisor",
-    image: null,
-    quote: "Science education begins not with answers, but with the courage to ask the right questions. At Manarat Science Club, we cultivate that courage, nurture curiosity, and produce students who are not just academically sound, but scientifically literate citizens of tomorrow.",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/maksud.png",
+    quote: "The Manarat Science Club continues to shine as a vibrant center of creativity, curiosity, and scientific enthusiasm. This year, our students have achieved remarkable success, earning awards in science fairs, quiz competitions, and Olympiads. Their research projects and innovative models ranging from environmental solutions to technological prototypes have been widely appreciated for their originality and practical value. Our hands-on workshops, experiments, and project-based activities have further strengthened students' analytical thinking and teamwork skills. Participation in exhibitions and science festivals has given our young learners the opportunity to showcase their talents with confidence, receiving recognition for both their scientific understanding and presentation skills. We are also proud of the new collaborations established with academic and scientific organizations. Through expert-led seminars and mentorship sessions, students have gained valuable insights that inspire them to aim higher and think beyond the classroom. I express my heartfelt gratitude to our respected Principal and Vice Principal for their constant encouragement and guidance. Their support has played a vital role in the club's continued growth and success. As we look ahead, we remain committed to nurturing curiosity and empowering our students to become future thinkers, innovators, and problem-solvers. Let science lead the way.",
   },
   {
     id: "advisor-2",
-    name: "Mr. Rafiqul Hasan",
-    designation: "Head of Biology Department & Club Supervisor",
+    name: "Roksana Khanam",
+    designation: "Club In-Charge, MSC",
     role: "faculty-advisor",
-    image: null,
-    quote: "In every cell, every atom, every reaction — there is a lesson waiting to be discovered. This club is where those lessons come alive outside the textbook. We believe in learning by doing, questioning by observing, and growing through collaboration.",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/roksana.png",
+    quote: "It gives me immense pleasure to share a few words on behalf of Manarat Science Club. Science is not just a subject learned in classrooms it is a mindset of inquiry, observation, and discovery. Our club is committed to nurturing this curiosity and empowering our students to think critically and creatively about the world around them. This year, we have introduced several new initiatives to inspire scientific engagement among our learners. One of our key activities is \"Science Talk,\" a platform where students confidently present scientific concepts, innovations, and real-world applications. This initiative has strengthened their communication skills and enhanced peer learning. We are also proud to begin publishing our own student-led science journals, showcasing research articles, experiment findings, creative scientific writing, and innovative ideas from our young scientists. This publication will serve as a space for students to express curiosity and develop academic writing skills with a scientific outlook. In addition to these, our workshops, exhibitions, experiments, and collaborative projects continue to make the Science Club a hub of exploration and hands-on learning. We remain dedicated to creating opportunities that help students grow as thinkers, innovators, and problem-solvers. I extend my heartfelt appreciation to our respected Principal and Vice Principal for their continuous encouragement, visionary leadership, and unwavering support. Their guidance has shaped the club's success and motivated our students to reach greater heights.",
   },
   {
     id: "president",
-    name: "Tariq Ziad Mahmud",
+    name: "Mohammad Ajmain Faieq",
     designation: "Club President, Batch 2025–26",
     role: "president",
     image: null,
@@ -127,6 +127,8 @@ export const projects: Project[] = [
   { id: "proj-002", title: "Vertical Hydroponic Garden System", description: "An automated vertical hydroponic system using recirculating nutrient solution, timed LED grow lights, and automated pH correction — designed for urban food production.", team: "Biology Field Division", status: "ongoing", materials: ["PVC Pipes", "Water Pump", "pH Sensor", "Nutrient Solution", "LED Grow Lights", "Arduino Nano"], goals: ["Grow leafy vegetables without soil in limited space", "Automate nutrient and pH monitoring", "Demonstrate urban food security innovation"], members: ["Samia Begum", "Fatima Tuz Zohra", "Rahim Uddin"] },
   { id: "proj-003", title: "Electrochemical Water Purification Device", description: "A small-scale electrochemical reactor that uses electrolysis to remove heavy metal contaminants and pathogens from drinking water without chemical additives.", team: "Chemistry Lab Division", status: "completed", materials: ["Graphite Electrodes", "Stainless Steel Chamber", "DC Power Supply", "pH Meter", "Conductivity Probe"], goals: ["Remove 90%+ of heavy metals from contaminated samples", "Design for low-cost community replication", "Document full experimental protocol for publication"], members: ["Farhan Ahmed", "Tasneem Akter", "Amir Khan"] },
   { id: "proj-004", title: "Radio Telescope Array — Phase 1", description: "Construction of a small-baseline radio interferometer array using repurposed satellite dishes and RTL-SDR receivers to detect 21cm hydrogen line emission from the Milky Way.", team: "Astronomy & Space Division", status: "ongoing", materials: ["Repurposed Satellite Dishes (×3)", "RTL-SDR Receivers", "Raspberry Pi 4", "Low-Noise Amplifiers", "Coaxial Cable"], goals: ["Detect 21cm hydrogen line emission", "Map a section of the galactic plane", "Build an open-source analysis pipeline"], members: ["Tariq Ziad Mahmud", "Sakib Mahmud", "Labiba Islam"] },
+  { id: "proj-005", title: "Automated Greenhouse Monitoring System", description: "A sensor-driven greenhouse controller that regulates irrigation, ventilation, and grow lights based on real-time soil moisture, temperature, and light readings — built for the campus botany garden.", team: "Robotics Division", status: "ongoing", materials: ["ESP32", "Capacitive Soil Moisture Sensor", "Relay Module", "Servo Actuators", "OLED Display", "Solar Panel"], goals: ["Cut manual watering effort by 80%", "Log climate data around the clock", "Power the system entirely from solar energy"], members: ["Khalid Hassan", "Ayesha Siddiqua", "Mahir Chowdhury"] },
+  { id: "proj-006", title: "Line-Following & Obstacle-Detecting Robot", description: "A compact competition robot that tracks high-contrast lines using an infrared sensor array and reroutes around obstacles with ultrasonic ranging — the build that earned MSC its IEEE merit certificate.", team: "Robotics Division", status: "completed", materials: ["Arduino Nano", "IR Line Sensor Array", "HC-SR04 Ultrasonic Sensor", "Geared DC Motors", "L293D Driver", "Acrylic Chassis"], goals: ["Complete a timed line-following course reliably", "Detect and avoid obstacles without human input", "Serve as the division's training platform for new members"], members: ["Nadia Rahman", "Rifat Hossain", "Mariam Akter"] },
 ];
 
 // ─── Legacy Content ───────────────────────────────────────────────────────────
@@ -434,3 +436,22 @@ As we move toward 2027, MSC's roadmap includes:
 - Expanding the Biology Division's vertical farming project to a rooftop installation
 - Hosting the first inter-school MSC Science Symposium
 - Establishing an alumni mentorship network`;
+
+export interface ShowcaseImage {
+  src: string;
+  alt: string;
+}
+
+/** Placeholder frames for the competition strip — swap in real event photos when available. */
+export const competitionShowcase: ShowcaseImage[] = [
+  { src: "/memberimage/Omama.jpeg", alt: "MSC member at last year's competition" },
+  { src: "/memberimage/abrar.png", alt: "MSC competitor preparing for a round" },
+  { src: "/memberimage/ajmain.jpg", alt: "MSC team member at the venue" },
+  { src: "/memberimage/dhrubo.png", alt: "MSC member reviewing notes" },
+  { src: "/memberimage/farheen.png", alt: "MSC member at the project stalls" },
+  { src: "/memberimage/mahdi.jpg", alt: "MSC competitor on stage" },
+  { src: "/memberimage/nureen.jpg", alt: "MSC member with teammates" },
+  { src: "/memberimage/roksana.jpg", alt: "MSC member at the awards segment" },
+  { src: "/memberimage/golamsami.jpg", alt: "MSC member during the competition" },
+  { src: "/memberimage/maksud.jpg", alt: "MSC member celebrating at the event" },
+];

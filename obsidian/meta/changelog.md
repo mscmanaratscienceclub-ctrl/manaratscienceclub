@@ -1,6 +1,6 @@
 ---
 tags: [meta, changelog]
-updated: 2026-08-19
+updated: 2026-08-20
 ---
 
 # Changelog
@@ -13,6 +13,24 @@ dependency, a new route or section, a convention bent, a bug whose cause is wort
 remembering. Routine commits do not need an entry.
 
 For *why* the conventions are what they are, see [[decisions-log]].
+
+---
+
+## 2026-08-20 — SEO metadata routes: sitemap.xml + robots.txt
+
+- Added `src/app/sitemap.ts` (dynamic — static site routes + published CMS
+  posts from the DB) and `src/app/robots.ts` (allows public pages, disallows
+  `/admin`, `/cms`, `/profile`, auth pages, `/api/`, Sentry example routes).
+- Both are whitelisted in `src/routes.ts` `publicRoutes` — the auth proxy in
+  `src/proxy.ts` otherwise redirects unauthenticated requests to `/signin`.
+- `metadataBase`, sitemap and robots all read `NEXT_PUBLIC_BASE_URL`
+  (fallback `https://manaratscience.club`). Must be set to the production
+  URL in the host env.
+- Added `public/og.png` (1792×1024) as the OpenGraph/Twitter card image —
+  the previous `/msc.svg` was not renderable by social crawlers.
+- Deleted Sentry demo routes (`/sentry-example-page`, `/api/sentry-example-api`)
+  and stray public assets (Minecraft mod jar, `Tr2n.ttf`, duplicate member
+  images).
 
 ---
 
@@ -36,6 +54,121 @@ The home view (`src/views/home.tsx`, route `/`) ships empty on purpose — start
 there ([[new-page]]).
 
 <!-- Log this project's changes below, newest first, under a `## YYYY-MM-DD` heading. -->
+
+## 2026-08-20 — Single global navbar + data fix
+
+- Fixed syntax error in `src/lib/data/index.ts` (unescaped quotes around
+  "Science Talk" in the new advisor-2 quote).
+- Navbar is now **one global bar everywhere** (home, inner pages, auth, 404):
+  `SignalNav` lost its overlay/bar variants; links are Home `/`, Members
+  `/legacy`, Research `/blogs`, and Register `/register` (ion CTA).
+  `src/components/nav.tsx` no longer branches on pathname.
+
+## 2026-08-20 — Mission Queue replaced by Editorial advisor section
+
+- Removed home `Telemetry` (radar + MISSION QUEUE) — `telemetry.tsx` deleted.
+- Added `src/components/home/editorial-voices.tsx` (`#editorial`): "Editorial —
+  Words of wisdom from our faculty advisors". Copy and quotes pulled from the
+  `leadership` data (matches old-site `drawsvg-redesign.html` leadership section);
+  advisors have no photos, so cards use monogram avatar frames like the old site.
+- Home nav "Mission → #mission" became "Editorial → #editorial".
+
+## 2026-08-20 — Fleet section replaced by competition carousel
+
+- Removed the home "Fleet" divisions pan (`divisions-pan.tsx` + `src/lib/data/home-cards.ts` deleted).
+- Added `src/components/home/competition-carousel.tsx` (`#showcase`): auto-scrolling
+  photo strip (GSAP `xPercent` loop, 45s, pauses on hover/focus, static under
+  reduced motion). No viewer/controls — just images moving in a line, edge-faded.
+- Frames come from `competitionShowcase` in `src/lib/data/index.ts` — placeholder
+  shots from `public/memberimage/` until real competition photos arrive.
+- Home nav link "Fleet → #divisions" became "Showcase → #showcase".
+
+## 2026-08-20 — GooeyNav navbar experiment — reverted
+
+Briefly integrated React Bits GooeyNav into `signal-nav.tsx`; reverted same day
+at request — the previous underline-link navbar was preferred. No residue left
+(component files, `--sh-ion` token and nav rewrite all removed).
+
+## 2026-08-20 — ChromaGrid member cards + full "//" sweep
+
+- Integrated React Bits **ChromaGrid** as `src/components/ui/chroma-grid.tsx`
+  (+ `chroma-grid.css`): TypeScript-typed, GSAP spotlight with
+  `useReducedMotion` gating (durations drop to 0), `next/image` instead of raw
+  `<img>`, token-based CSS (`--space-*`, `--radius-2xl`), social icon links
+  with stopPropagation on the anchors, and a fallback placeholder for members
+  without photos.
+- `/legacy` redesigned around it: member sections map `Member[]` → `ChromaItem`
+  with rotating token accents (ion / space-amber / space-sage / teal-bright);
+  name, role, batch, and socials all preserved.
+- Finished the `//` sweep missed earlier: kicker strings in achievements,
+  events, join, opportunities, profile, signin, signup, forgot/reset-password,
+  and legacy hero. Only URLs contain `//` now.
+
+Verified: `verify.sh` 0 FAIL (6 pre-existing WARNs), `pnpm lint` clean,
+`pnpm build` green, `/legacy` smoke-tested on the dev server.
+
+## 2026-08-20 — Robotics hub + "//" removal + README rewrite
+
+- New `/robotics` page: division stats, focus-area chips, **Project Display**
+  (filtered from `projects`), **Olympiads & Honors** (robotics achievements),
+  upcoming robotics events, join CTA. Two new robotics projects added to the
+  data module (`proj-005` greenhouse system, `proj-006` line-follower).
+  Wired into `publicRoutes`, nav, and footer Explore column.
+- Removed all displayed `//` separators: nav/footer wordmarks are now
+  `MSC SIGNAL` (SIGNAL in ion), hero status line uses an em dash, legal kickers
+  are `MSC Legal`, 404 sign-off uses `·`.
+- `README.md` fully rewritten to document the actual architecture: route
+  groups, three-layer authorization, data layer, design tokens, motion rules,
+  file-by-file structure, routes table, env setup.
+
+Verified: `verify.sh` 0 FAIL, `pnpm lint` clean, `pnpm build` green,
+`/robotics` smoke-tested on the dev server.
+
+## 2026-08-20 — Navbar + footer redesign
+
+- `signal-nav.tsx` — logo mark (Atom in ion square) + wordmark, scroll-aware
+  blur/backdrop, animated ion underline on hover/active links, filled ion CTA,
+  numbered mobile menu items. `siteNavigation` gains Opportunities. Mobile menu
+  duration drops to 0 under `useReducedMotion`.
+- `signal-footer.tsx` — expanded from one strip to a 4-column footer: brand +
+  tagline + address/email/phone, Explore links, Get Involved (Join, Campus
+  Ambassador, bug report) + Legal, Community (Instagram, Facebook, Discord,
+  boys/girls WhatsApp), plus bottom bar with copyright, founded year, and
+  developer credit. All info sourced from `siteConfig`.
+- Smoke-tested against the running dev server: nav/footer render on `/legacy`,
+  404 renders for invalid `/blogs/:slug`. Note: unknown top-level paths still
+  307 to `/signin` (proxy gates non-public routes — pre-existing behaviour).
+
+Verified: `verify.sh` 0 FAIL, `pnpm lint` clean, `pnpm build` green.
+
+## 2026-08-20 — Custom 404 + legal pages
+
+- `src/app/not-found.tsx` — themed "Signal lost / Lost in space" 404 with Nav +
+  Footer, ion glow, and CTA links back to `/` and `/events`.
+- `/privacy-policy` and `/terms` — built on a shared
+  `src/components/site/legal-shell.tsx` (numbered sections, dark signal theme);
+  both added to `publicRoutes` in `src/routes.ts` so the proxy lets them through.
+- `signal-footer.tsx` gains a bottom row with copyright + Privacy/Terms links.
+
+Verified: `verify.sh` 0 FAIL, `pnpm lint` clean, `pnpm build` green.
+
+## 2026-08-20 — Grand admin panel (`/admin`)
+
+New admin-only route group `(admin)` reusing the CMS auth stack
+(`getServerSession` + better-auth roles). The layout redirects non-admins to `/`.
+
+- `/admin` — stats dashboard (total / this week / this month / unique schools)
+  plus recent `campus_ambassador_registrations`.
+- `/admin/campus-ambassador` — full response viewer (search + expandable
+  experience rows); client table at
+  `src/app/(routes)/(admin)/admin/campus-ambassador/registrations-table.tsx`.
+- `/admin/science-competition` — placeholder until that form launches.
+- `campus_ambassador_registrations` is now mirrored in the Drizzle schema
+  (`src/db/schema/registrations.ts`); reads go through the admin-guarded
+  `src/lib/actions/registrations.ts`, not the Supabase client.
+- CMS sidebar gains an "Admin Panel" link for admins.
+
+Verified: `verify.sh` 0 FAIL, `pnpm lint` clean, `pnpm build` green.
 
 ## 2026-08-19 — Auth system audit: bug fixes & hardening
 

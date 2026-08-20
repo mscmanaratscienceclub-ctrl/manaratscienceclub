@@ -20,7 +20,7 @@ import InputPasswordContainer from "../components/input-password";
 import { cn } from "@/lib/utils";
 import { AtSign, Loader2, MailIcon, UserIcon } from "lucide-react";
 import { GenderRadioGroup } from "../components/gender-radio-group";
-import { trackEvent } from "@/lib/analytics";
+import { identifyUser, trackEvent } from "@/lib/analytics";
 
 export default function SignUpForm() {
   const [isPending, startTransition] = useTransition();
@@ -44,10 +44,10 @@ export default function SignUpForm() {
       if (response.error) {
         toast.error(response.error.message);
       } else {
-        // TODO: call identifyUser(...) once we confirm the Better Auth response
-        // shape exposes the user id. The next page load calls getServerSession
-        // which sets the Sentry user, so PostHog identity will eventually be
-        // attached via the server-side setSentryUser flow.
+        const user = response.data?.user;
+        if (user) {
+          identifyUser({ id: user.id, email: user.email ?? undefined });
+        }
         trackEvent("user_signed_up");
         toast.success("Account created! Please check your email to verify your account.");
         router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);

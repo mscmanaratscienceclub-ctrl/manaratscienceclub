@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { ImagePlus, X, Loader2 } from "lucide-react";
 
 const ProfileSchema = z.object({
@@ -54,7 +55,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
     const QUALITY = 0.8;
 
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => resolve(img);
       img.onerror = reject;
       img.src = URL.createObjectURL(file);
@@ -177,9 +178,16 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="flex flex-col items-center gap-4 sm:flex-row">
           <div className="relative">
-            <div className="flex size-24 items-center justify-center overflow-hidden border border-dashed border-space-line-soft bg-space-deep">
+            <div className="relative flex size-24 items-center justify-center overflow-hidden border border-dashed border-space-line-soft bg-space-deep">
               {imagePreview ? (
-                <img src={imagePreview} alt="Profile" className="h-full w-full object-cover" />
+                <Image
+                  src={imagePreview}
+                  alt="Profile"
+                  fill
+                  sizes="96px"
+                  className="object-cover"
+                  unoptimized
+                />
               ) : (
                 <ImagePlus className="size-8 text-space-muted/60" />
               )}

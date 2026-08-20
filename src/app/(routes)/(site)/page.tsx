@@ -1,9 +1,9 @@
 import { getPublishedPosts } from "@/lib/actions/posts";
-import DivisionsPan from "@/components/home/divisions-pan";
+import CompetitionCarousel from "@/components/home/competition-carousel";
+import EditorialVoices from "@/components/home/editorial-voices";
 import JournalConsole, { type JournalPost } from "@/components/home/journal-console";
 import ManifestoLines from "@/components/home/manifesto-lines";
 import SignalHero from "@/components/home/signal-hero";
-import Telemetry from "@/components/home/telemetry";
 
 // Force dynamic rendering — prevents Next.js prerendering in parallel
 // which would exhaust the Supabase free-tier connection pool
@@ -36,8 +36,8 @@ export default async function HomePage() {
     <div className="min-h-screen overflow-x-clip bg-space-deep text-space-ivory">
       <SignalHero />
       <ManifestoLines />
-      <DivisionsPan />
-      <Telemetry />
+      <CompetitionCarousel />
+      <EditorialVoices />
       <JournalConsole posts={transmissions} />
     </div>
   );

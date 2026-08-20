@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "appwrite": {
-      "command": "uvx",
-      "args": ["appwrite-mcp-server"],
-      "disabled": false
-    }
-  }
-}

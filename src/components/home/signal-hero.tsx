@@ -39,7 +39,7 @@ export default function SignalHero() {
 
       intro.to("[data-scramble-status]", {
         duration: 0.7,
-        scrambleText: { text: "SIGNAL ACQUIRED // MANARAT SCIENCE CLUB", chars: SCRAMBLE_CHARS, speed: 0.6 },
+        scrambleText: { text: "SIGNAL ACQUIRED — MANARAT SCIENCE CLUB", chars: SCRAMBLE_CHARS, speed: 0.6 },
       });
 
       if (headlineTop) {
@@ -130,7 +130,7 @@ export default function SignalHero() {
             data-scramble-status
             className="font-mono text-[0.62rem] font-medium uppercase tracking-[0.34em] text-ion"
           >
-            SIGNAL ACQUIRED // MANARAT SCIENCE CLUB
+            SIGNAL ACQUIRED — MANARAT SCIENCE CLUB
           </p>
 
           <h1

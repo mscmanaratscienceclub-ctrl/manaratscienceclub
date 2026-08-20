@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { resetPassword } from "@/lib/auth/client";
 import { passwordSchema } from "@/lib/auth/password";
-import { Loader2, KeyRound, ShieldAlert } from "lucide-react";
+import { Loader2, KeyRound } from "lucide-react";
+import InvalidResetLink from "./invalid-link";
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -43,29 +44,14 @@ function ResetPasswordContent() {
   }
 
   if (!token) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
-        <div className="flex w-full flex-col items-center border border-space-line-soft bg-space-deep/70 px-8 py-8 text-center backdrop-blur-sm md:w-96">
-          <ShieldAlert className="mb-4 size-10 text-space-amber" />
-          <h1 className="font-voyage text-xl font-bold uppercase tracking-tight text-space-ivory">
-            Invalid Reset Link
-          </h1>
-          <p className="mt-2 text-sm text-space-muted">
-            This link is missing its token or has expired. Request a new one.
-          </p>
-          <Link href="/forgot-password" className="signal-btn-ghost mt-6 w-full">
-            Request New Link
-          </Link>
-        </div>
-      </div>
-    );
+    return <InvalidResetLink />;
   }
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
       <div className="flex w-full flex-col border border-space-line-soft bg-space-deep/70 px-8 py-6 backdrop-blur-sm md:w-96">
         <p className="font-mono text-[0.6rem] font-medium uppercase tracking-[0.24em] text-ion">
-          {"// Recovery"}
+          {"Recovery"}
         </p>
         <h1 className="mt-2 font-voyage text-2xl font-bold uppercase tracking-tight text-space-ivory">
           Set New Password

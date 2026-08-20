@@ -15,7 +15,7 @@ export default async function SignInPage({
     <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
       <div className="flex w-full flex-col border border-space-line-soft bg-space-deep/70 px-8 py-6 backdrop-blur-sm md:w-96">
         <p className="font-mono text-[0.6rem] font-medium uppercase tracking-[0.24em] text-ion">
-          {"// Access"}
+          {"Access"}
         </p>
         <h1 className="mt-2 font-voyage text-2xl font-bold uppercase tracking-tight text-space-ivory">
           Sign In

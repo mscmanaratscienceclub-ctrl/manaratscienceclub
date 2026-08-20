@@ -1,0 +1,27 @@
+import { getAllAmbassadorRegistrations } from "@/lib/actions/registrations";
+import RegistrationsTable from "./registrations-table";
+
+export default async function CampusAmbassadorAdminPage() {
+  const rows = await getAllAmbassadorRegistrations();
+
+  const registrations = rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    class: row.class,
+    school: row.school,
+    experience: row.experience,
+    createdAt: new Date(row.createdAt).toISOString(),
+  }));
+
+  return (
+    <div className="flex flex-col gap-8 p-6 md:p-10">
+      <div>
+        <h1 className="font-display text-3xl font-bold text-ink">Campus Ambassador</h1>
+        <p className="mt-1 font-body text-ink/60">
+          All {registrations.length} {registrations.length === 1 ? "response" : "responses"} from the campus ambassador registration form.
+        </p>
+      </div>
+      <RegistrationsTable registrations={registrations} />
+    </div>
+  );
+}

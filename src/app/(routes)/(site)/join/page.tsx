@@ -101,7 +101,7 @@ export default function JoinPage() {
       <section className="border-b border-space-line-soft">
         <div className="mx-auto w-full max-w-[1440px] px-5 py-16 sm:px-8 lg:px-16">
           <p className="font-mono text-[0.64rem] font-medium uppercase tracking-[0.24em] text-ion">
-            {"// 01 — Enlist"}
+            {"01 — Enlist"}
           </p>
           <h1 className="mt-4 max-w-[46rem] font-voyage text-3xl font-bold uppercase leading-[1.08] tracking-tight text-space-ivory sm:text-4xl lg:text-5xl">
             Join Manarat Science Club
@@ -126,7 +126,7 @@ export default function JoinPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="font-mono text-[0.56rem] font-medium uppercase tracking-[0.24em] text-space-muted">
-                      {`// 0${index + 1}`}
+                      {`0${index + 1}`}
                     </p>
                     <h2 className="font-voyage text-base font-bold uppercase leading-snug tracking-tight text-space-ivory">
                       {committee.name}

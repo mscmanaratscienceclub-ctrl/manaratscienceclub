@@ -45,7 +45,7 @@ export default function OpportunitiesPage() {
         <div className="mx-auto w-full max-w-[1440px] px-5 py-20 sm:px-8 lg:px-16">
           <ScrollReveal>
             <p className="font-mono text-[0.64rem] font-medium uppercase tracking-[0.24em] text-ion">
-              {"// 01 — Crew"}
+              {"01 — Crew"}
             </p>
             <h1 className="mt-4 max-w-[46rem] font-voyage text-3xl font-bold uppercase leading-[1.08] tracking-tight text-space-ivory sm:text-4xl lg:text-5xl">
               Opportunities & Teams
@@ -95,7 +95,7 @@ export default function OpportunitiesPage() {
         <div className="mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-16">
           <ScrollReveal className="max-w-[40rem]">
             <p className="font-mono text-[0.64rem] font-medium uppercase tracking-[0.24em] text-ion">
-              {"// Recruiting"}
+              {"Recruiting"}
             </p>
             <h2 className="mt-3 font-voyage text-2xl font-bold uppercase tracking-tight text-space-ivory lg:text-3xl">
               Open Positions
