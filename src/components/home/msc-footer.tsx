@@ -7,10 +7,6 @@ const exploreLinks = [
   { label: "Home", href: "/" },
   { label: "Legacy", href: "/legacy" },
   { label: "Research", href: "/blogs" },
-  { label: "Events", href: "/events" },
-  { label: "Robotics", href: "/robotics" },
-  { label: "Opportunities", href: "/opportunities" },
-  { label: "Achievements", href: "/achievements" },
 ];
 
 const involvedLinks = [
@@ -30,7 +26,7 @@ const communityLinks = [
 const sectionHeading = "font-mono text-[0.64rem] font-medium uppercase tracking-[0.24em] text-ion";
 const footerLink = "font-space-body text-sm text-space-muted transition-colors hover:text-ion-bright";
 
-export default function SignalFooter() {
+export default function MscFooter() {
   return (
     <footer className="border-t border-space-line-soft bg-space-deep text-space-ivory">
       <div className="mx-auto w-full max-w-[1440px] px-5 py-14 sm:px-8 lg:px-16">
@@ -42,7 +38,7 @@ export default function SignalFooter() {
                 <Atom className="size-4 text-ion" />
               </span>
               <span className="font-voyage text-sm font-bold uppercase tracking-[0.3em]">
-                MSC<span className="text-ion"> SIGNAL</span>
+                MSC
               </span>
             </Link>
 

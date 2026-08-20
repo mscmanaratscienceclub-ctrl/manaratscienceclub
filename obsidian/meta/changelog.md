@@ -60,7 +60,7 @@ there ([[new-page]]).
 - Fixed syntax error in `src/lib/data/index.ts` (unescaped quotes around
   "Science Talk" in the new advisor-2 quote).
 - Navbar is now **one global bar everywhere** (home, inner pages, auth, 404):
-  `SignalNav` lost its overlay/bar variants; links are Home `/`, Members
+  `MscNav` lost its overlay/bar variants; links are Home `/`, Members
   `/legacy`, Research `/blogs`, and Register `/register` (ion CTA).
   `src/components/nav.tsx` no longer branches on pathname.
 
@@ -85,7 +85,7 @@ there ([[new-page]]).
 
 ## 2026-08-20 — GooeyNav navbar experiment — reverted
 
-Briefly integrated React Bits GooeyNav into `signal-nav.tsx`; reverted same day
+Briefly integrated React Bits GooeyNav into `msc-nav.tsx`; reverted same day
 at request — the previous underline-link navbar was preferred. No residue left
 (component files, `--sh-ion` token and nav rewrite all removed).
 
@@ -115,7 +115,7 @@ Verified: `verify.sh` 0 FAIL (6 pre-existing WARNs), `pnpm lint` clean,
   data module (`proj-005` greenhouse system, `proj-006` line-follower).
   Wired into `publicRoutes`, nav, and footer Explore column.
 - Removed all displayed `//` separators: nav/footer wordmarks are now
-  `MSC SIGNAL` (SIGNAL in ion), hero status line uses an em dash, legal kickers
+  `MSC`, hero status line uses an em dash, legal kickers
   are `MSC Legal`, 404 sign-off uses `·`.
 - `README.md` fully rewritten to document the actual architecture: route
   groups, three-layer authorization, data layer, design tokens, motion rules,
@@ -126,11 +126,11 @@ Verified: `verify.sh` 0 FAIL, `pnpm lint` clean, `pnpm build` green,
 
 ## 2026-08-20 — Navbar + footer redesign
 
-- `signal-nav.tsx` — logo mark (Atom in ion square) + wordmark, scroll-aware
+- `msc-nav.tsx` — logo mark (Atom in ion square) + wordmark, scroll-aware
   blur/backdrop, animated ion underline on hover/active links, filled ion CTA,
   numbered mobile menu items. `siteNavigation` gains Opportunities. Mobile menu
   duration drops to 0 under `useReducedMotion`.
-- `signal-footer.tsx` — expanded from one strip to a 4-column footer: brand +
+- `msc-footer.tsx` — expanded from one strip to a 4-column footer: brand +
   tagline + address/email/phone, Explore links, Get Involved (Join, Campus
   Ambassador, bug report) + Legal, Community (Instagram, Facebook, Discord,
   boys/girls WhatsApp), plus bottom bar with copyright, founded year, and
@@ -143,12 +143,12 @@ Verified: `verify.sh` 0 FAIL, `pnpm lint` clean, `pnpm build` green.
 
 ## 2026-08-20 — Custom 404 + legal pages
 
-- `src/app/not-found.tsx` — themed "Signal lost / Lost in space" 404 with Nav +
+- `src/app/not-found.tsx` — themed "Lost in space" 404 with Nav +
   Footer, ion glow, and CTA links back to `/` and `/events`.
 - `/privacy-policy` and `/terms` — built on a shared
-  `src/components/site/legal-shell.tsx` (numbered sections, dark signal theme);
+  `src/components/site/legal-shell.tsx` (numbered sections, dark msc theme);
   both added to `publicRoutes` in `src/routes.ts` so the proxy lets them through.
-- `signal-footer.tsx` gains a bottom row with copyright + Privacy/Terms links.
+- `msc-footer.tsx` gains a bottom row with copyright + Privacy/Terms links.
 
 Verified: `verify.sh` 0 FAIL, `pnpm lint` clean, `pnpm build` green.
 

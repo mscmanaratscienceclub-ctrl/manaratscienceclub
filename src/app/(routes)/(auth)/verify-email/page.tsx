@@ -56,7 +56,7 @@ function VerifyEmailContent() {
             Thank you for verifying your email address. Your account is now fully active.
           </p>
           <div className="mt-6 w-full">
-            <Link href="/" className="signal-btn-primary w-full">
+            <Link href="/" className="msc-btn-primary w-full">
               Go to Homepage
               <ArrowRight className="ml-2 size-4" />
             </Link>
@@ -89,7 +89,7 @@ function VerifyEmailContent() {
             type="button"
             onClick={handleResendEmail}
             disabled={isPending || resendCooldown > 0 || !emailParam}
-            className="signal-btn-ghost w-full disabled:pointer-events-none disabled:opacity-60"
+            className="msc-btn-ghost w-full disabled:pointer-events-none disabled:opacity-60"
           >
             {isPending ? (
               <>

@@ -12,7 +12,7 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen bg-space-deep">
       <section className="relative overflow-hidden border-b border-space-line-soft">
-        <div aria-hidden="true" className="signal-atmosphere pointer-events-none absolute inset-0" />
+        <div aria-hidden="true" className="msc-atmosphere pointer-events-none absolute inset-0" />
         <div aria-hidden="true" className="space-grain pointer-events-none absolute inset-0" />
 
         <div className="relative mx-auto w-full max-w-[1440px] px-5 py-16 sm:px-8 lg:px-16">

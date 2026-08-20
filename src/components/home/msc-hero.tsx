@@ -17,7 +17,7 @@ if (typeof window !== "undefined") {
 
 const SCRAMBLE_CHARS = "!<>-_\\/[]{}=+*^?#01";
 
-export default function SignalHero() {
+export default function MscHero() {
   const sectionRef = useRef<HTMLElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef(0);
@@ -39,7 +39,7 @@ export default function SignalHero() {
 
       intro.to("[data-scramble-status]", {
         duration: 0.7,
-        scrambleText: { text: "SIGNAL ACQUIRED — MANARAT SCIENCE CLUB", chars: SCRAMBLE_CHARS, speed: 0.6 },
+        scrambleText: { text: "MANARAT SCIENCE CLUB", chars: SCRAMBLE_CHARS, speed: 0.6 },
       });
 
       if (headlineTop) {
@@ -110,13 +110,13 @@ export default function SignalHero() {
     <section
       ref={sectionRef}
       className="relative isolate flex min-h-[100dvh] w-full flex-col justify-center overflow-hidden bg-space-deep"
-      aria-labelledby="signal-title"
+      aria-labelledby="msc-hero-title"
     >
-      <div className="signal-atmosphere pointer-events-none absolute inset-0 -z-30" aria-hidden="true" />
+      <div className="msc-atmosphere pointer-events-none absolute inset-0 -z-30" aria-hidden="true" />
       <div className="absolute inset-0 -z-20" aria-hidden="true">
         <TesseractCanvas progressRef={progressRef} />
       </div>
-      <div className="signal-vignette pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
+      <div className="msc-vignette pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
       <div
         className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-t from-space-deep via-transparent to-space-deep/70"
         aria-hidden="true"
@@ -130,11 +130,11 @@ export default function SignalHero() {
             data-scramble-status
             className="font-mono text-[0.62rem] font-medium uppercase tracking-[0.34em] text-ion"
           >
-            SIGNAL ACQUIRED — MANARAT SCIENCE CLUB
+            MANARAT SCIENCE CLUB
           </p>
 
           <h1
-            id="signal-title"
+            id="msc-hero-title"
             className="mt-6 font-voyage text-[1.8rem] font-bold uppercase leading-[1.08] tracking-tight text-space-ivory sm:text-4xl lg:text-[3.5rem]"
           >
             <span data-scramble-top className="block">

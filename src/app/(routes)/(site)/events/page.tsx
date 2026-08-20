@@ -56,7 +56,7 @@ export default function EventsPage() {
               Upcoming sessions
             </h2>
           </div>
-          <button type="button" className="signal-btn-ghost w-fit">
+          <button type="button" className="msc-btn-ghost w-fit">
             Request calendar <CalendarDays className="size-4" />
           </button>
         </div>

@@ -27,6 +27,7 @@ function toChromaItem(member: Member, index: number): ChromaItem {
     : undefined;
 
   return {
+    id: member.id,
     image,
     title: member.name,
     subtitle: member.role,

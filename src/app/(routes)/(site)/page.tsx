@@ -3,7 +3,7 @@ import CompetitionCarousel from "@/components/home/competition-carousel";
 import EditorialVoices from "@/components/home/editorial-voices";
 import JournalConsole, { type JournalPost } from "@/components/home/journal-console";
 import ManifestoLines from "@/components/home/manifesto-lines";
-import SignalHero from "@/components/home/signal-hero";
+import MscHero from "@/components/home/msc-hero";
 
 // Force dynamic rendering — prevents Next.js prerendering in parallel
 // which would exhaust the Supabase free-tier connection pool
@@ -34,7 +34,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen overflow-x-clip bg-space-deep text-space-ivory">
-      <SignalHero />
+      <MscHero />
       <ManifestoLines />
       <CompetitionCarousel />
       <EditorialVoices />

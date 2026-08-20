@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { cn } from "@/lib/utils";
 
 /* A rotating 4D hypercube (tesseract) projected to 3D, drawn as additive
-   line segments. The Interstellar tesseract, rendered as a signal console.
+   line segments. The Interstellar tesseract, rendered as an msc console.
    16 vertices, 32 edges: cheap enough to recompute every frame. Scroll
    progress drives a camera dive that ends inside the wireframe. */
 

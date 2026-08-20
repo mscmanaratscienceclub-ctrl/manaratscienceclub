@@ -5,7 +5,7 @@ export const siteConfig = {
   shortName: "MSC",
   tagline: "Where curiosity meets creativity",
   address: "Manarat Dhaka International School & College, Gulshan, Dhaka-1212",
-  email: "manaratscienceclub@gmail.com",
+  email: "info@manaratscience.club",
   phone: "+8801920522197",
   bugReportUrl: "mailto:info@manaratscience.club?subject=Bug%20Report%20%7C%20MSC%20Website",
   social: {
@@ -442,16 +442,16 @@ export interface ShowcaseImage {
   alt: string;
 }
 
-/** Placeholder frames for the competition strip — swap in real event photos when available. */
+/** Past STEM Fest event photos. */
 export const competitionShowcase: ShowcaseImage[] = [
-  { src: "/memberimage/Omama.jpeg", alt: "MSC member at last year's competition" },
-  { src: "/memberimage/abrar.png", alt: "MSC competitor preparing for a round" },
-  { src: "/memberimage/ajmain.jpg", alt: "MSC team member at the venue" },
-  { src: "/memberimage/dhrubo.png", alt: "MSC member reviewing notes" },
-  { src: "/memberimage/farheen.png", alt: "MSC member at the project stalls" },
-  { src: "/memberimage/mahdi.jpg", alt: "MSC competitor on stage" },
-  { src: "/memberimage/nureen.jpg", alt: "MSC member with teammates" },
-  { src: "/memberimage/roksana.jpg", alt: "MSC member at the awards segment" },
-  { src: "/memberimage/golamsami.jpg", alt: "MSC member during the competition" },
-  { src: "/memberimage/maksud.jpg", alt: "MSC member celebrating at the event" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2703.JPG", alt: "MSC STEM Fest 2025 — photo 3" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2704.JPG", alt: "MSC STEM Fest 2025 — photo 4" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2705.JPG", alt: "MSC STEM Fest 2025 — photo 5" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2706.JPG", alt: "MSC STEM Fest 2025 — photo 6" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2707.JPG", alt: "MSC STEM Fest 2025 — photo 7" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2708.JPG", alt: "MSC STEM Fest 2025 — photo 8" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2709.JPG", alt: "MSC STEM Fest 2025 — photo 9" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2710.JPG", alt: "MSC STEM Fest 2025 — photo 10" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2711.JPG", alt: "MSC STEM Fest 2025 — photo 11" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2712.JPG", alt: "MSC STEM Fest 2025 — photo 12" },
 ];

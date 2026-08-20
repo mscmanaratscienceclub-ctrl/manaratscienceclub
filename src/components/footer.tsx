@@ -1,5 +1,5 @@
-import SignalFooter from "@/components/home/signal-footer";
+import MscFooter from "@/components/home/msc-footer";
 
 export default function Footer() {
-  return <SignalFooter />;
+  return <MscFooter />;
 }

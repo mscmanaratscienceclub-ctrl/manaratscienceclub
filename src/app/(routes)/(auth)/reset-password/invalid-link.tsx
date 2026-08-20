@@ -12,7 +12,7 @@ export default function InvalidResetLink() {
         <p className="mt-2 text-sm text-space-muted">
           This link is missing its token or has expired. Request a new one.
         </p>
-        <Link href="/forgot-password" className="signal-btn-ghost mt-6 w-full">
+        <Link href="/forgot-password" className="msc-btn-ghost mt-6 w-full">
           Request New Link
         </Link>
       </div>

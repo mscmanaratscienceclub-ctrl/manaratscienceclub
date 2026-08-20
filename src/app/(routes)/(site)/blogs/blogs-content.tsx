@@ -125,7 +125,7 @@ export default function BlogsContent({ posts }: BlogsContentProps) {
 
           <div className="relative flex min-h-[320px] flex-col items-center justify-center overflow-hidden border border-space-line-soft bg-space-deep/60 p-10">
             <div aria-hidden="true" className="space-grain absolute inset-0" />
-            <div aria-hidden="true" className="signal-atmosphere absolute inset-0 opacity-60" />
+            <div aria-hidden="true" className="msc-atmosphere absolute inset-0 opacity-60" />
             <div className="relative flex h-full min-h-[240px] flex-col items-center justify-center gap-6 text-center">
               <div className="flex size-24 items-center justify-center border border-ion-line bg-space-deep">
                 <Microscope className="size-12 text-ion" />

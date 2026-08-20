@@ -213,7 +213,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
             />
             <label
               htmlFor="profile-image-input"
-              className="signal-btn-ghost cursor-pointer"
+              className="msc-btn-ghost cursor-pointer"
             >
               <ImagePlus className="size-4" />
               {user.image ? "Change Photo" : "Upload Photo"}
@@ -227,9 +227,9 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="signal-label">Full Name</FormLabel>
+              <FormLabel className="msc-label">Full Name</FormLabel>
               <FormControl>
-                <input placeholder="John Doe" className="signal-input disabled:opacity-50" disabled={isPending} {...field} />
+                <input placeholder="John Doe" className="msc-input disabled:opacity-50" disabled={isPending} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -240,9 +240,9 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
           name="username"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="signal-label">Username</FormLabel>
+              <FormLabel className="msc-label">Username</FormLabel>
               <FormControl>
-                <input placeholder="johndoe" className="signal-input disabled:opacity-50" disabled={isPending} {...field} />
+                <input placeholder="johndoe" className="msc-input disabled:opacity-50" disabled={isPending} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -253,9 +253,9 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="signal-label">Bio / Description</FormLabel>
+              <FormLabel className="msc-label">Bio / Description</FormLabel>
               <FormControl>
-                <textarea placeholder="Tell us about yourself..." className="signal-input h-24 resize-none disabled:opacity-50" disabled={isPending} {...field} />
+                <textarea placeholder="Tell us about yourself..." className="msc-input h-24 resize-none disabled:opacity-50" disabled={isPending} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -265,7 +265,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
           <button
             type="submit"
             disabled={isPending || isUploading}
-            className="signal-btn-primary disabled:pointer-events-none disabled:opacity-60"
+            className="msc-btn-primary disabled:pointer-events-none disabled:opacity-60"
           >
             {isPending || isUploading ? (
               <><Loader2 className="mr-2 size-4 animate-spin" /> Saving...</>

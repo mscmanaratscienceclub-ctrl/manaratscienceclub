@@ -77,13 +77,13 @@ export default function ForgotPasswordPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isPending}
-                  className="signal-input ps-9 disabled:opacity-50"
+                  className="msc-input ps-9 disabled:opacity-50"
                 />
               </div>
               <button
                 type="submit"
                 disabled={isPending}
-                className="signal-btn-primary w-full disabled:pointer-events-none disabled:opacity-60"
+                className="msc-btn-primary w-full disabled:pointer-events-none disabled:opacity-60"
               >
                 {isPending ? (
                   <>

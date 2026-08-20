@@ -72,7 +72,7 @@
   --space-line: #ffffff2b;
   --space-line-soft: #ffffff18;
 
-  /* ── Signal console tokens (tesseract home) ─────────────────── */
+  /* ── MSC console tokens (tesseract home) ─────────────────── */
   --ion: #ff7053;
   --ion-bright: #ffd9cd;
   --ion-deep: #26100a;
@@ -253,14 +253,14 @@ html {
     mix-blend-mode: screen;
     opacity: 0.05;
   }
-  .signal-atmosphere {
+  .msc-atmosphere {
     background:
       radial-gradient(52rem 36rem at 68% 40%, color-mix(in srgb, var(--ion) 15%, transparent), transparent 72%),
       radial-gradient(72rem 48rem at 8% 94%, color-mix(in srgb, var(--space-plum) 62%, transparent), transparent 70%),
       radial-gradient(46rem 32rem at 22% 8%, color-mix(in srgb, var(--space-amber) 9%, transparent), transparent 66%),
       radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--ion-deep) 92%, transparent), transparent 62%);
   }
-  .signal-vignette {
+  .msc-vignette {
     background: radial-gradient(130% 100% at 50% 42%, transparent 52%, color-mix(in srgb, var(--space-deep) 85%, transparent) 100%);
   }
   .space-fallback {
@@ -272,18 +272,18 @@ html {
   }
 }
 
-/* ── Signal form helpers (registered utilities so ps-9/h-auto etc. can override) ── */
-@utility signal-label {
+/* ── MSC form helpers (registered utilities so ps-9/h-auto etc. can override) ── */
+@utility msc-label {
   @apply font-mono text-[0.64rem] font-medium tracking-[0.24em] text-space-muted uppercase;
 }
-@utility signal-input {
+@utility msc-input {
   @apply w-full border border-space-line-soft bg-space-deep px-4 py-3 text-sm text-space-ivory transition-colors placeholder:text-space-muted/60 focus:border-ion focus:outline-none;
 }
-@utility signal-btn-primary {
+@utility msc-btn-primary {
   @apply inline-flex items-center justify-center gap-2 border border-ion px-6 py-3 font-mono text-[0.68rem] font-semibold tracking-[0.24em] text-space-black uppercase transition-all active:translate-y-px hover:brightness-110;
   background: linear-gradient(120deg, var(--ion) 15%, color-mix(in srgb, var(--ion) 45%, var(--space-amber)) 90%);
 }
-@utility signal-btn-ghost {
+@utility msc-btn-ghost {
   @apply inline-flex items-center justify-center gap-2 border border-ion-line px-6 py-3 font-mono text-[0.68rem] font-semibold tracking-[0.24em] text-ion uppercase transition-colors hover:border-ion hover:text-ion-bright active:translate-y-px;
 }
 
@@ -306,7 +306,7 @@ html {
   overflow-wrap: break-word;
 }
 
-/* Dark SIGNAL reading surface — public article page */
+/* Dark MSC reading surface — public article page */
 .blog-content:not(.editor) {
   @apply font-space-body text-space-ivory/80;
 }

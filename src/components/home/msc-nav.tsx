@@ -19,7 +19,7 @@ function isActive(href: string, pathname: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-export default function SignalNav() {
+export default function MscNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
@@ -50,7 +50,7 @@ export default function SignalNav() {
             <Atom className="size-4 text-ion transition-transform duration-300 group-hover:rotate-90" />
           </span>
           <span className="font-voyage text-sm font-bold uppercase tracking-[0.3em] text-space-ivory transition-colors group-hover:text-ion-bright">
-            MSC<span className="text-ion"> SIGNAL</span>
+            MSC
           </span>
         </Link>
 
@@ -91,7 +91,7 @@ export default function SignalNav() {
           type="button"
           onClick={() => setMenuOpen((open) => !open)}
           aria-expanded={menuOpen}
-          aria-controls="signal-mobile-nav"
+          aria-controls="msc-mobile-nav"
           aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
           className="inline-flex size-10 items-center justify-center border border-ion-line text-ion transition-colors hover:text-ion-bright lg:hidden"
         >
@@ -102,7 +102,7 @@ export default function SignalNav() {
       <AnimatePresence>
         {menuOpen && (
           <motion.div
-            id="signal-mobile-nav"
+            id="msc-mobile-nav"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}

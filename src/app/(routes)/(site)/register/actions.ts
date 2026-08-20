@@ -7,6 +7,7 @@ export type AmbassadorFormData = {
   class: string;
   school: string;
   experience: string;
+  firstTimeCa: "yes" | "no";
 };
 
 export type SubmitResult =
@@ -36,6 +37,7 @@ export async function submitAmbassadorForm(
         class: data.class.trim(),
         school: data.school.trim(),
         experience: data.experience.trim(),
+        first_time_ca: data.firstTimeCa === "yes",
       },
     ])
     .select("id, created_at")

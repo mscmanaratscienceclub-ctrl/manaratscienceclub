@@ -17,6 +17,7 @@ import {
   RefreshCw,
   ChevronRight,
   Save,
+  HelpCircle,
 } from "lucide-react";
 import { submitAmbassadorForm } from "./actions";
 import { useReducedMotion } from "@/lib/hooks/use-reduced-motion";
@@ -26,10 +27,8 @@ const schema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
   class: z.string().min(1, "Please enter your class / grade").max(50),
   school: z.string().min(2, "School name must be at least 2 characters").max(200),
-  experience: z
-    .string()
-    .min(20, "Please write at least 20 characters about your experience")
-    .max(2000, "Keep it under 2 000 characters"),
+  experience: z.string().min(1, "Please share your experience").max(2000, "Keep it under 2 000 characters"),
+  firstTimeCa: z.enum(["yes", "no"], { message: "Please answer this question" }),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -44,6 +43,7 @@ type SavedSubmission = {
   class: string;
   school: string;
   experience: string;
+  firstTimeCa?: "yes" | "no";
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -155,7 +155,7 @@ function Field({
   );
 }
 
-const inputClass = "signal-input";
+const inputClass = "msc-input";
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function CampusAmbassadorForm() {
@@ -222,6 +222,7 @@ export default function CampusAmbassadorForm() {
         class: values.class,
         school: values.school,
         experience: values.experience,
+        firstTimeCa: values.firstTimeCa,
       };
 
       saveSubmission(submission);
@@ -241,6 +242,7 @@ export default function CampusAmbassadorForm() {
       class: previousSubmission.class,
       school: previousSubmission.school,
       experience: previousSubmission.experience,
+      ...(previousSubmission.firstTimeCa ? { firstTimeCa: previousSubmission.firstTimeCa } : {}),
     });
     setPreviousSubmission(null);
     setShowForm(true);
@@ -312,12 +314,22 @@ export default function CampusAmbassadorForm() {
             <div className="border border-space-line-soft bg-space-deep px-4 py-3 sm:col-span-2">
               <div className="flex items-center gap-1.5 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-ion">
                 <Sparkles className="size-3.5" />
-                Experience / Motivation
+                Experience
               </div>
               <p className="mt-1 text-sm leading-relaxed text-space-ivory/80">
                 {previousSubmission.experience}
               </p>
             </div>
+
+            {previousSubmission.firstTimeCa && (
+              <div className="border border-space-line-soft bg-space-deep px-4 py-3 sm:col-span-2">
+                <div className="flex items-center gap-1.5 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-ion">
+                  <HelpCircle className="size-3.5" />
+                  First time being a CA
+                </div>
+                <p className="mt-1 text-sm text-space-ivory capitalize">{previousSubmission.firstTimeCa}</p>
+              </div>
+            )}
           </div>
 
           <div className="border-t border-space-line-soft pt-5">
@@ -325,7 +337,7 @@ export default function CampusAmbassadorForm() {
               Need to update your application? You can resubmit below — this
               will create a new entry.
             </p>
-            <button onClick={handleResubmit} className="signal-btn-ghost">
+            <button onClick={handleResubmit} className="msc-btn-ghost">
               <RefreshCw className="size-4" />
               Submit a new application
             </button>
@@ -416,16 +428,15 @@ export default function CampusAmbassadorForm() {
           {/* Experience */}
           <Field
             id="experience"
-            label="Experience & Motivation"
+            label="Experience"
             icon={<Sparkles className="size-3.5" />}
             error={errors.experience?.message}
-            hint="Tell us about any clubs, leadership roles, or why you want to be an ambassador."
+            hint="Tell us about any clubs, leadership roles, or relevant experience."
           >
             <div className="relative">
               <textarea
                 id="experience"
                 rows={6}
-                placeholder="Share your story — your involvement in science, leadership experience, or why Manarat Science Club excites you…"
                 className={`${inputClass} resize-none`}
                 {...register("experience")}
               />
@@ -440,6 +451,31 @@ export default function CampusAmbassadorForm() {
               >
                 {experienceLen}/2000
               </span>
+            </div>
+          </Field>
+
+          {/* First time as a CA */}
+          <Field
+            id="firstTimeCa"
+            label="Is this your first time being a CA?"
+            icon={<HelpCircle className="size-3.5" />}
+            error={errors.firstTimeCa?.message}
+          >
+            <div className="flex gap-3" role="radiogroup" aria-label="Is this your first time being a CA?">
+              {(["yes", "no"] as const).map((option) => (
+                <label
+                  key={option}
+                  className="flex flex-1 cursor-pointer items-center justify-center gap-2 border border-space-line-soft px-4 py-3 font-mono text-[0.64rem] font-semibold uppercase tracking-[0.24em] text-space-muted transition-colors has-checked:border-ion has-checked:bg-ion/10 has-checked:text-ion-bright hover:border-ion"
+                >
+                  <input
+                    type="radio"
+                    value={option}
+                    className="sr-only"
+                    {...register("firstTimeCa")}
+                  />
+                  {option}
+                </label>
+              ))}
             </div>
           </Field>
 
@@ -468,7 +504,7 @@ export default function CampusAmbassadorForm() {
           <button
             type="submit"
             disabled={submitting}
-            className="signal-btn-primary group w-full disabled:cursor-not-allowed disabled:opacity-60"
+            className="msc-btn-primary group w-full disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? (
               <>

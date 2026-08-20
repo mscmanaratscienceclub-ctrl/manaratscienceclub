@@ -103,7 +103,7 @@ export default function OpportunitiesPage() {
             <p className="mt-4 text-lg leading-relaxed text-space-muted">
               We are constantly looking for enthusiastic individuals to join our core operations. Whether you are interested in hardware, software, or editorial work, there is a place for you.
             </p>
-            <Link href="/join" className="signal-btn-primary mt-8">
+            <Link href="/join" className="msc-btn-primary mt-8">
               Apply to Join <Users className="size-4" />
             </Link>
           </ScrollReveal>

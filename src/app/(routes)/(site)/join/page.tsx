@@ -149,7 +149,7 @@ export default function JoinPage() {
                   href={committee.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="signal-btn-ghost w-full"
+                  className="msc-btn-ghost w-full"
                 >
                   Apply now
                   <ChevronRight className="size-4" />

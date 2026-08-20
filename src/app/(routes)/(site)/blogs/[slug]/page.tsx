@@ -225,7 +225,7 @@ export default async function BlogPostPage({ params }: PageProps) {
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="mb-8 flex items-center justify-between">
               <h2 className="font-voyage text-xl font-bold uppercase tracking-tight text-space-ivory">Related Articles</h2>
-              <Link href="/blogs" className="signal-btn-ghost !px-4 !py-2">
+              <Link href="/blogs" className="msc-btn-ghost !px-4 !py-2">
                 View All <ArrowLeft className="size-4 rotate-180" />
               </Link>
             </div>

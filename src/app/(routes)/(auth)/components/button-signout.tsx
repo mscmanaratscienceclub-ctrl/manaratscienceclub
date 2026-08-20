@@ -34,7 +34,7 @@ export default function SignOutButton() {
       type="button"
       disabled={isPending}
       onClick={onSignOut}
-      className="signal-btn-ghost disabled:pointer-events-none disabled:opacity-60"
+      className="msc-btn-ghost disabled:pointer-events-none disabled:opacity-60"
     >
       <LogOut className="size-4" />
       Logout

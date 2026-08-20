@@ -24,7 +24,7 @@ export default function NotFound() {
           </div>
 
           <p className="font-mono text-[0.64rem] font-medium uppercase tracking-[0.24em] text-ion">
-            Signal lost — Error 404
+            Lost in space — Error 404
           </p>
 
           <h1 className="mt-4 font-voyage text-4xl font-bold uppercase tracking-tight text-space-ivory sm:text-6xl">

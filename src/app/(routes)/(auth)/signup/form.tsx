@@ -77,7 +77,7 @@ export default function SignUpForm() {
                   <input
                     type="text"
                     placeholder="Name"
-                    className={cn("signal-input peer ps-9 disabled:opacity-50", getInputClassName("name"))}
+                    className={cn("msc-input peer ps-9 disabled:opacity-50", getInputClassName("name"))}
                     disabled={isPending}
                     {...field}
                   />
@@ -97,7 +97,7 @@ export default function SignUpForm() {
                   <input
                     type="email"
                     placeholder="Email"
-                    className={cn("signal-input peer ps-9 disabled:opacity-50", getInputClassName("email"))}
+                    className={cn("msc-input peer ps-9 disabled:opacity-50", getInputClassName("email"))}
                     disabled={isPending}
                     {...field}
                   />
@@ -118,7 +118,7 @@ export default function SignUpForm() {
                   <input
                     type="text"
                     placeholder="Username"
-                    className={cn("signal-input peer ps-9 disabled:opacity-50", getInputClassName("username"))}
+                    className={cn("msc-input peer ps-9 disabled:opacity-50", getInputClassName("username"))}
                     disabled={isPending}
                     {...field}
                   />
@@ -138,7 +138,7 @@ export default function SignUpForm() {
                 <InputPasswordContainer>
                   <input
                     type="password"
-                    className={cn("signal-input pe-9 disabled:opacity-50", getInputClassName("password"))}
+                    className={cn("msc-input pe-9 disabled:opacity-50", getInputClassName("password"))}
                     placeholder="Password"
                     disabled={isPending}
                     {...field}
@@ -159,7 +159,7 @@ export default function SignUpForm() {
                 <InputPasswordContainer>
                   <input
                     type="password"
-                    className={cn("signal-input pe-9 disabled:opacity-50", getInputClassName("confirmPassword"))}
+                    className={cn("msc-input pe-9 disabled:opacity-50", getInputClassName("confirmPassword"))}
                     placeholder="Confirm Password"
                     disabled={isPending}
                     {...field}
@@ -177,7 +177,7 @@ export default function SignUpForm() {
           name="gender"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="signal-label">Gender</FormLabel>
+              <FormLabel className="msc-label">Gender</FormLabel>
               <GenderRadioGroup
                 value={field.value}
                 onChange={field.onChange}
@@ -190,7 +190,7 @@ export default function SignUpForm() {
         <button
           type="submit"
           disabled={isPending}
-          className="signal-btn-primary mt-5 w-full disabled:pointer-events-none disabled:opacity-60"
+          className="msc-btn-primary mt-5 w-full disabled:pointer-events-none disabled:opacity-60"
         >
           {isPending ? (
             <>

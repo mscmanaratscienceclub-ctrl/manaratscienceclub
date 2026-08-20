@@ -14,6 +14,7 @@ export interface ChromaSocial {
 }
 
 export interface ChromaItem {
+  id?: string;
   image?: string;
   title: string;
   subtitle?: string;
@@ -119,7 +120,7 @@ export default function ChromaGrid({
     >
       {items.map((item) => (
           <article
-            key={item.title}
+            key={item.id ?? item.title}
             className="chroma-card"
             onMouseMove={handleCardMove}
             onClick={() => handleCardClick(item)}

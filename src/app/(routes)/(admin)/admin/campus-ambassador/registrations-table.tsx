@@ -10,6 +10,7 @@ export interface RegistrationRow {
   class: string;
   school: string;
   experience: string;
+  firstTimeCa: boolean;
   createdAt: string;
 }
 
@@ -67,6 +68,7 @@ export default function RegistrationsTable({ registrations }: { registrations: R
                 <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Name</th>
                 <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Class</th>
                 <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">School</th>
+                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">First-time CA</th>
                 <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Submitted</th>
               </tr>
             </thead>
@@ -111,14 +113,15 @@ function FragmentRow({
         <td className="px-4 py-4 font-body font-medium text-ink">{row.name}</td>
         <td className="px-4 py-4 font-body text-sm text-ink/60">{row.class}</td>
         <td className="px-4 py-4 font-body text-sm text-ink/60">{row.school}</td>
+        <td className="px-4 py-4 font-body text-sm text-ink/60">{row.firstTimeCa ? "Yes" : "No"}</td>
         <td className="px-4 py-4 font-body text-sm text-ink/60">{dateFormatter.format(new Date(row.createdAt))}</td>
       </tr>
       {expanded && (
         <tr className="bg-cream/60">
           <td />
-          <td colSpan={4} className="px-4 pb-5 pt-1">
+          <td colSpan={5} className="px-4 pb-5 pt-1">
             <p className="mb-1.5 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">
-              Experience &amp; Motivation
+              Experience
             </p>
             <p className="max-w-3xl whitespace-pre-wrap font-body text-sm leading-relaxed text-ink/80">
               {row.experience}

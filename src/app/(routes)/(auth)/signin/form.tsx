@@ -71,7 +71,7 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
                   <input
                     type="text"
                     placeholder="Username"
-                    className={cn("signal-input peer ps-9 disabled:opacity-50", getInputClassName("username"))}
+                    className={cn("msc-input peer ps-9 disabled:opacity-50", getInputClassName("username"))}
                     disabled={isPending}
                     {...field}
                   />
@@ -92,7 +92,7 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
                   <input
                     type="password"
                     id="input-23"
-                    className={cn("signal-input pe-9 disabled:opacity-50", getInputClassName("password"))}
+                    className={cn("msc-input pe-9 disabled:opacity-50", getInputClassName("password"))}
                     placeholder="Password"
                     disabled={isPending}
                     {...field}
@@ -106,7 +106,7 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
         <button
           type="submit"
           disabled={isPending}
-          className="signal-btn-primary mt-5 w-full disabled:pointer-events-none disabled:opacity-60"
+          className="msc-btn-primary mt-5 w-full disabled:pointer-events-none disabled:opacity-60"
         >
           {isPending ? (
             <>

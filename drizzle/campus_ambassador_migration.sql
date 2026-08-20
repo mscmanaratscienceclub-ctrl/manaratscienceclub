@@ -4,13 +4,18 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 
 create table if not exists public.campus_ambassador_registrations (
-  id          uuid primary key default gen_random_uuid(),
-  name        text not null,
-  class       text not null,
-  school      text not null,
-  experience  text not null,
-  created_at  timestamptz not null default now()
+  id            uuid primary key default gen_random_uuid(),
+  name          text not null,
+  class         text not null,
+  school        text not null,
+  experience    text not null,
+  first_time_ca boolean not null default false,
+  created_at    timestamptz not null default now()
 );
+
+-- If the table already exists without the column (added 2026-08-20):
+alter table public.campus_ambassador_registrations
+  add column if not exists first_time_ca boolean not null default false;
 
 -- Enable Row-Level Security
 alter table public.campus_ambassador_registrations enable row level security;

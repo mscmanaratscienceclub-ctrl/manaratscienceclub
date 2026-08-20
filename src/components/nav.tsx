@@ -1,5 +1,5 @@
-import SignalNav from "@/components/home/signal-nav";
+import MscNav from "@/components/home/msc-nav";
 
 export default function Nav() {
-  return <SignalNav />;
+  return <MscNav />;
 }

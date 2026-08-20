@@ -10,6 +10,7 @@ export default async function CampusAmbassadorAdminPage() {
     class: row.class,
     school: row.school,
     experience: row.experience,
+    firstTimeCa: row.firstTimeCa,
     createdAt: new Date(row.createdAt).toISOString(),
   }));
 

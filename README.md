@@ -42,8 +42,8 @@ Three sibling groups, each with its own layout and visual language:
 
 | Group | Purpose | Theme | Gate |
 |-------|---------|-------|------|
-| `(site)` | Public pages (home, blogs, events, robotics…) | Dark "space / signal console" (`bg-space-deep`, ion orange accents) with Nav + Footer | Public |
-| `(auth)` | Sign-in, sign-up, verify/reset password | Dark signal theme | Redirects signed-in users away |
+| `(site)` | Public pages (home, blogs, events, robotics…) | Dark "space / msc console" (`bg-space-deep`, ion orange accents) with Nav + Footer | Public |
+| `(auth)` | Sign-in, sign-up, verify/reset password | Dark msc theme | Redirects signed-in users away |
 | `(cms)` | Content management (`/cms/*`) | Light cream (`bg-cream`, ink text) with `CmsSidebar` | Session + role `admin` or `writer` |
 | `(admin)` | Grand admin panel (`/admin/*`) | Light cream with `AdminSidebar` | Session + role `admin` only |
 
@@ -89,7 +89,7 @@ Two visual languages share one token set:
 - **Light brand tokens** (`--cream`, `--ink`, `--surface`, `--manara-*`
   accents) — used by CMS/admin and legal content. Shadows: `shadow-subtle`,
   `shadow-academic`.
-- **Interstellar / signal tokens** (`--space-*`, `--ion`, `--ion-bright`,
+- **Interstellar / msc tokens** (`--space-*`, `--ion`, `--ion-bright`,
   `--ion-line`) — used by the public site and auth pages.
 - Fonts: `font-display` (Fredoka), `font-body` (Rubik), `font-voyage`
   (Unbounded), `font-space-display` (Cormorant), `font-space-body` (DM Sans),
@@ -156,9 +156,9 @@ animation honours `prefers-reduced-motion` via `useReducedMotion()`
     ├── components/
     │   ├── nav.tsx / footer.tsx   # Thin wrappers picking variant/theme
     │   ├── home/
-    │   │   ├── signal-nav.tsx     # Site navbar (overlay/bar variants, scroll blur)
-    │   │   ├── signal-footer.tsx  # 4-column footer + legal bottom bar
-    │   │   ├── signal-hero.tsx    # GSAP scramble-text hero
+    │   │   ├── msc-nav.tsx     # Site navbar (overlay/bar variants, scroll blur)
+    │   │   ├── msc-footer.tsx  # 4-column footer + legal bottom bar
+    │   │   ├── msc-hero.tsx    # GSAP scramble-text hero
     │   │   ├── blackhole-shader.tsx  # three.js home shader (reference 3D impl)
     │   │   ├── divisions-pan.tsx, journal-console.tsx, journal-rows.tsx,
     │   │   ├── manifesto-lines.tsx, telemetry.tsx, tesseract-canvas.tsx
@@ -204,7 +204,7 @@ animation honours `prefers-reduced-motion` via `useReducedMotion()`
 
 | Route | Description |
 |-------|-------------|
-| `/` | Homepage — signal hero, divisions pan, journal console, manifesto, telemetry |
+| `/` | Homepage — msc hero, divisions pan, journal console, manifesto, telemetry |
 | `/legacy` | Club history timeline and member generations |
 | `/blogs`, `/blogs/[slug]` | Published posts from the CMS |
 | `/events` | Events calendar (data module) |
