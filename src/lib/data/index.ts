@@ -444,14 +444,9 @@ export interface ShowcaseImage {
 
 /** Past STEM Fest event photos. */
 export const competitionShowcase: ShowcaseImage[] = [
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2703.JPG", alt: "MSC STEM Fest 2025 — photo 3" },
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2704.JPG", alt: "MSC STEM Fest 2025 — photo 4" },
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2705.JPG", alt: "MSC STEM Fest 2025 — photo 5" },
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2706.JPG", alt: "MSC STEM Fest 2025 — photo 6" },
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2707.JPG", alt: "MSC STEM Fest 2025 — photo 7" },
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2708.JPG", alt: "MSC STEM Fest 2025 — photo 8" },
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2709.JPG", alt: "MSC STEM Fest 2025 — photo 9" },
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2710.JPG", alt: "MSC STEM Fest 2025 — photo 10" },
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2711.JPG", alt: "MSC STEM Fest 2025 — photo 11" },
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/IMG_2712.JPG", alt: "MSC STEM Fest 2025 — photo 12" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image1.png", alt: "MSC STEM Fest 2025 — photo 3" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image2.png", alt: "MSC STEM Fest 2025 — photo 4" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image3.png", alt: "MSC STEM Fest 2025 — photo 5" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image4.png", alt: "MSC STEM Fest 2025 — photo 6" },
+ 
 ];
