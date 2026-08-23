@@ -331,4 +331,4 @@ Before finishing any change: `.claude/scripts/verify.sh` (0 FAILs) +
 
 ## License
 
-MIT — Copyright 2025 Jabir Developer
+MIT — Copyright 2026 Abrar Jawad
