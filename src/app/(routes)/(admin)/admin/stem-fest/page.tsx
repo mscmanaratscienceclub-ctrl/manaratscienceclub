@@ -1,16 +1,17 @@
-import { getAllAmbassadorRegistrations } from "@/lib/actions/registrations";
-import RegistrationsTable from "./registrations-table";
+import { getAllStemFestRegistrations } from "@/lib/actions/registrations";
+import StemFestRegistrationsTable from "./stem-fest-registrations-table";
 
-export default async function CampusAmbassadorAdminPage() {
-  const rows = await getAllAmbassadorRegistrations();
+export default async function StemFestAdminPage() {
+  const rows = await getAllStemFestRegistrations();
 
   const registrations = rows.map((row) => ({
     id: row.id,
     name: row.name,
     class: row.class,
     school: row.school,
-    experience: row.experience,
-    firstTimeCa: row.firstTimeCa,
+    segments: row.segments,
+    transactionId: row.transactionId,
+    paymentNumber: row.paymentNumber,
     createdAt: new Date(row.createdAt).toISOString(),
   }));
 
@@ -21,13 +22,13 @@ export default async function CampusAmbassadorAdminPage() {
           Form Responses
         </p>
         <h1 className="font-voyage text-3xl font-bold uppercase tracking-tight text-space-ivory">
-          Campus Ambassador
+          STEM Fest
         </h1>
         <p className="mt-2 font-space-body text-sm text-space-muted">
-          All {registrations.length} {registrations.length === 1 ? "response" : "responses"} from the campus ambassador registration form.
+          All {registrations.length} {registrations.length === 1 ? "registration" : "registrations"} from the STEM Fest registration form.
         </p>
       </div>
-      <RegistrationsTable registrations={registrations} />
+      <StemFestRegistrationsTable registrations={registrations} />
     </div>
   );
 }

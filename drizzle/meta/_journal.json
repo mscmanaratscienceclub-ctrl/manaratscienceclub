@@ -43,6 +43,13 @@
       "when": 1787163146901,
       "tag": "0005_pink_sinister_six",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787755012543,
+      "tag": "0006_classy_pride",
+      "breakpoints": true
     }
   ]
 }

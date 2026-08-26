@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { campusAmbassadorRegistrations } from "@/db/schema/registrations";
+import { campusAmbassadorRegistrations, stemFestRegistrations } from "@/db/schema/registrations";
 import { getServerSession } from "@/lib/auth/get-session";
 import { desc } from "drizzle-orm";
 
@@ -22,4 +22,12 @@ export async function getAllAmbassadorRegistrations() {
     .select()
     .from(campusAmbassadorRegistrations)
     .orderBy(desc(campusAmbassadorRegistrations.createdAt));
+}
+
+export async function getAllStemFestRegistrations() {
+  await requireAdmin();
+  return db
+    .select()
+    .from(stemFestRegistrations)
+    .orderBy(desc(stemFestRegistrations.createdAt));
 }

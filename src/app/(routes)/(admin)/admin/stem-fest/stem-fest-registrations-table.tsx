@@ -1,16 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, GraduationCap, Search } from "lucide-react";
+import { ChevronDown, FlaskConical, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export interface RegistrationRow {
+export interface StemFestRow {
   id: string;
   name: string;
   class: string;
   school: string;
-  experience: string;
-  firstTimeCa: boolean;
+  segments: string;
+  transactionId: string;
+  paymentNumber: string;
   createdAt: string;
 }
 
@@ -20,7 +21,11 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 });
 
-export default function RegistrationsTable({ registrations }: { registrations: RegistrationRow[] }) {
+export default function StemFestRegistrationsTable({
+  registrations,
+}: {
+  registrations: StemFestRow[];
+}) {
   const [query, setQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -31,7 +36,8 @@ export default function RegistrationsTable({ registrations }: { registrations: R
       (r) =>
         r.name.toLowerCase().includes(q) ||
         r.school.toLowerCase().includes(q) ||
-        r.class.toLowerCase().includes(q)
+        r.class.toLowerCase().includes(q) ||
+        r.transactionId.toLowerCase().includes(q)
     );
   }, [query, registrations]);
 
@@ -44,7 +50,7 @@ export default function RegistrationsTable({ registrations }: { registrations: R
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, school, or class…"
+            placeholder="Search by name, school, class, or TrxID…"
             className="w-full border border-space-line-soft bg-space-deep py-2.5 pl-10 pr-3 font-mono text-xs text-space-ivory outline-none transition-colors placeholder:text-space-muted/60 focus:border-ion"
           />
         </div>
@@ -52,10 +58,10 @@ export default function RegistrationsTable({ registrations }: { registrations: R
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-          <GraduationCap className="mb-4 size-10 text-space-line" />
+          <FlaskConical className="mb-4 size-10 text-space-line" />
           <p className="font-space-body text-sm text-space-muted">
             {registrations.length === 0
-              ? "No registrations yet."
+              ? "No STEM Fest registrations yet."
               : "No registrations match your search."}
           </p>
         </div>
@@ -68,7 +74,7 @@ export default function RegistrationsTable({ registrations }: { registrations: R
                 <th className="px-6 py-3.5 font-mono text-[0.56rem] font-semibold uppercase tracking-[0.24em] text-space-muted">Name</th>
                 <th className="px-6 py-3.5 font-mono text-[0.56rem] font-semibold uppercase tracking-[0.24em] text-space-muted">Class</th>
                 <th className="px-6 py-3.5 font-mono text-[0.56rem] font-semibold uppercase tracking-[0.24em] text-space-muted">School</th>
-                <th className="px-6 py-3.5 font-mono text-[0.56rem] font-semibold uppercase tracking-[0.24em] text-space-muted">First-time CA</th>
+                <th className="px-6 py-3.5 font-mono text-[0.56rem] font-semibold uppercase tracking-[0.24em] text-space-muted">Transaction ID</th>
                 <th className="px-6 py-3.5 font-mono text-[0.56rem] font-semibold uppercase tracking-[0.24em] text-space-muted">Submitted</th>
               </tr>
             </thead>
@@ -97,7 +103,7 @@ function FragmentRow({
   expanded,
   onToggle,
 }: {
-  row: RegistrationRow;
+  row: StemFestRow;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -116,7 +122,7 @@ function FragmentRow({
         <td className="px-6 py-4 font-space-body text-sm font-medium text-space-ivory">{row.name}</td>
         <td className="px-6 py-4 font-space-body text-sm text-space-muted">{row.class}</td>
         <td className="px-6 py-4 font-space-body text-sm text-space-muted">{row.school}</td>
-        <td className="px-6 py-4 font-space-body text-sm text-space-muted">{row.firstTimeCa ? "Yes" : "No"}</td>
+        <td className="px-6 py-4 font-mono text-xs text-space-muted">{row.transactionId}</td>
         <td className="px-6 py-4 font-mono text-xs text-space-muted">{dateFormatter.format(new Date(row.createdAt))}</td>
       </tr>
       {expanded && (
@@ -124,10 +130,16 @@ function FragmentRow({
           <td />
           <td colSpan={5} className="px-6 pb-6 pt-1">
             <p className="mb-1.5 font-mono text-[0.56rem] font-semibold uppercase tracking-[0.26em] text-ion">
-              Experience
+              Segments
             </p>
-            <p className="max-w-3xl whitespace-pre-wrap font-space-body text-sm leading-relaxed text-space-ivory/80">
-              {row.experience}
+            <p className="mb-4 max-w-3xl font-space-body text-sm leading-relaxed text-space-ivory/80">
+              {row.segments}
+            </p>
+            <p className="mb-1.5 font-mono text-[0.56rem] font-semibold uppercase tracking-[0.26em] text-ion">
+              Payment Number / ID
+            </p>
+            <p className="max-w-3xl font-mono text-sm leading-relaxed text-space-ivory/80">
+              {row.paymentNumber}
             </p>
           </td>
         </tr>

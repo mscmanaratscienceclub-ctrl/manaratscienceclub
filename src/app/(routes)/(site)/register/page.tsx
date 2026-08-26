@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
 import { Sparkles } from "lucide-react";
-import CampusAmbassadorForm from "./campus-ambassador-form";
+import RegisterForms from "./register-forms";
+import { getFormFields } from "@/lib/actions/form-config";
 
 export const metadata: Metadata = {
-  title: "Register — Campus Ambassador",
+  title: "Register — STEM Fest & Campus Ambassador",
   description:
-    "Apply to become a Campus Ambassador for Manarat Science Club. Represent science, innovation, and curiosity at your school.",
+    "Register for the Manarat Science Club STEM Fest or apply to become a Campus Ambassador. Represent science, innovation, and curiosity at your school.",
 };
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  const [stemFest, campusAmbassador] = await Promise.all([
+    getFormFields("stem-fest"),
+    getFormFields("campus-ambassador"),
+  ]);
+
   return (
     <main className="min-h-screen bg-space-deep">
       <section className="relative overflow-hidden border-b border-space-line-soft">
@@ -20,10 +26,10 @@ export default function RegisterPage() {
             <Sparkles className="size-3.5" /> Open Applications
           </span>
           <h1 className="mt-5 max-w-[40rem] font-voyage text-3xl font-bold uppercase leading-[1.08] tracking-tight text-space-ivory sm:text-4xl lg:text-5xl">
-            Campus Ambassador
+            Registrations
           </h1>
           <p className="mt-5 max-w-[36rem] text-base leading-relaxed text-space-muted md:text-lg">
-            Represent Manarat Science Club at your school — inspire fellow
+            Sign up for STEM Fest or become a Campus Ambassador — inspire fellow
             students, organise activities, and be the bridge between curiosity
             and discovery.
           </p>
@@ -31,7 +37,7 @@ export default function RegisterPage() {
       </section>
 
       <section className="mx-auto w-full max-w-2xl px-4 py-14 sm:px-6">
-        <CampusAmbassadorForm />
+        <RegisterForms fields={{ "stem-fest": stemFest, "campus-ambassador": campusAmbassador }} />
       </section>
     </main>
   );

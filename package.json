@@ -65,6 +65,7 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^10",
     "eslint-config-next": "^16.2.4",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "lightningcss-win32-x64-msvc": "1.32.0",
     "postcss": "^8",
     "prettier-plugin-tailwindcss": "^0.7.3",
