@@ -1,0 +1,12 @@
+{
+  // Tailwind v4 at-rules (@theme, @utility, @apply, @plugin, @source) are not
+  // part of the CSS spec, so VS Code's built-in CSS validator flags every one
+  // of them as "Unknown at rule". Tailwind's own tooling parses them correctly,
+  // so this built-in lint is pure noise in this project.
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "less.lint.unknownAtRules": "ignore",
+  // Helps Tailwind IntelliSense (bradlc.vscode-tailwindcss) pick up classes
+  // passed through this project's `cn()` / `cva()` helpers.
+  "tailwindCSS.classAttributes": ["class", "className", "cn", "cva", "clsx"]
+}

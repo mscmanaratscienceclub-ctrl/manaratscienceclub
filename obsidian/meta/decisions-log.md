@@ -1,6 +1,6 @@
 ---
 tags: [meta, decision]
-updated: 2026-08-19
+updated: 2026-08-30
 ---
 
 # Decisions Log (ADRs)
@@ -14,6 +14,40 @@ decisions on top, continuing the numbering. Amending an inherited decision is
 fine; write a new ADR that says so rather than editing the old one.
 
 Template: [[templates/adr-note]].
+
+---
+
+## ADR-0025 — Pre-optimise bucket images instead of using the Vercel image optimizer
+
+**Status:** Accepted · 2026-08-30
+
+**Decision.** Curated imagery stored in the Supabase `avatars` bucket is
+re-encoded once, offline, to WebP at 2x its rendered size and uploaded under
+`optimized/` with a one-year `cache-control`. Components render those URLs with
+`unoptimized`, so no request ever reaches `/_next/image`. URLs that are not
+known at build time (CMS author avatars, stored profile pictures) are pointed at
+Supabase's own `/storage/v1/render/image/` endpoint instead.
+`scripts/optimize-bucket-images.mjs` regenerates the set; `bucketImage()` and
+`renderedImageUrl()` in `src/lib/media.ts` build the URLs.
+
+**Why.** `/legacy` referenced 25 bucket objects totalling 17.7 MB — the largest a
+9.35 MB PNG of a headshot being drawn into a 320 px card. With the optimizer on,
+Vercel re-transformed each object whenever its cache expired, and
+`minimumCacheTTL` was unset (60 s default), so one page view could trigger dozens
+of metered "image transformations", each pulling the multi-megabyte original back
+out of Supabase. Setting `unoptimized` stopped the billing but shipped raw bytes
+instead. Both were the same mistake: the *source* assets were the wrong size and
+format. Pre-optimising removes the need to transform at all — the bytes the CDN
+sends are already the bytes the browser wants. `/legacy` image weight went
+17.7 MB → 0.66 MB with zero optimizer requests.
+
+**When building.** After adding an image path to `src/lib/data/index.ts`, run
+`pnpm images:optimize` (`:dry` to preview). Never reference a raw original. The
+rendered size of a card is what picks its profile in the script, so if a layout
+grows materially, bump the profile and re-run rather than switching the optimizer
+back on. User uploads stay small by construction — `profile-form.tsx` compresses
+to 512 px WebP client-side before the request, so the optimizer is not needed to
+tame an oversized file.
 
 ---
 

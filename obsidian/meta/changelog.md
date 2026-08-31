@@ -1,6 +1,6 @@
 ---
 tags: [meta, changelog]
-updated: 2026-08-20
+updated: 2026-08-30
 ---
 
 # Changelog
@@ -15,6 +15,98 @@ remembering. Routine commits do not need an entry.
 For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
+
+## 2026-08-30 — Supabase image pipeline: pre-optimised, zero transformations
+
+- `scripts/optimize-bucket-images.mjs` (`pnpm images:optimize`, or
+  `images:optimize:dry` to preview) re-encodes every bucket object referenced in
+  `src/lib/data/index.ts` to WebP at 2x rendered size and uploads it under
+  `optimized/` with a one-year `cache-control`. 23.5 MB → 0.85 MB across 31
+  objects; `/legacy` drops from 17.7 MB to 0.66 MB. Originals are left in place.
+- The 36 hardcoded `https://<project>.supabase.co/...` strings in the data
+  module are replaced by `bucketImage()` from the new `src/lib/media.ts`, which
+  derives the origin from `NEXT_PUBLIC_SUPABASE_URL`. `getPublicImageUrl()` is
+  gone — it built a plain string through the service-role client.
+- Blog author avatars and stored profile pictures route through Supabase's
+  `/render/image/` endpoint (`renderedImageUrl()`) so Vercel is never asked to
+  transform them. See [[decisions-log|ADR-0025]].
+- `POST /api/upload` sets `cacheControl: "31536000"`; UUID-named uploads were
+  inheriting Supabase's 1-hour default.
+- The competition carousel no longer sends `priority` for below-the-fold slides,
+  which was competing with the real LCP element.
+- Fixed 6 `/memberimage/*.{png,jpg}` references left dangling by the in-flight
+  WebP migration (they were 404ing); profile uploads are now 512 px WebP with a
+  JPEG fallback where canvas WebP is unsupported.
+
+## 2026-08-30 — Batch Ambassador registration
+
+- `/register` now offers Campus Ambassador and Batch Ambassador side by side,
+  reusing one validated form with programme-specific drafts and submission state.
+- Ambassador submissions persist a constrained `type` value (`campus` or
+  `batch`); existing rows default to `campus`. Run
+  `drizzle/add_ambassador_type.sql` in the Supabase SQL Editor before deploying.
+- The admin ambassador table now identifies and searches both registration types.
+- Form payloads are validated by the same Zod schema on the client and server;
+  the submit action no longer falls back to a publishable key or logs key details.
+
+## 2026-08-28 — Tailwind scan scope and Tesseract loop recovery
+
+- Restored Tailwind's `source("../")` import scope so only `src/` is scanned.
+  The split `@source "../"` form allowed class-like wildcard examples in the
+  root vault and `.claude/` files to produce invalid generated CSS such as
+  `animation-duration: var(--duration-*)`.
+- Removed the Tesseract canvas's duplicate initial `requestAnimationFrame`
+  chain and clear the active frame handle at callback entry. Visibility and
+  intersection pauses can now cancel the one authoritative loop and reliably
+  wake it again.
+- The scene now listens for live `prefers-reduced-motion` changes: enabling the
+  preference freezes on a rendered frame, and disabling it safely resumes.
+
+---
+
+## 2026-08-28 — Hero FOUC fix: animated hero starts hidden in CSS, not JS
+
+- On refresh, the server HTML painted all six scroll slides stacked on
+  top of each other over the hero copy for the ~1s before React
+  hydration — their hidden state existed only in GSAP
+  (`useLayoutEffect`), which cannot run until the bundle loads.
+- Fix: an inline gate script (first child of `<body>` in
+  `src/app/layout.tsx`) adds `html.motion-ok` before first paint when
+  `prefers-reduced-motion` is not set; new gate rules in `globals.css`
+  start `[data-hero-rise]`/`[data-hero-fade]` at `opacity: 0` and
+  position + hide `[data-slide]` under that class only.
+- Hero slides now render **static-first** (bare divs in a `grid`); the
+  absolute slide-deck layout moved from Tailwind classes into the CSS
+  gate — no-JS and reduce-motion visitors get the readable static page
+  immediately (before, they saw stacked slides until hydration).
+- Intro tweens switched `.from()` → `.fromTo()` with explicit end
+  values (a `from` would read the CSS-hidden 0 as the end state); the
+  animation effect checks the media query directly since
+  `useReducedMotion` syncs post-paint.
+- `<html>` needs `suppressHydrationWarning` (missed initially): the
+  pre-paint script mutates its `class` before React hydrates, and the
+  mismatch could trip a client re-render that strips `motion-ok` and
+  knocks the slides out of the pinned dive mid-animation. The hero
+  effect also re-asserts the class before GSAP initializes as
+  insurance against any framework attribute reconciliation.
+
+---
+
+## 2026-08-28 — Hero intro softened: gentle fade-rise replaces scramble decode
+
+- Replaced the `ScrambleTextPlugin` cipher-decode intro in
+  `src/components/home/msc-hero.tsx` with a subtle staggered fade + rise
+  (`power2.out`, ~0.8s per element) — the decrypt effect read as visual
+  noise on the landing hero.
+- Data markers `data-scramble-status/-top/-bottom` renamed to a single
+  `data-hero-rise` (DOM order drives the cascade). Scroll-driven tesseract
+  dive and the `data-hero-fade` reveal are unchanged; `prefers-reduced-motion`
+  still renders everything static. Plugin registration now loads only
+  `ScrollTrigger`.
+
+---
+
+
 
 ## 2026-08-20 — SEO metadata routes: sitemap.xml + robots.txt
 

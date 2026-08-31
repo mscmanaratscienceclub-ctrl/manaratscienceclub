@@ -19,7 +19,6 @@ export const stemfestSegments: StemfestSegment[] = [
       "Bio-Chem",
       "General Science",
       "Computer Science",
-      "",
     ],
   },
   {
@@ -30,7 +29,7 @@ export const stemfestSegments: StemfestSegment[] = [
     items: [
       "Robotics",
       "Robosoccer",
-      "LFR ",
+      "LFR",
       "Roborace",
     ],
   },

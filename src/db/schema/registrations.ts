@@ -1,9 +1,11 @@
-import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { boolean, check, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const campusAmbassadorRegistrations = pgTable(
   "campus_ambassador_registrations",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    type: text("type", { enum: ["campus", "batch"] }).notNull().default("campus"),
     name: text("name").notNull(),
     class: text("class").notNull(),
     school: text("school").notNull(),
@@ -12,7 +14,13 @@ export const campusAmbassadorRegistrations = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-  }
+  },
+  (table) => [
+    check(
+      "campus_ambassador_registrations_type_check",
+      sql`${table.type} in ('campus', 'batch')`
+    ),
+  ]
 ).enableRLS();
 
 export type CampusAmbassadorRegistration =

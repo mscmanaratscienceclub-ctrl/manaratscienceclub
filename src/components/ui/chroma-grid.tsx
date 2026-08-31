@@ -132,6 +132,10 @@ export default function ChromaGrid({
               } as React.CSSProperties
             }
           >
+            {/* Curated members come from pre-optimised WebP in the bucket
+                (scripts/optimize-bucket-images.mjs); local ones are already
+                .webp in /public. Either way the bytes are final, so skip the
+                optimizer and its per-view transformation cost. */}
             <div className="chroma-img-wrapper">
               {item.image ? (
                 <Image
@@ -141,7 +145,9 @@ export default function ChromaGrid({
                   sizes="320px"
                   loading="lazy"
                   className="chroma-img"
+                  unoptimized
                 />
+
               ) : (
                 <div className="chroma-img-fallback">
                   <User className="size-10" aria-hidden="true" />

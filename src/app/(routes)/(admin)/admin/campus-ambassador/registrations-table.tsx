@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 export interface RegistrationRow {
   id: string;
+  type: "campus" | "batch";
   name: string;
   class: string;
   school: string;
@@ -30,6 +31,7 @@ export default function RegistrationsTable({ registrations }: { registrations: R
     return registrations.filter(
       (r) =>
         r.name.toLowerCase().includes(q) ||
+        r.type.includes(q) ||
         r.school.toLowerCase().includes(q) ||
         r.class.toLowerCase().includes(q)
     );
@@ -65,6 +67,7 @@ export default function RegistrationsTable({ registrations }: { registrations: R
             <thead>
               <tr className="border-b border-ink/5 text-left">
                 <th className="w-8 px-3 py-3" aria-label="Expand" />
+                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Type</th>
                 <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Name</th>
                 <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Class</th>
                 <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">School</th>
@@ -110,6 +113,7 @@ function FragmentRow({
         <td className="px-3 py-4">
           <ChevronDown className={cn("h-4 w-4 text-ink/40 transition-transform", expanded && "rotate-180")} />
         </td>
+        <td className="px-4 py-4 font-body text-sm font-medium text-manara-teal capitalize">{row.type}</td>
         <td className="px-4 py-4 font-body font-medium text-ink">{row.name}</td>
         <td className="px-4 py-4 font-body text-sm text-ink/60">{row.class}</td>
         <td className="px-4 py-4 font-body text-sm text-ink/60">{row.school}</td>
@@ -119,7 +123,7 @@ function FragmentRow({
       {expanded && (
         <tr className="bg-cream/60">
           <td />
-          <td colSpan={5} className="px-4 pb-5 pt-1">
+          <td colSpan={6} className="px-4 pb-5 pt-1">
             <p className="mb-1.5 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">
               Experience
             </p>

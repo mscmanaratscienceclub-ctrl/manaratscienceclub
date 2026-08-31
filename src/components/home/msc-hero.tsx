@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { ScrambleTextPlugin } from "gsap/ScrambleTextPlugin";
 
 import TesseractCanvas from "@/components/home/tesseract-canvas";
 import { useReducedMotion } from "@/lib/hooks/use-reduced-motion";
@@ -12,10 +11,8 @@ import { metrics } from "@/lib/data";
 import { stemfestSegments } from "@/lib/data/stemfest";
 
 if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger, ScrambleTextPlugin);
+  gsap.registerPlugin(ScrollTrigger);
 }
-
-const SCRAMBLE_CHARS = "!<>-_\\/[]{}=+*^?#01";
 
 export default function MscHero() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -27,47 +24,41 @@ export default function MscHero() {
     const section = sectionRef.current;
     if (!section) return;
 
-    if (reducedMotion) return;
+    /* Also check the media query directly: `useReducedMotion` syncs in a
+       post-paint effect, so its state is still `false` during this first
+       layout pass and a reduce-motion visitor would get one GSAP-driven
+       flash before the hook catches up. */
+    if (
+      reducedMotion ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+
+    /* Defense-in-depth: the pre-paint script in layout.tsx already set
+       this, but a framework re-render can reconcile <html> attributes
+       and drop it — re-assert before GSAP initializes so the gate rules
+       in globals.css are guaranteed to be in force (idempotent). */
+    document.documentElement.classList.add("motion-ok");
 
     const ctx = gsap.context(() => {
-      const headlineTop = section.querySelector<HTMLElement>("[data-scramble-top]");
-      const headlineBottom = section.querySelector<HTMLElement>("[data-scramble-bottom]");
+      /* Gentle intro: eyebrow and headline lines drift up softly, then
+         subtext, CTAs and the metrics line follow. */
+      const intro = gsap.timeline({ defaults: { ease: "power2.out" } });
 
-      /* Decode sequence: status line, then the two headline rows resolve
-         out of static, then subtext and CTAs surface. */
-      const intro = gsap.timeline({ defaults: { ease: "none" } });
-
-      intro.to("[data-scramble-status]", {
-        duration: 0.7,
-        scrambleText: { text: "MANARAT SCIENCE CLUB", chars: SCRAMBLE_CHARS, speed: 0.6 },
-      });
-
-      if (headlineTop) {
-        intro.to(
-          headlineTop,
-          {
-            duration: 0.9,
-            scrambleText: { text: "THINK LIKE A SCIENTIST.", chars: SCRAMBLE_CHARS, speed: 0.45 },
-          },
-          "-=0.25",
-        );
-      }
-      if (headlineBottom) {
-        intro.to(
-          headlineBottom,
-          {
-            duration: 1.0,
-            scrambleText: { text: "COMPETE LIKE A CHAMPION.", chars: SCRAMBLE_CHARS, speed: 0.45 },
-          },
-          "-=0.55",
-        );
-      }
+      /* fromTo, not from: these elements start hidden by the
+         `html.motion-ok` gate rules in globals.css, so a plain `from`
+         would read opacity 0 as the END value and nothing would appear. */
+      intro.fromTo(
+        "[data-hero-rise]",
+        { opacity: 0, y: 14 },
+        { opacity: 1, y: 0, duration: 0.8, stagger: 0.14 },
+      );
 
       intro.fromTo(
         "[data-hero-fade]",
-        { opacity: 0, y: 18 },
-        { opacity: 1, y: 0, duration: 0.7, stagger: 0.12, ease: "power3.out" },
-        "-=0.45",
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.7, stagger: 0.1 },
+        "-=0.4",
       );
 
       /* Pinned dive: copy lifts away, the camera flies into the tesseract,
@@ -127,7 +118,7 @@ export default function MscHero() {
       <div className="mx-auto w-full max-w-[1440px] px-5 pb-16 pt-24 sm:px-8 lg:px-16">
         <div ref={copyRef}>
           <p
-            data-scramble-status
+            data-hero-rise
             className="font-mono text-[0.62rem] font-medium uppercase tracking-[0.34em] text-ion"
           >
             MANARAT SCIENCE CLUB
@@ -137,10 +128,10 @@ export default function MscHero() {
             id="msc-hero-title"
             className="mt-6 font-voyage text-[1.8rem] font-bold uppercase leading-[1.08] tracking-tight text-space-ivory sm:text-4xl lg:text-[3.5rem]"
           >
-            <span data-scramble-top className="block">
+            <span data-hero-rise className="block">
               THINK LIKE A SCIENTIST.
             </span>
-            <span data-scramble-bottom className="block text-ion-bright">
+            <span data-hero-rise className="block text-ion-bright">
               COMPETE LIKE A CHAMPION.
             </span>
           </h1>
@@ -184,24 +175,16 @@ export default function MscHero() {
         </div>
       </div>
 
-      <div
-        className={
-          reducedMotion
-            ? "mx-auto w-full max-w-[1440px] px-5 pb-20 sm:px-8 lg:px-16"
-            : "pointer-events-none absolute inset-0 -z-10"
-        }
-      >
-        <div className={reducedMotion ? "grid gap-12" : undefined}>
+      {/* Static-first: renders as a plain grid — readable without JS and
+          for prefers-reduced-motion visitors. When JS is present and motion
+          is allowed, the `html.motion-ok` gate rules in globals.css turn
+          the stage into the absolutely positioned slide deck and GSAP
+          drives the reveal, so the pre-hydration HTML never shows the
+          stacked-slides flash. */}
+      <div className="msc-slide-stage mx-auto w-full max-w-[1440px] px-5 pb-20 sm:px-8 lg:px-16">
+        <div className="grid gap-12">
           {stemfestSegments.map((segment) => (
-            <div
-              key={segment.id}
-              data-slide
-              className={
-                reducedMotion
-                  ? undefined
-                  : "absolute inset-0 flex flex-col items-center justify-center px-5 text-center"
-              }
-            >
+            <div key={segment.id} data-slide>
               <p className="font-mono text-[0.6rem] font-medium uppercase tracking-[0.34em] text-ion">
                 Segment {segment.index}
               </p>
@@ -212,9 +195,13 @@ export default function MscHero() {
                 {segment.description}
               </p>
               {segment.items.length > 0 && (
-                <p className="mt-6 max-w-[64ch] font-mono text-[0.68rem] uppercase leading-6 tracking-[0.22em] text-ion-bright">
-                  {segment.items.join("  /  ")}
-                </p>
+                <ol className="mt-6 list-none space-y-1 max-w-[64ch] font-mono text-[0.68rem] uppercase leading-6 tracking-[0.22em] text-ion-bright">
+                  {segment.items.map((item, itemIndex) => (
+                    <li key={item}>
+                      {itemIndex + 1}. {item}
+                    </li>
+                  ))}
+                </ol>
               )}
             </div>
           ))}

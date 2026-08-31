@@ -263,6 +263,38 @@ html {
   .msc-vignette {
     background: radial-gradient(130% 100% at 50% 42%, transparent 52%, color-mix(in srgb, var(--space-deep) 85%, transparent) 100%);
   }
+  /* ── Hero pre-hydration gate ───────────────────────────────────────
+     The msc-hero intro/dive is GSAP-driven, and GSAP cannot run until
+     React hydrates — until then the raw server HTML paints. The
+     `motion-ok` class (set by the inline gate script, first child of
+     <body> in src/app/layout.tsx) exists only when JS can run AND the
+     user allows motion, so under it the animated hero elements start
+     hidden IN CSS instead of flashing their final state. GSAP overrides
+     these with inline styles (inline > stylesheet) once it initializes;
+     no JS / prefers-reduced-motion => no class => visible static page. */
+  html.motion-ok .msc-slide-stage {
+    position: absolute;
+    inset: 0;
+    z-index: -10;
+    padding: 0;
+    pointer-events: none;
+  }
+  html.motion-ok [data-slide] {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 1.25rem; /* px-5 */
+    text-align: center;
+    opacity: 0;
+    visibility: hidden;
+  }
+  html.motion-ok [data-hero-rise],
+  html.motion-ok [data-hero-fade] {
+    opacity: 0;
+  }
   .space-fallback {
     background:
       radial-gradient(circle at 75% 48%, var(--space-amber-bright) 0 1%, var(--space-amber) 5%, transparent 18%),

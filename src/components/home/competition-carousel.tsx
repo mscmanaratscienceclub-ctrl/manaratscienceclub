@@ -73,14 +73,19 @@ export default function CompetitionCarousel() {
               className="relative h-56 w-44 shrink-0 overflow-hidden border border-space-line-soft bg-space-black sm:h-72 sm:w-56"
               aria-hidden={index >= competitionShowcase.length}
             >
+              {/* Pre-optimised WebP at 2x this box (see
+                  scripts/optimize-bucket-images.mjs), so the bytes are already
+                  final — served verbatim, no Vercel transformation per view. */}
               <Image
                 src={frame.src}
                 alt={index < competitionShowcase.length ? frame.alt : ""}
                 fill
                 sizes="224px"
                 className="object-cover"
-                priority={index < 4}
+                loading="lazy"
+                unoptimized
               />
+
             </li>
           ))}
         </ul>

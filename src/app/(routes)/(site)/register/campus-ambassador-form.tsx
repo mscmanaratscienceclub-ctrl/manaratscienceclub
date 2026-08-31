@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { motion, AnimatePresence } from "motion/react";
 import {
   User,
@@ -19,22 +18,31 @@ import {
   Save,
   HelpCircle,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { submitAmbassadorForm } from "./actions";
+import { AmbassadorProgramSelector } from "./ambassador-program-selector";
+import {
+  ambassadorFormSchema,
+  type AmbassadorFormValues,
+  type AmbassadorType,
+} from "./validate";
 import { useReducedMotion } from "@/lib/hooks/use-reduced-motion";
 
-// ── Schema ──────────────────────────────────────────────────────────────────
-const schema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters").max(100),
-  class: z.string().min(1, "Please enter your class / grade").max(50),
-  school: z.string().min(2, "School name must be at least 2 characters").max(200),
-  experience: z.string().min(1, "Please share your experience").max(2000, "Keep it under 2 000 characters"),
-  firstTimeCa: z.enum(["yes", "no"], { message: "Please answer this question" }),
-});
+const AMBASSADOR_PROGRAMS = {
+  campus: { title: "Campus Ambassador", shortTitle: "Campus" },
+  batch: { title: "Batch Ambassador", shortTitle: "Batch" },
+} as const;
 
-type FormValues = z.infer<typeof schema>;
+function draftKey(type: AmbassadorType) {
+  return `msc_${type}_ambassador_form`;
+}
 
-const LS_KEY = "msc_ambassador_form";
-const LS_SUBMISSION_KEY = "msc_ambassador_submission";
+function submissionKey(type: AmbassadorType) {
+  return `msc_${type}_ambassador_submission`;
+}
 
 type SavedSubmission = {
   id: string;
@@ -47,45 +55,45 @@ type SavedSubmission = {
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-function loadDraft(): Partial<FormValues> | null {
+function loadDraft(type: AmbassadorType): Partial<AmbassadorFormValues> | null {
   try {
-    const raw = localStorage.getItem(LS_KEY);
+    const raw = localStorage.getItem(draftKey(type));
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-function saveDraft(values: Partial<FormValues>) {
+function saveDraft(type: AmbassadorType, values: Partial<AmbassadorFormValues>) {
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify(values));
+    localStorage.setItem(draftKey(type), JSON.stringify(values));
   } catch {}
 }
 
-function clearDraft() {
+function clearDraft(type: AmbassadorType) {
   try {
-    localStorage.removeItem(LS_KEY);
+    localStorage.removeItem(draftKey(type));
   } catch {}
 }
 
-function loadSubmission(): SavedSubmission | null {
+function loadSubmission(type: AmbassadorType): SavedSubmission | null {
   try {
-    const raw = localStorage.getItem(LS_SUBMISSION_KEY);
+    const raw = localStorage.getItem(submissionKey(type));
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-function saveSubmission(s: SavedSubmission) {
+function saveSubmission(type: AmbassadorType, submission: SavedSubmission) {
   try {
-    localStorage.setItem(LS_SUBMISSION_KEY, JSON.stringify(s));
+    localStorage.setItem(submissionKey(type), JSON.stringify(submission));
   } catch {}
 }
 
-function clearSubmission() {
+function clearSubmission(type: AmbassadorType) {
   try {
-    localStorage.removeItem(LS_SUBMISSION_KEY);
+    localStorage.removeItem(submissionKey(type));
   } catch {}
 }
 
@@ -117,7 +125,7 @@ function Field({
 }) {
   return (
     <div className="group space-y-1.5">
-      <label
+      <Label
         htmlFor={id}
         className="flex items-center gap-2 font-mono text-[0.64rem] font-semibold uppercase tracking-[0.24em] text-space-ivory/90"
       >
@@ -125,7 +133,7 @@ function Field({
           {icon}
         </span>
         {label}
-      </label>
+      </Label>
       {children}
       <AnimatePresence mode="wait">
         {error ? (
@@ -161,6 +169,7 @@ const inputClass = "msc-input";
 export default function CampusAmbassadorForm() {
   const reducedMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
+  const [selectedType, setSelectedType] = useState<AmbassadorType>("campus");
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [previousSubmission, setPreviousSubmission] =
@@ -173,41 +182,55 @@ export default function CampusAmbassadorForm() {
     watch,
     reset,
     formState: { errors },
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { name: "", class: "", school: "", experience: "" },
+  } = useForm<AmbassadorFormValues>({
+    resolver: zodResolver(ambassadorFormSchema),
+    defaultValues: { name: "", class: "", school: "", experience: "", firstTimeCa: undefined },
   });
 
   const watchAll = watch();
 
-  // ── Hydration: load localStorage ──────────────────────────────────────────
+  // ── Hydration: load type-specific localStorage ─────────────────────────────
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
-    setMounted(true);
-    const submission = loadSubmission();
+    if (!mounted) return;
+
+    setServerError(null);
+    const submission = loadSubmission(selectedType);
+    setPreviousSubmission(submission);
+
     if (submission) {
-      setPreviousSubmission(submission);
-    } else {
-      const draft = loadDraft();
-      if (draft) {
-        reset(draft);
-      }
-      setShowForm(true);
+      setShowForm(false);
+      return;
     }
-  }, [reset]);
+
+    reset(
+      loadDraft(selectedType) ?? {
+        name: "",
+        class: "",
+        school: "",
+        experience: "",
+        firstTimeCa: undefined,
+      }
+    );
+    setShowForm(true);
+  }, [mounted, reset, selectedType]);
 
   // ── Auto-save draft on every change ───────────────────────────────────────
   useEffect(() => {
     if (!mounted || previousSubmission) return;
-    const timeout = setTimeout(() => saveDraft(watchAll), 500);
+    const timeout = setTimeout(() => saveDraft(selectedType, watchAll), 500);
     return () => clearTimeout(timeout);
-  }, [watchAll, mounted, previousSubmission]);
+  }, [watchAll, mounted, previousSubmission, selectedType]);
 
   const onSubmit = useCallback(
-    async (values: FormValues) => {
+    async (values: AmbassadorFormValues) => {
+      console.log("[CampusAmbassadorForm] onSubmit fired", { type: selectedType, values });
       setSubmitting(true);
       setServerError(null);
 
-      const result = await submitAmbassadorForm(values);
+      const result = await submitAmbassadorForm({ ...values, type: selectedType });
+      console.log("[CampusAmbassadorForm] server result:", result);
 
       if (!result.success) {
         setServerError(result.error);
@@ -225,18 +248,18 @@ export default function CampusAmbassadorForm() {
         firstTimeCa: values.firstTimeCa,
       };
 
-      saveSubmission(submission);
-      clearDraft();
+      saveSubmission(selectedType, submission);
+      clearDraft(selectedType);
       setPreviousSubmission(submission);
       setShowForm(false);
       setSubmitting(false);
     },
-    []
+    [selectedType]
   );
 
   const handleResubmit = useCallback(() => {
     if (!previousSubmission) return;
-    clearSubmission();
+    clearSubmission(selectedType);
     reset({
       name: previousSubmission.name,
       class: previousSubmission.class,
@@ -246,9 +269,10 @@ export default function CampusAmbassadorForm() {
     });
     setPreviousSubmission(null);
     setShowForm(true);
-  }, [previousSubmission, reset]);
+  }, [previousSubmission, reset, selectedType]);
 
   const experienceLen = watchAll.experience?.length ?? 0;
+  const activeProgram = AMBASSADOR_PROGRAMS[selectedType];
 
   // ── SSR guard ─────────────────────────────────────────────────────────────
   if (!mounted) {
@@ -262,12 +286,14 @@ export default function CampusAmbassadorForm() {
   // ── Previously-submitted view ─────────────────────────────────────────────
   if (previousSubmission && !showForm) {
     return (
-      <motion.div
-        initial={reducedMotion ? false : { opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="overflow-hidden border border-space-line-soft bg-space-deep/60"
-      >
+      <>
+        <AmbassadorProgramSelector value={selectedType} onChange={setSelectedType} />
+        <motion.div
+          initial={reducedMotion ? false : { opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="overflow-hidden border border-space-line-soft bg-space-deep/60"
+        >
         {/* Confirmation banner */}
         <div className="border-b border-space-line-soft bg-ion-deep px-8 py-8 text-center">
           <motion.div
@@ -282,7 +308,7 @@ export default function CampusAmbassadorForm() {
             Application Submitted!
           </h2>
           <p className="mt-1 text-sm text-space-muted">
-            You have already applied as a Campus Ambassador.
+            You have already applied as a {activeProgram.title}.
           </p>
         </div>
 
@@ -325,9 +351,9 @@ export default function CampusAmbassadorForm() {
               <div className="border border-space-line-soft bg-space-deep px-4 py-3 sm:col-span-2">
                 <div className="flex items-center gap-1.5 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-ion">
                   <HelpCircle className="size-3.5" />
-                  First time being a CA
-                </div>
-                <p className="mt-1 text-sm text-space-ivory capitalize">{previousSubmission.firstTimeCa}</p>
+                   First time being a {activeProgram.shortTitle} Ambassador
+                 </div>
+                 <p className="mt-1 text-sm text-space-ivory capitalize">{previousSubmission.firstTimeCa}</p>
               </div>
             )}
           </div>
@@ -337,23 +363,31 @@ export default function CampusAmbassadorForm() {
               Need to update your application? You can resubmit below — this
               will create a new entry.
             </p>
-            <button onClick={handleResubmit} className="msc-btn-ghost">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleResubmit}
+              className="msc-btn-ghost"
+            >
               <RefreshCw className="size-4" />
               Submit a new application
-            </button>
+            </Button>
           </div>
         </div>
-      </motion.div>
+        </motion.div>
+      </>
     );
   }
 
   // ── Form ──────────────────────────────────────────────────────────────────
   return (
-    <motion.div
-      initial={reducedMotion ? false : { opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-    >
+    <>
+      <AmbassadorProgramSelector value={selectedType} onChange={setSelectedType} />
+      <motion.div
+        initial={reducedMotion ? false : { opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
       {/* Card */}
       <div className="overflow-hidden border border-space-line-soft bg-space-deep/60">
         {/* Header */}
@@ -364,7 +398,7 @@ export default function CampusAmbassadorForm() {
             </div>
             <div>
               <h2 className="font-voyage text-lg font-bold uppercase tracking-tight text-space-ivory">
-                Campus Ambassador Form
+                {activeProgram.title} Form
               </h2>
               <p className="text-sm text-space-muted">
                 Fill in all fields — your draft is saved automatically.
@@ -374,7 +408,12 @@ export default function CampusAmbassadorForm() {
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 px-8 py-8">
+        <form
+          onSubmit={handleSubmit(onSubmit, (fieldErrors) => {
+            console.warn("[CampusAmbassadorForm] Validation failed — field errors:", fieldErrors);
+          })}
+          className="space-y-6 px-8 py-8"
+        >
           {/* Name */}
           <Field
             id="name"
@@ -382,11 +421,12 @@ export default function CampusAmbassadorForm() {
             icon={<User className="size-3.5" />}
             error={errors.name?.message}
           >
-            <input
+            <Input
               id="name"
               type="text"
               placeholder="e.g. Ahmed Al-Rashid"
               className={inputClass}
+              aria-invalid={Boolean(errors.name)}
               {...register("name")}
             />
           </Field>
@@ -400,11 +440,12 @@ export default function CampusAmbassadorForm() {
               error={errors.class?.message}
               hint="e.g. Grade 10, Class XI"
             >
-              <input
+              <Input
                 id="class"
                 type="text"
                 placeholder="e.g. Grade 11"
                 className={inputClass}
+                aria-invalid={Boolean(errors.class)}
                 {...register("class")}
               />
             </Field>
@@ -415,11 +456,12 @@ export default function CampusAmbassadorForm() {
               icon={<Building2 className="size-3.5" />}
               error={errors.school?.message}
             >
-              <input
+              <Input
                 id="school"
                 type="text"
                 placeholder="Your school name"
                 className={inputClass}
+                aria-invalid={Boolean(errors.school)}
                 {...register("school")}
               />
             </Field>
@@ -434,10 +476,11 @@ export default function CampusAmbassadorForm() {
             hint="Tell us about any clubs, leadership roles, or relevant experience."
           >
             <div className="relative">
-              <textarea
+              <Textarea
                 id="experience"
                 rows={6}
                 className={`${inputClass} resize-none`}
+                aria-invalid={Boolean(errors.experience)}
                 {...register("experience")}
               />
               <span
@@ -454,14 +497,18 @@ export default function CampusAmbassadorForm() {
             </div>
           </Field>
 
-          {/* First time as a CA */}
+          {/* Previous ambassador experience */}
           <Field
             id="firstTimeCa"
-            label="Is this your first time being a CA?"
+            label={`Is this your first time being a ${activeProgram.title}?`}
             icon={<HelpCircle className="size-3.5" />}
             error={errors.firstTimeCa?.message}
           >
-            <div className="flex gap-3" role="radiogroup" aria-label="Is this your first time being a CA?">
+            <div
+              className="flex gap-3"
+              role="radiogroup"
+              aria-label={`Is this your first time being a ${activeProgram.title}?`}
+            >
               {(["yes", "no"] as const).map((option) => (
                 <label
                   key={option}
@@ -501,7 +548,7 @@ export default function CampusAmbassadorForm() {
           </p>
 
           {/* Submit */}
-          <button
+          <Button
             type="submit"
             disabled={submitting}
             className="msc-btn-primary group w-full disabled:cursor-not-allowed disabled:opacity-60"
@@ -513,11 +560,11 @@ export default function CampusAmbassadorForm() {
               </>
             ) : (
               <>
-                Submit Application
+                Submit {activeProgram.shortTitle} Application
                 <ChevronRight className="size-5 transition-transform group-hover:translate-x-0.5" />
               </>
             )}
-          </button>
+          </Button>
         </form>
       </div>
 
@@ -526,6 +573,7 @@ export default function CampusAmbassadorForm() {
         By submitting, you agree to be contacted by the Manarat Science Club
         regarding your application. We never share your data with third parties.
       </p>
-    </motion.div>
+      </motion.div>
+    </>
   );
 }

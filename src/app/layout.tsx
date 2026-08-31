@@ -91,6 +91,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn(
         "font-sans",
         fredoka.variable,
@@ -103,6 +104,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* Pre-paint motion gate: tags <html class="motion-ok"> before the
+            hero paints, ONLY when a JS runtime exists and the user allows
+            motion. globals.css uses this class to pre-hide GSAP-animated
+            hero elements, so the server HTML never flashes the final state
+            during the hydration window. No JS / reduced motion => no class
+            => fully visible static layout. Must stay the FIRST element in
+            <body> so it executes before the hero HTML is parsed. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if (!matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("motion-ok");`,
+          }}
+        />
         <Providers>{children}</Providers>
         <SpeedInsights />
         {/* Google Analytics (gtag.js) */}
