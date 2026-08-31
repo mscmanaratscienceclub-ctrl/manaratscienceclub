@@ -163,7 +163,7 @@ export const currentMembers: Member[] = [
   },
     {
     id: "current-ehsas",
-    name: "Yasa Rahman",
+    name: "Ehsas Mostofa Nahi",
     image: "/memberimage/ehsas.webp",
     batch: "2026–2027",
     role: "Vice President",
