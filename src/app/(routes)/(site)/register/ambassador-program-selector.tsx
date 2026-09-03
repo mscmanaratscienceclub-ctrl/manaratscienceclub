@@ -47,7 +47,7 @@ export function AmbassadorProgramSelector({
       <div
         role="group"
         aria-label="Choose a programme"
-        className="flex flex-col gap-1.5 rounded-full border border-space-line-soft bg-space-black/30 p-1.5 sm:inline-flex sm:flex-row"
+        className="flex flex-col gap-1.5 rounded-3xl border border-space-line-soft bg-space-black/30 p-1.5 sm:inline-flex sm:flex-row sm:rounded-full"
       >
         {(Object.entries(PROGRAMS) as [RegistrationType, (typeof PROGRAMS)[RegistrationType]][]).map(
           ([type, program]) => {
@@ -62,7 +62,7 @@ export function AmbassadorProgramSelector({
                 aria-pressed={selected}
                 onClick={() => onChange(type)}
                 className={cn(
-                  "h-auto min-h-0 w-full flex-1 justify-center gap-2.5 rounded-full border-transparent bg-transparent px-5 py-2.5 font-space-body text-sm font-medium normal-case tracking-normal text-space-muted transition-colors hover:border-transparent hover:bg-ion/10 hover:text-space-ivory sm:w-auto sm:flex-none",
+                  "h-auto min-h-0 w-full flex-1 justify-center gap-2.5 rounded-full border-transparent bg-transparent px-5 py-3 font-space-body text-sm font-medium normal-case tracking-normal text-space-muted transition-colors hover:border-transparent hover:bg-ion/10 hover:text-space-ivory sm:w-auto sm:flex-none sm:py-2.5",
                   selected &&
                     "bg-ion text-space-black hover:bg-ion hover:text-space-black"
                 )}
@@ -74,7 +74,10 @@ export function AmbassadorProgramSelector({
           }
         )}
       </div>
-      <p className="mt-3 max-w-[52ch] font-space-body text-sm leading-relaxed text-space-muted">
+      <p
+        aria-live="polite"
+        className="mt-3 max-w-[52ch] font-space-body text-sm leading-relaxed text-space-muted"
+      >
         {PROGRAMS[value].description}
       </p>
     </section>

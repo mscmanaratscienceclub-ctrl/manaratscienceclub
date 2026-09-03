@@ -55,7 +55,6 @@ export const stemfestSegments: StemfestSegment[] = [
     description: "Two days, all classes. The whole campus becomes the game board.",
     items: [
       "Treasure Hunt",
-      "Quiz",
       "Pinata",
       "Tic Tac Toe",
       "Battleship",

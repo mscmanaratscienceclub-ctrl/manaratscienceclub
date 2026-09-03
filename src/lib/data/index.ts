@@ -169,7 +169,7 @@ export const currentMembers: Member[] = [
   },
     {
     id: "current-nafisa",
-    name: "Nafisa Rahman",
+    name: "Nafisa Nawar",
     image: "/memberimage/nafisa.jpg",
     batch: "2026–2027",
     role: "Vice President",
@@ -196,7 +196,7 @@ export const currentMembers: Member[] = [
     {
     id: "current-sakib",
     name: "Sakib Raihan",
-    image: "/memberimage/sakib.jpg",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/sakib.webp",
     batch: "2026–2027",
     role: "Assistant Secretary",
     socials: {},
@@ -212,7 +212,7 @@ export const currentMembers: Member[] = [
       {
     id: "current-shayan",
     name: "M. Shayan Ibn Taufique",
-    image: "/memberimage/shayan.jpg",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/shayan.webp",
     batch: "2026–2027",
     role: "Coordinator",
     socials: {},
@@ -220,7 +220,7 @@ export const currentMembers: Member[] = [
       {
     id: "current-wadud",
     name: "Akil Ibn Wadud",
-    image: "/memberimage/wadud.jpg",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/wadud.webp",
     batch: "2026–2027",
     role: "Coordinator",
     socials: {},
@@ -228,7 +228,7 @@ export const currentMembers: Member[] = [
       {
     id: "current-junayna",
     name: "Junayna Ekrum",
-    image: "/memberimage/junayna.jpg",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/junayna.webp",
     batch: "2026–2027",
     role: "Coordinator",
     socials: {},
@@ -236,7 +236,7 @@ export const currentMembers: Member[] = [
       {
     id: "current-rose",
     name: "Tarannum Rose",
-    image: "/memberimage/rose.heif",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/rose.webp",
     batch: "2026–2027",
     role: "Coordinator",
     socials: {},

@@ -585,14 +585,14 @@ export default function CampusAmbassadorForm({
                 error={errors.firstTimeCa?.message}
               >
                 <div
-                  className="flex flex-col gap-1.5 rounded-full border border-space-line-soft bg-space-black/40 p-1.5 sm:flex-row"
+                  className="flex flex-col gap-1.5 rounded-3xl border border-space-line-soft bg-space-black/40 p-1.5 sm:flex-row sm:rounded-full"
                   role="radiogroup"
                   aria-label={`Is this your first time being a ${activeProgram.title}?`}
                 >
                   {(["yes", "no"] as const).map((option) => (
                     <label
                       key={option}
-                      className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-2.5 text-center font-space-body text-sm font-medium text-space-muted transition-colors hover:text-space-ivory has-checked:bg-ion has-checked:text-space-black has-checked:hover:text-space-black"
+                      className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-3 text-center font-space-body text-sm font-medium text-space-muted transition-colors hover:text-space-ivory has-checked:bg-ion has-checked:text-space-black has-checked:hover:text-space-black sm:py-2.5"
                     >
                       <input
                         type="radio"
