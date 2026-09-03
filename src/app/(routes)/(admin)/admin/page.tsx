@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { GraduationCap, FlaskConical, Users, CalendarDays, CalendarRange, School } from "lucide-react";
-import { getAllAmbassadorRegistrations } from "@/lib/actions/registrations";
+import { GraduationCap, FlaskConical, Users, CalendarDays, CalendarRange, School, HandHeart } from "lucide-react";
+import { getAllAmbassadorRegistrations, getAllVolunteerRegistrations } from "@/lib/actions/registrations";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -11,7 +11,10 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export default async function AdminDashboardPage() {
-  const registrations = await getAllAmbassadorRegistrations();
+  const [registrations, volunteers] = await Promise.all([
+    getAllAmbassadorRegistrations(),
+    getAllVolunteerRegistrations(),
+  ]);
 
   const now = Date.now();
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
@@ -58,7 +61,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Form Cards */}
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         <Link
           href="/admin/campus-ambassador"
           className="group flex flex-col gap-3 rounded-2xl bg-surface p-6 shadow-subtle transition-shadow hover:shadow-academic"
@@ -77,6 +80,28 @@ export default async function AdminDashboardPage() {
             </h2>
             <p className="mt-1 font-body text-sm text-ink/60">
               {totalRegistrations} {totalRegistrations === 1 ? "registration" : "registrations"} collected. View every response.
+            </p>
+          </div>
+        </Link>
+
+        <Link
+          href="/admin/volunteer"
+          className="group flex flex-col gap-3 rounded-2xl bg-surface p-6 shadow-subtle transition-shadow hover:shadow-academic"
+        >
+          <div className="flex items-center justify-between">
+            <div className="rounded-xl bg-manara-yellow/15 p-3">
+              <HandHeart className="h-6 w-6 text-manara-yellow" />
+            </div>
+            <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 font-body text-xs font-medium text-emerald-700">
+              Live
+            </span>
+          </div>
+          <div>
+            <h2 className="font-display text-lg font-semibold text-ink group-hover:text-manara-teal">
+              STEM Fest Volunteer
+            </h2>
+            <p className="mt-1 font-body text-sm text-ink/60">
+              {volunteers.length} {volunteers.length === 1 ? "application" : "applications"} collected. View every response.
             </p>
           </div>
         </Link>

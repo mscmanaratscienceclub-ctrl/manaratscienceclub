@@ -319,6 +319,21 @@ html {
   @apply inline-flex items-center justify-center gap-2 border border-ion-line px-6 py-3 font-mono text-[0.68rem] font-semibold tracking-[0.24em] text-ion uppercase transition-colors hover:border-ion hover:text-ion-bright active:translate-y-px;
 }
 
+/* ── MSC "dossier" form variant — presentation only, same fields & logic ────── */
+@utility msc-field {
+  @apply w-full border-0 bg-transparent px-0 py-2.5 font-space-body text-base text-space-ivory outline-none placeholder:text-space-muted/50;
+}
+@utility msc-field-area {
+  @apply w-full border-0 bg-transparent px-4 py-3.5 font-space-body text-base leading-relaxed text-space-ivory outline-none placeholder:text-space-muted/50;
+}
+@utility msc-btn-pill {
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-8 py-3.5 font-space-body text-sm font-semibold text-space-black transition-all hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ion active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60;
+  background: linear-gradient(120deg, var(--ion) 15%, color-mix(in srgb, var(--ion) 45%, var(--space-amber)) 90%);
+}
+@utility msc-btn-pill-ghost {
+  @apply inline-flex items-center justify-center gap-2 rounded-full border border-space-line-soft px-6 py-3 font-space-body text-sm font-medium text-space-muted transition-colors hover:border-ion hover:text-space-ivory focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ion active:translate-y-px;
+}
+
 /* ── TipTap editor ──────────────────────────────────────────────── */
 .ProseMirror {
   outline: none;

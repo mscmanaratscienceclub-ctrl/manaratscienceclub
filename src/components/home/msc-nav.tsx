@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, Atom, Menu, X } from "lucide-react";
+import { ArrowRight, Menu, X } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -46,8 +47,8 @@ export default function MscNav() {
     >
       <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between px-5 py-4 sm:px-8 lg:px-16">
         <Link href="/" className="group flex items-center gap-3" aria-label="Manarat Science Club home">
-          <span className="flex size-9 items-center justify-center border border-ion-line bg-ion-deep/40 transition-colors duration-300 group-hover:border-ion">
-            <Atom className="size-4 text-ion transition-transform duration-300 group-hover:rotate-90" />
+          <span className="flex size-9 items-center justify-center overflow-hidden rounded-full border border-ion-line bg-ion-deep/40 transition-colors duration-300 group-hover:border-ion">
+            <Image src="/stemmsc.png" alt="STEM Fest 2027" width={28} height={28} className="object-cover" />
           </span>
           <span className="font-voyage text-sm font-bold uppercase tracking-[0.3em] text-space-ivory transition-colors group-hover:text-ion-bright">
             MSC

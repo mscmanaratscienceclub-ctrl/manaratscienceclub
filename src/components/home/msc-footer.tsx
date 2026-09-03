@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Atom, Bug, Camera, Globe, Mail, MapPin, MessageCircle, Phone, Users } from "lucide-react";
+import { Bug, Camera, Globe, Mail, MapPin, MessageCircle, Phone, Users } from "lucide-react";
+import Image from "next/image";
 
 import { siteConfig } from "@/lib/data";
 
@@ -34,8 +35,8 @@ export default function MscFooter() {
           {/* Brand + contact */}
           <div className="lg:col-span-4">
             <Link href="/" className="group inline-flex items-center gap-3" aria-label="Manarat Science Club home">
-              <span className="flex size-10 items-center justify-center border border-ion-line bg-ion-deep/40 transition-colors group-hover:border-ion">
-                <Atom className="size-4 text-ion" />
+              <span className="flex size-10 items-center justify-center overflow-hidden rounded-full border border-ion-line bg-ion-deep/40 transition-colors group-hover:border-ion">
+                <Image src="/stemmsc.png" alt="STEM Fest 2027" width={32} height={32} className="object-cover" />
               </span>
               <span className="font-voyage text-sm font-bold uppercase tracking-[0.3em]">
                 MSC

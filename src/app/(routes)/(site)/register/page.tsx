@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Sparkles } from "lucide-react";
-import CampusAmbassadorForm from "./campus-ambassador-form";
+import { RegistrationForms } from "./registration-forms";
 
 export const metadata: Metadata = {
-  title: "Register — Ambassador Programmes",
+  title: "Register — Ambassador & Volunteer Programmes",
   description:
-    "Apply to become a Campus Ambassador or Batch Ambassador for Manarat Science Club.",
+    "Apply to become a Campus Ambassador, Batch Ambassador, or Volunteer for Manarat Science Club.",
 };
 
 export default function RegisterPage() {
@@ -20,17 +20,18 @@ export default function RegisterPage() {
             <Sparkles className="size-3.5" /> Open Applications
           </span>
           <h1 className="mt-5 max-w-[40rem] font-voyage text-3xl font-bold uppercase leading-[1.08] tracking-tight text-space-ivory sm:text-4xl lg:text-5xl">
-            Ambassador Programmes
+            Ambassador & Volunteer Programmes
           </h1>
           <p className="mt-5 max-w-[36rem] text-base leading-relaxed text-space-muted md:text-lg">
-            Represent Manarat Science Club across your campus or within your
-            batch — inspire fellow students and connect curiosity with discovery.
+            Represent Manarat Science Club across your campus, lead your batch,
+            or volunteer at our events — inspire fellow students and connect
+            curiosity with discovery.
           </p>
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-2xl px-4 py-14 sm:px-6">
-        <CampusAmbassadorForm />
+      <section className="mx-auto w-full max-w-5xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+        <RegistrationForms />
       </section>
     </main>
   );

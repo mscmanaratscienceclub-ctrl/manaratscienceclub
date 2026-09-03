@@ -2,6 +2,7 @@
 
 import { db } from "@/db";
 import { campusAmbassadorRegistrations } from "@/db/schema/registrations";
+import { volunteerRegistrations } from "@/db/schema/volunteer-registrations";
 import { getServerSession } from "@/lib/auth/get-session";
 import { desc } from "drizzle-orm";
 
@@ -22,4 +23,12 @@ export async function getAllAmbassadorRegistrations() {
     .select()
     .from(campusAmbassadorRegistrations)
     .orderBy(desc(campusAmbassadorRegistrations.createdAt));
+}
+
+export async function getAllVolunteerRegistrations() {
+  await requireAdmin();
+  return db
+    .select()
+    .from(volunteerRegistrations)
+    .orderBy(desc(volunteerRegistrations.createdAt));
 }

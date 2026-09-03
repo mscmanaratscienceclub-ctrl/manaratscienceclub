@@ -3,10 +3,11 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, GraduationCap, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { AmbassadorType } from "@/app/(routes)/(site)/register/validate";
 
 export interface RegistrationRow {
   id: string;
-  type: "campus" | "batch";
+  type: AmbassadorType;
   name: string;
   class: string;
   school: string;
@@ -71,7 +72,7 @@ export default function RegistrationsTable({ registrations }: { registrations: R
                 <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Name</th>
                 <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Class</th>
                 <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">School</th>
-                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">First-time CA</th>
+                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">First time</th>
                 <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Submitted</th>
               </tr>
             </thead>

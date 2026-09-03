@@ -53,9 +53,9 @@ export const metadata: Metadata = {
   description:
     "A prestigious high school science club where curiosity meets creativity — featuring robotics, astronomy, chemistry, biology, and student research.",
   icons: {
-    icon: [{ url: "/msc.svg", type: "image/svg+xml" }],
-    shortcut: "/msc.svg",
-    apple: "/msc.svg",
+    icon: [{ url: "/stemmsc.png", type: "image/png" }],
+    shortcut: "/stemmsc.png",
+    apple: "/stemmsc.png",
   },
   openGraph: {
     title: "Manarat Science Club",

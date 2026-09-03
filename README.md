@@ -146,13 +146,13 @@ animation honours `prefers-reduced-motion` via `useReducedMotion()`
     │       │   ├── robotics/  #   Robotics division hub (projects, olympiads)
     │       │   ├── opportunities/ # Member opportunities
     │       │   ├── join/      #   Membership form (→ Google Form)
-    │       │   ├── register/  #   Campus Ambassador registration + action
+    │       │   ├── register/  #   Ambassador + Volunteer registration form, selector, action
     │       │   ├── profile/   #   Signed-in profile editing
     │       │   ├── privacy-policy/ & terms/  # Legal pages (LegalShell)
     │       ├── (auth)/        # signin, signup, verify-email, forgot/reset password
     │       ├── (cms)/cms/     # CMS: dashboard, posts (CRUD + TipTap), tags, users
-    │       └── (admin)/admin/ # Grand admin: dashboard, campus-ambassador viewer,
-    │                          # science-competition placeholder
+    │       └── (admin)/admin/ # Grand admin: dashboard, campus-ambassador + volunteer
+    │                          # viewers, science-competition placeholder
     ├── components/
     │   ├── nav.tsx / footer.tsx   # Thin wrappers picking variant/theme
     │   ├── home/
@@ -172,7 +172,8 @@ animation honours `prefers-reduced-motion` via `useReducedMotion()`
     │   └── schema/
     │       ├── auth/          # user, account, session, verification tables
     │       ├── posts.ts       # Blog posts (slug, HTML content, status, tags)
-    │       └── registrations.ts  # campus_ambassador_registrations mirror
+    │       ├── registrations.ts  # campus_ambassador_registrations mirror
+    │       └── volunteer-registrations.ts  # volunteer_registrations mirror
     ├── lib/
     │   ├── auth/
     │   │   ├── server.ts      # betterAuth() config (drizzle adapter, admin plugin,
@@ -212,7 +213,7 @@ animation honours `prefers-reduced-motion` via `useReducedMotion()`
 | `/robotics` | Robotics division hub — project display, olympiads & honors, upcoming |
 | `/opportunities` | Opportunities for members |
 | `/join` | Membership application (redirects to Google Form) |
-| `/register` | Campus Ambassador registration (Supabase insert) |
+| `/register` | Campus / Batch Ambassador + Volunteer registration (Supabase insert) |
 | `/privacy-policy`, `/terms` | Legal pages |
 | `/profile` | Signed-in profile editing |
 
@@ -239,6 +240,7 @@ animation honours `prefers-reduced-motion` via `useReducedMotion()`
 |-------|-------------|
 | `/admin` | Stats dashboard (total/week/month/unique schools) + form cards |
 | `/admin/campus-ambassador` | Full registration viewer — search + expandable responses |
+| `/admin/volunteer` | STEM Fest volunteer application viewer — search + expandable answers |
 | `/admin/science-competition` | Placeholder until the competition form launches |
 
 ---
@@ -252,9 +254,11 @@ animation honours `prefers-reduced-motion` via `useReducedMotion()`
 | `session` | Sessions with IP + user-agent |
 | `verification` | Email verification tokens |
 | `posts` | Blog posts — slug, HTML content, tags, status, author refs |
-| `campus_ambassador_registrations` | Ambassador form responses (name, class, school, experience) — raw-SQL migration, service_role-only RLS |
+| `campus_ambassador_registrations` | Ambassador form responses (`type`: `campus` / `batch`, name, class, school, experience) — raw-SQL migration, service_role-only RLS |
+| `volunteer_registrations` | STEM Fest volunteer applications — student identity (class section, roll, shift, student code), contact, and six availability/situational answers — own table, service_role-only RLS |
 
-Migrations: `drizzle/0000…0005` (drizzle-kit) + `campus_ambassador_migration.sql`
+Migrations: `drizzle/0000…0005` (drizzle-kit) + `campus_ambassador_migration.sql`,
+`add_ambassador_type.sql` and `create_volunteer_registrations.sql`
 (applied manually via Supabase SQL editor).
 
 ---
@@ -299,7 +303,8 @@ pnpm dev          # http://localhost:3000
 ```
 
 > The `campus_ambassador_registrations` table must also be created by running
-> `drizzle/campus_ambassador_migration.sql` in the Supabase SQL editor.
+> `drizzle/campus_ambassador_migration.sql` in the Supabase SQL editor, and the
+> volunteer table by running `drizzle/create_volunteer_registrations.sql`.
 
 ## Available Scripts
 

@@ -15,7 +15,7 @@ const sections: LegalSection[] = [
       "We only collect information you choose to give us or that is needed to keep the site running:",
     ],
     list: [
-      "Form submissions — details you enter into registration forms, such as the Campus Ambassador form (name, class, school, and your written responses).",
+      "Form submissions — details you enter into registration forms, such as the Campus Ambassador, Batch Ambassador and Volunteer forms (name, class, school, and your written responses).",
       "Account data — if you create an MSC account, we store your name, email address, username, and a securely hashed password.",
       "Usage data — anonymised analytics (such as page views) that help us understand which parts of the site are useful.",
       "Local drafts — registration forms may save unfinished answers in your own browser's local storage so you can resume later; this data never leaves your device.",

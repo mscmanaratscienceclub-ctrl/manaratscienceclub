@@ -1,6 +1,6 @@
 ---
 tags: [meta, changelog]
-updated: 2026-08-30
+updated: 2026-09-01
 ---
 
 # Changelog
@@ -15,6 +15,40 @@ remembering. Routine commits do not need an entry.
 For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
+
+## 2026-09-01 — `/register` form: visual-only "dossier" variant
+
+- The programme application form got a new look with **no logic change**: same
+  Zod schema, same `submitAmbassadorForm` action, same per-type localStorage
+  draft/submission keys, same `campus | batch | volunteer` discriminator.
+- Layout is now an editorial split instead of one boxed card: serif display
+  header, numbered sections (`01 Your details`, `02 Your experience`),
+  underline fields with hairline rules that turn ion-coloured on focus, a pill
+  segmented Yes/No control, a character-count progress bar, and a sticky
+  progress rail whose checklist is derived from the existing `watch()` values
+  (no new state).
+- `ambassador-program-selector.tsx` is now a pill tab strip with the selected
+  programme's description below it; `register/page.tsx` widened to `max-w-5xl`
+  to give the split room.
+- New presentation tokens in `globals.css`: `msc-field`, `msc-field-area`,
+  `msc-btn-pill`, `msc-btn-pill-ghost`. Because Tailwind sorts custom
+  `@utility` rules *before* standard ones, `fieldClass`/`fieldAreaClass` in the
+  form repeat `border-0`, `h-auto`, `py-*` and `placeholder:*` as standard
+  utilities so they win over the `ui/Input` and `ui/Textarea` base classes.
+
+## 2026-09-01 — Volunteer applications on `/register`
+
+- `/register` now offers a third programme — **Volunteer** — beside Campus and
+  Batch Ambassador. It reuses the same Zod-validated form, the same per-type
+  localStorage draft/submission state and the same submit action; only the
+  persisted discriminator changes (`type = 'volunteer'`).
+- `campus_ambassador_registrations.type` accepts a third value. Run
+  `drizzle/add_volunteer_type.sql` in the Supabase SQL Editor **before
+  deploying** — it replaces `campus_ambassador_registrations_type_check`.
+  The Drizzle mirror in `src/db/schema/registrations.ts` was updated to match.
+- The admin table's `type` union now comes from `AmbassadorType` in
+  `register/validate.ts` instead of repeating the literals, and the
+  "First-time CA" column is the generic "First time".
 
 ## 2026-08-30 — Supabase image pipeline: pre-optimised, zero transformations
 

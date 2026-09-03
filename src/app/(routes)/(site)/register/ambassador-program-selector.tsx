@@ -1,26 +1,35 @@
 "use client";
 
-import { School, Users } from "lucide-react";
+import { HandHeart, School, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { AmbassadorType } from "./validate";
+
+export type RegistrationType = "campus" | "batch" | "volunteer";
 
 const PROGRAMS = {
   campus: {
     title: "Campus Ambassador",
-    description: "Represent MSC across your school campus.",
+    description:
+      "Represent Manarat Science Club across your school campus and grow a community of curious students.",
     icon: School,
   },
   batch: {
     title: "Batch Ambassador",
-    description: "Represent MSC within your year group.",
+    description:
+      "Speak for your year group, share opportunities with your classmates, and keep MSC close to your batch.",
     icon: Users,
+  },
+  volunteer: {
+    title: "Volunteer",
+    description:
+      "Help run MSC events, workshops and programmes — on the ground, behind the scenes, or both.",
+    icon: HandHeart,
   },
 } as const;
 
 export interface AmbassadorProgramSelectorProps {
-  value: AmbassadorType;
-  onChange: (value: AmbassadorType) => void;
+  value: RegistrationType;
+  onChange: (value: RegistrationType) => void;
 }
 
 export function AmbassadorProgramSelector({
@@ -28,15 +37,19 @@ export function AmbassadorProgramSelector({
   onChange,
 }: AmbassadorProgramSelectorProps) {
   return (
-    <section aria-labelledby="ambassador-program-heading" className="mb-8">
+    <section aria-labelledby="ambassador-program-heading" className="mb-14">
       <h2
         id="ambassador-program-heading"
-        className="mb-3 font-mono text-[0.64rem] font-semibold uppercase tracking-[0.24em] text-space-muted"
+        className="mb-3 font-mono text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-space-muted"
       >
-        Choose an ambassador programme
+        I want to apply as
       </h2>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {(Object.entries(PROGRAMS) as [AmbassadorType, (typeof PROGRAMS)[AmbassadorType]][]).map(
+      <div
+        role="group"
+        aria-label="Choose a programme"
+        className="flex flex-col gap-1.5 rounded-full border border-space-line-soft bg-space-black/30 p-1.5 sm:inline-flex sm:flex-row"
+      >
+        {(Object.entries(PROGRAMS) as [RegistrationType, (typeof PROGRAMS)[RegistrationType]][]).map(
           ([type, program]) => {
             const Icon = program.icon;
             const selected = value === type;
@@ -49,26 +62,21 @@ export function AmbassadorProgramSelector({
                 aria-pressed={selected}
                 onClick={() => onChange(type)}
                 className={cn(
-                  "h-auto min-h-24 justify-start gap-4 border-space-line-soft bg-space-deep/60 px-5 py-4 text-left normal-case tracking-normal text-space-ivory hover:border-ion hover:bg-ion/10 hover:text-space-ivory",
-                  selected && "border-ion bg-ion/10"
+                  "h-auto min-h-0 w-full flex-1 justify-center gap-2.5 rounded-full border-transparent bg-transparent px-5 py-2.5 font-space-body text-sm font-medium normal-case tracking-normal text-space-muted transition-colors hover:border-transparent hover:bg-ion/10 hover:text-space-ivory sm:w-auto sm:flex-none",
+                  selected &&
+                    "bg-ion text-space-black hover:bg-ion hover:text-space-black"
                 )}
               >
-                <span className="flex size-10 shrink-0 items-center justify-center border border-ion-line text-ion">
-                  <Icon className="size-5" aria-hidden="true" />
-                </span>
-                <span>
-                  <span className="block font-voyage text-sm font-bold uppercase tracking-tight">
-                    {program.title}
-                  </span>
-                  <span className="mt-1 block font-space-body text-xs leading-relaxed font-normal text-space-muted">
-                    {program.description}
-                  </span>
-                </span>
+                <Icon className="size-4" aria-hidden="true" />
+                {program.title}
               </Button>
             );
           }
         )}
       </div>
+      <p className="mt-3 max-w-[52ch] font-space-body text-sm leading-relaxed text-space-muted">
+        {PROGRAMS[value].description}
+      </p>
     </section>
   );
 }

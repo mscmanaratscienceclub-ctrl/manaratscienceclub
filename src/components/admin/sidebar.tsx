@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, GraduationCap, FlaskConical, ExternalLink, LogOut, ShieldCheck, PenSquare } from "lucide-react";
+import { LayoutDashboard, GraduationCap, FlaskConical, ExternalLink, LogOut, ShieldCheck, PenSquare, HandHeart } from "lucide-react";
 import { signOut } from "@/lib/auth/client";
 import { trackEvent, resetAnalytics } from "@/lib/analytics";
 import { clearSentryUser } from "@/lib/sentry-helpers";
@@ -15,6 +15,7 @@ const navItems = [
 ];
 const formItems = [
   { href: "/admin/campus-ambassador", label: "Campus Ambassador", icon: GraduationCap, exact: false },
+  { href: "/admin/volunteer", label: "Volunteer", icon: HandHeart, exact: false },
   { href: "/admin/science-competition", label: "Science Competition", icon: FlaskConical, exact: false },
 ];
 
