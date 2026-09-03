@@ -162,7 +162,7 @@ export const currentMembers: Member[] = [
     {
     id: "current-ehsas",
     name: "Ehsas Mostafa",
-    image: "/memberimage/ehsas.png",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/ehsas.webp",
     batch: "2026–2027",
     role: "Vice President",
     socials: {},
@@ -170,7 +170,7 @@ export const currentMembers: Member[] = [
     {
     id: "current-nafisa",
     name: "Nafisa Nawar",
-    image: "/memberimage/nafisa.jpg",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/nafisa.webp",
     batch: "2026–2027",
     role: "Vice President",
     socials: {},
@@ -236,7 +236,7 @@ export const currentMembers: Member[] = [
       {
     id: "current-rose",
     name: "Tarannum Rose",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/rose.webp",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/rose.png",
     batch: "2026–2027",
     role: "Coordinator",
     socials: {},

@@ -55,31 +55,26 @@ export const volunteerFormSections: VolunteerFormSection[] = [
       {
         id: "fullName",
         label: "Name",
-        placeholder: "e.g. Ahmed Al-Rashid",
       },
       {
         id: "classSection",
         label: "Class section",
-        placeholder: "e.g. HSC 1st year, Group B",
         span: "half",
       },
       {
         id: "roll",
         label: "Roll",
-        placeholder: "e.g. 1024",
         span: "half",
       },
       {
         id: "shift",
         label: "Shift",
-        placeholder: "e.g. Morning",
         hint: "Morning / Day as printed on your ID card.",
         span: "half",
       },
       {
         id: "studentCode",
         label: "Student code",
-        placeholder: "e.g. 202401024",
         span: "half",
       },
     ],
@@ -92,18 +87,15 @@ export const volunteerFormSections: VolunteerFormSection[] = [
       {
         id: "address",
         label: "Address",
-        placeholder: "House, road, area, city",
       },
       {
         id: "personalPhone",
         label: "Personal phone no",
-        placeholder: "e.g. 01XXXXXXXXX",
         span: "half",
       },
       {
         id: "parentsPhone",
         label: "Parents phone no",
-        placeholder: "e.g. 01XXXXXXXXX",
         span: "half",
       },
     ],
