@@ -1,6 +1,6 @@
 ---
 tags: [meta, changelog]
-updated: 2026-09-01
+updated: 2026-09-04
 ---
 
 # Changelog
@@ -15,6 +15,23 @@ remembering. Routine commits do not need an entry.
 For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
+
+## 2026-09-04 — Ambassador forms: contact & social questions
+
+- Campus/Batch applications now collect **phone, email, gender, Facebook and
+  Instagram** (phone/email/gender required; socials optional). Gender reuses the
+  segmented pill control; a new numbered section `02 Social accounts` sits
+  between details and experience, so field indices run 01–10.
+- Schema: `drizzle/add_ambassador_contact_fields.sql` adds nullable
+  `phone, email, gender, facebook, instagram` columns to
+  `campus_ambassador_registrations` (nullable so pre-existing rows stay valid)
+  plus a gender CHECK. Mirrored in `src/db/schema/registrations.ts`; the
+  Supabase insert in `register/actions.ts` stores empty socials as `null`.
+- Validation in `register/validate.ts` reuses the volunteer phone pattern;
+  email uses `z.string().trim().pipe(z.email())` (Zod v4).
+- Admin table (`/admin/campus-ambassador`) shows the new values in the expanded
+  row and searches by phone/email. Older localStorage submissions without the
+  new keys still render (fields are optional in `SavedSubmission`).
 
 ## 2026-09-01 — `/register` form: visual-only "dossier" variant
 

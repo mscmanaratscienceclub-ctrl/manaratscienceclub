@@ -32,6 +32,12 @@ const AMBASSADOR_PROGRAMS = {
   batch: { title: "Batch Ambassador", shortTitle: "Batch" },
 } as const;
 
+const GENDER_OPTIONS: { value: AmbassadorFormValues["gender"]; label: string }[] = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+  { value: "other", label: "Other" },
+];
+
 function draftKey(type: AmbassadorType) {
   return `msc_${type}_ambassador_form`;
 }
@@ -44,8 +50,13 @@ type SavedSubmission = {
   id: string;
   submittedAt: string;
   name: string;
+  phone?: string;
+  email?: string;
+  gender?: AmbassadorFormValues["gender"];
   class: string;
   school: string;
+  facebook?: string;
+  instagram?: string;
   experience: string;
   firstTimeCa?: "yes" | "no";
 };
@@ -253,7 +264,7 @@ export default function CampusAmbassadorForm({
     formState: { errors },
   } = useForm<AmbassadorFormValues>({
     resolver: zodResolver(ambassadorFormSchema),
-    defaultValues: { name: "", class: "", school: "", experience: "", firstTimeCa: undefined },
+    defaultValues: { name: "", phone: "", email: "", class: "", school: "", gender: undefined, facebook: "", instagram: "", experience: "", firstTimeCa: undefined },
   });
 
   const watchAll = watch();
@@ -276,8 +287,13 @@ export default function CampusAmbassadorForm({
     reset(
       loadDraft(selectedType) ?? {
         name: "",
+        phone: "",
+        email: "",
         class: "",
         school: "",
+        gender: undefined,
+        facebook: "",
+        instagram: "",
         experience: "",
         firstTimeCa: undefined,
       }
@@ -309,8 +325,13 @@ export default function CampusAmbassadorForm({
         id: result.id,
         submittedAt: result.submittedAt,
         name: values.name,
+        phone: values.phone,
+        email: values.email,
+        gender: values.gender,
         class: values.class,
         school: values.school,
+        facebook: values.facebook,
+        instagram: values.instagram,
         experience: values.experience,
         firstTimeCa: values.firstTimeCa,
       };
@@ -329,9 +350,14 @@ export default function CampusAmbassadorForm({
     clearSubmission(selectedType);
     reset({
       name: previousSubmission.name,
+      phone: previousSubmission.phone ?? "",
+      email: previousSubmission.email ?? "",
       class: previousSubmission.class,
       school: previousSubmission.school,
+      facebook: previousSubmission.facebook ?? "",
+      instagram: previousSubmission.instagram ?? "",
       experience: previousSubmission.experience,
+      ...(previousSubmission.gender ? { gender: previousSubmission.gender } : {}),
       ...(previousSubmission.firstTimeCa ? { firstTimeCa: previousSubmission.firstTimeCa } : {}),
     });
     setPreviousSubmission(null);
@@ -343,8 +369,11 @@ export default function CampusAmbassadorForm({
   // Presentational only — mirrors the fields above to drive the progress rail.
   const checklist = [
     { label: "Full name", done: Boolean(watchAll.name?.trim()) },
+    { label: "Phone number", done: Boolean(watchAll.phone?.trim()) },
+    { label: "Email", done: Boolean(watchAll.email?.trim()) },
     { label: "Class / grade", done: Boolean(watchAll.class?.trim()) },
     { label: "School", done: Boolean(watchAll.school?.trim()) },
+    { label: "Gender", done: Boolean(watchAll.gender) },
     { label: "Experience", done: Boolean(watchAll.experience?.trim()) },
     { label: "First-time answer", done: Boolean(watchAll.firstTimeCa) },
   ];
@@ -402,8 +431,16 @@ export default function CampusAmbassadorForm({
           <dl className="divide-y divide-space-line-soft border-y border-space-line-soft">
             {[
               { label: "Full name", value: previousSubmission.name },
+              { label: "Phone number", value: previousSubmission.phone },
+              { label: "Email", value: previousSubmission.email },
               { label: "Class / grade", value: previousSubmission.class },
               { label: "School", value: previousSubmission.school },
+              {
+                label: "Gender",
+                value: GENDER_OPTIONS.find((option) => option.value === previousSubmission.gender)?.label,
+              },
+              { label: "Facebook account", value: previousSubmission.facebook },
+              { label: "Instagram account", value: previousSubmission.instagram },
               { label: "Experience", value: previousSubmission.experience },
               ...(previousSubmission.firstTimeCa
                 ? [
@@ -414,7 +451,9 @@ export default function CampusAmbassadorForm({
                     },
                   ]
                 : []),
-            ].map((item) => (
+            ]
+              .filter((item) => item.value)
+              .map((item) => (
               <div
                 key={item.label}
                 className="grid gap-1 py-4 sm:grid-cols-[12rem_minmax(0,1fr)] sm:gap-6"
@@ -465,8 +504,9 @@ export default function CampusAmbassadorForm({
             Tell us who you are
           </h2>
           <p className="mt-5 max-w-[48ch] font-space-body text-base leading-relaxed text-pretty text-space-muted">
-            Five short questions — about a minute of your time. Everything you
-            type is saved as you go, so you can close the tab and finish later.
+            Ten short questions — about two minutes of your time. Everything
+            you type is saved as you go, so you can close the tab and finish
+            later.
           </p>
         </header>
 
@@ -494,6 +534,48 @@ export default function CampusAmbassadorForm({
               <div className="grid gap-8 sm:grid-cols-2">
                 <Field
                   index="02"
+                  id="phone"
+                  label="Phone number"
+                  error={errors.phone?.message}
+                >
+                  <FieldShell invalid={Boolean(errors.phone)}>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      placeholder="e.g. 01XXXXXXXXX"
+                      className={fieldClass}
+                      aria-invalid={Boolean(errors.phone)}
+                      {...register("phone")}
+                    />
+                  </FieldShell>
+                </Field>
+
+                <Field
+                  index="03"
+                  id="email"
+                  label="Email"
+                  error={errors.email?.message}
+                >
+                  <FieldShell invalid={Boolean(errors.email)}>
+                    <Input
+                      id="email"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                      className={fieldClass}
+                      aria-invalid={Boolean(errors.email)}
+                      {...register("email")}
+                    />
+                  </FieldShell>
+                </Field>
+              </div>
+
+              <div className="grid gap-8 sm:grid-cols-2">
+                <Field
+                  index="04"
                   id="class"
                   label="Class / grade"
                   error={errors.class?.message}
@@ -512,7 +594,7 @@ export default function CampusAmbassadorForm({
                 </Field>
 
                 <Field
-                  index="03"
+                  index="05"
                   id="school"
                   label="School"
                   error={errors.school?.message}
@@ -529,15 +611,86 @@ export default function CampusAmbassadorForm({
                   </FieldShell>
                 </Field>
               </div>
+
+              <Field index="06" id="gender" label="Gender" error={errors.gender?.message}>
+                <div
+                  className="flex flex-col gap-1.5 rounded-3xl border border-space-line-soft bg-space-black/40 p-1.5 sm:flex-row sm:rounded-full"
+                  role="radiogroup"
+                  aria-label="Gender"
+                >
+                  {GENDER_OPTIONS.map((option) => (
+                    <label
+                      key={option.value}
+                      className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-3 text-center font-space-body text-sm font-medium text-space-muted transition-colors hover:text-space-ivory has-checked:bg-ion has-checked:text-space-black has-checked:hover:text-space-black sm:py-2.5"
+                    >
+                      <input
+                        type="radio"
+                        value={option.value}
+                        className="sr-only"
+                        {...register("gender")}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </Field>
             </FormSection>
 
             <FormSection
               step="02"
+              title="Social accounts"
+              caption="Optional — where we can find you online."
+            >
+              <div className="grid gap-8 sm:grid-cols-2">
+                <Field
+                  index="07"
+                  id="facebook"
+                  label="Facebook account"
+                  error={errors.facebook?.message}
+                  hint="Profile link or username — optional"
+                >
+                  <FieldShell invalid={Boolean(errors.facebook)}>
+                    <Input
+                      id="facebook"
+                      type="text"
+                      inputMode="url"
+                      autoComplete="off"
+                      className={fieldClass}
+                      aria-invalid={Boolean(errors.facebook)}
+                      {...register("facebook")}
+                    />
+                  </FieldShell>
+                </Field>
+
+                <Field
+                  index="08"
+                  id="instagram"
+                  label="Instagram account"
+                  error={errors.instagram?.message}
+                  hint="Profile link or username — optional"
+                >
+                  <FieldShell invalid={Boolean(errors.instagram)}>
+                    <Input
+                      id="instagram"
+                      type="text"
+                      inputMode="url"
+                      autoComplete="off"
+                      className={fieldClass}
+                      aria-invalid={Boolean(errors.instagram)}
+                      {...register("instagram")}
+                    />
+                  </FieldShell>
+                </Field>
+              </div>
+            </FormSection>
+
+            <FormSection
+              step="03"
               title="Your experience"
               caption="What you have done so far, and whether this is new ground for you."
             >
               <Field
-                index="04"
+                index="09"
                 id="experience"
                 label="Experience"
                 error={errors.experience?.message}
@@ -579,7 +732,7 @@ export default function CampusAmbassadorForm({
               </Field>
 
               <Field
-                index="05"
+                index="10"
                 id="firstTimeCa"
                 label={`Is this your first time being a ${activeProgram.title}?`}
                 error={errors.firstTimeCa?.message}

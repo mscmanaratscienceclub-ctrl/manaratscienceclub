@@ -9,8 +9,13 @@ export interface RegistrationRow {
   id: string;
   type: AmbassadorType;
   name: string;
+  phone: string;
+  email: string;
   class: string;
   school: string;
+  gender: string | null;
+  facebook: string | null;
+  instagram: string | null;
   experience: string;
   firstTimeCa: boolean;
   createdAt: string;
@@ -34,7 +39,9 @@ export default function RegistrationsTable({ registrations }: { registrations: R
         r.name.toLowerCase().includes(q) ||
         r.type.includes(q) ||
         r.school.toLowerCase().includes(q) ||
-        r.class.toLowerCase().includes(q)
+        r.class.toLowerCase().includes(q) ||
+        r.phone.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q)
     );
   }, [query, registrations]);
 
@@ -125,6 +132,26 @@ function FragmentRow({
         <tr className="bg-cream/60">
           <td />
           <td colSpan={6} className="px-4 pb-5 pt-1">
+            <dl className="mb-5 grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                { label: "Phone", value: row.phone },
+                { label: "Email", value: row.email },
+                { label: "Gender", value: row.gender },
+                { label: "Facebook", value: row.facebook },
+                { label: "Instagram", value: row.instagram },
+              ]
+                .filter((item) => item.value)
+                .map((item) => (
+                  <div key={item.label}>
+                    <dt className="font-body text-xs font-semibold uppercase tracking-wider text-ink/40">
+                      {item.label}
+                    </dt>
+                    <dd className="mt-0.5 font-body text-sm break-words text-ink/80 capitalize">
+                      {item.value}
+                    </dd>
+                  </div>
+                ))}
+            </dl>
             <p className="mb-1.5 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">
               Experience
             </p>
