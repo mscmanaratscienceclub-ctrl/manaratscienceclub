@@ -35,7 +35,6 @@ const AMBASSADOR_PROGRAMS = {
 const GENDER_OPTIONS: { value: AmbassadorFormValues["gender"]; label: string }[] = [
   { value: "male", label: "Male" },
   { value: "female", label: "Female" },
-  { value: "other", label: "Other" },
 ];
 
 function draftKey(type: AmbassadorType) {

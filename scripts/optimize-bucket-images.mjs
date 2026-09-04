@@ -35,8 +35,8 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
 const PROFILES = {
   // chroma-grid cards render at 320px -> serve 640px for retina.
   default: { width: 640, height: 640, quality: 78 },
-  // carousel cards render at 224x288 -> serve 448x576 for retina.
-  stemfest: { width: 448, height: 576, quality: 72 },
+  // bento grid cells — largest spans 2x2 (~360-500px per axis at 2x for retina).
+  stemfest: { width: 800, height: 800, quality: 82 },
 };
 
 const args = new Set(process.argv.slice(2));

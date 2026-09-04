@@ -7,47 +7,67 @@ import { gsap } from "gsap";
 import { competitionShowcase } from "@/lib/data";
 import { useReducedMotion } from "@/lib/hooks/use-reduced-motion";
 
-const LOOP_SECONDS = 45;
+const CELL_SIZES = [
+  { cols: 2, rows: 2 },
+  { cols: 1, rows: 1 },
+  { cols: 1, rows: 2 },
+  { cols: 1, rows: 1 },
+  { cols: 2, rows: 1 },
+  { cols: 1, rows: 1 },
+] as const;
 
 export default function CompetitionCarousel() {
-  const trackRef = useRef<HTMLUListElement>(null);
+  const gridRef = useRef<HTMLUListElement>(null);
   const reducedMotion = useReducedMotion();
-  const frames = [...competitionShowcase, ...competitionShowcase];
 
   useEffect(() => {
-    const track = trackRef.current;
-    if (!track || reducedMotion) return;
+    const grid = gridRef.current;
+    if (!grid || reducedMotion) return;
 
-    const tween = gsap.to(track, {
-      xPercent: -50,
-      ease: "none",
-      duration: LOOP_SECONDS,
-      repeat: -1,
+    const items = grid.querySelectorAll<HTMLLIElement>("[data-gallery-item]");
+
+    const enterHandler = (e: Event) => {
+      const target = e.currentTarget as HTMLLIElement;
+      gsap.to(target, {
+        scale: 1.02,
+        borderColor: "var(--ion-bright)",
+        duration: 0.3,
+        ease: "power2.out",
+      });
+    };
+
+    const leaveHandler = (e: Event) => {
+      const target = e.currentTarget as HTMLLIElement;
+      gsap.to(target, {
+        scale: 1,
+        borderColor: "var(--space-line-soft)",
+        duration: 0.3,
+        ease: "power2.out",
+      });
+    };
+
+    items.forEach((item) => {
+      item.addEventListener("mouseenter", enterHandler);
+      item.addEventListener("mouseleave", leaveHandler);
     });
 
-    const container = track.parentElement;
-    const pause = () => tween.pause();
-    const play = () => tween.play();
-    container?.addEventListener("mouseenter", pause);
-    container?.addEventListener("mouseleave", play);
-    container?.addEventListener("focusin", pause);
-    container?.addEventListener("focusout", play);
-
     return () => {
-      container?.removeEventListener("mouseenter", pause);
-      container?.removeEventListener("mouseleave", play);
-      container?.removeEventListener("focusin", pause);
-      container?.removeEventListener("focusout", play);
-      tween.kill();
+      items.forEach((item) => {
+        item.removeEventListener("mouseenter", enterHandler);
+        item.removeEventListener("mouseleave", leaveHandler);
+      });
     };
   }, [reducedMotion]);
 
   return (
-    <section id="showcase" className="border-t border-space-line-soft bg-space-deep py-20">
+    <section
+      id="showcase"
+      className="border-t border-space-line-soft bg-space-deep py-20"
+    >
       <div className="mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-16">
         <div className="mb-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="font-mono text-[0.64rem] font-medium uppercase tracking-[0.24em] text-ion">
+            <p className="font-mono text-[0.64rem] font-medium uppercase tracking-[0.24em] text-ion-bright">
               Field archive
             </p>
             <h2 className="mt-3 max-w-[36rem] font-voyage text-3xl font-bold uppercase leading-[1.08] tracking-tight text-space-ivory sm:text-4xl">
@@ -55,49 +75,41 @@ export default function CompetitionCarousel() {
             </h2>
           </div>
           <p className="max-w-[26rem] font-space-body text-sm leading-relaxed text-space-muted">
-            Frames from MSC&apos;s run at last year&apos;s national competition —
-            placeholder shots for now, the full event archive is on its way.
+            Frames from MSC&apos;s run at last year&apos;s national competition
+            — placeholder shots for now, the full event archive is on its way.
           </p>
         </div>
-      </div>
 
-      <div className="relative overflow-hidden">
         <ul
-          ref={trackRef}
-          className="flex w-max items-stretch gap-4 pr-4"
-          aria-label="Competition photo strip"
+          ref={gridRef}
+          className="grid auto-rows-[140px] grid-cols-2 gap-3 sm:auto-rows-[180px] sm:grid-cols-3 sm:gap-4 lg:grid-cols-4"
+          aria-label="Competition photo gallery"
         >
-          {frames.map((frame, index) => (
-            <li
-              key={`${frame.src}-${index}`}
-              className="relative h-56 w-44 shrink-0 overflow-hidden border border-space-line-soft bg-space-black sm:h-72 sm:w-56"
-              aria-hidden={index >= competitionShowcase.length}
-            >
-              {/* Pre-optimised WebP at 2x this box (see
-                  scripts/optimize-bucket-images.mjs), so the bytes are already
-                  final — served verbatim, no Vercel transformation per view. */}
-              <Image
-                src={frame.src}
-                alt={index < competitionShowcase.length ? frame.alt : ""}
-                fill
-                sizes="224px"
-                className="object-cover"
-                loading="lazy"
-                unoptimized
-              />
-
-            </li>
-          ))}
+          {competitionShowcase.map((frame, index) => {
+            const size = CELL_SIZES[index % CELL_SIZES.length];
+            return (
+              <li
+                key={frame.src}
+                data-gallery-item
+                className="relative overflow-hidden border border-space-line-soft bg-space-black transition-colors"
+                style={{
+                  gridColumn: `span ${size.cols}`,
+                  gridRow: `span ${size.rows}`,
+                }}
+              >
+                <Image
+                  src={frame.src}
+                  alt={frame.alt}
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  className="object-cover"
+                  loading="lazy"
+                  unoptimized
+                />
+              </li>
+            );
+          })}
         </ul>
-
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-space-deep to-transparent sm:w-32"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-space-deep to-transparent sm:w-32"
-        />
       </div>
     </section>
   );
