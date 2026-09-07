@@ -34,9 +34,9 @@ export type VolunteerQuestionId =
 
 /** Paragraphs shown above the form, in order. */
 export const volunteerIntroParagraphs: string[] = [
-  "STEM Fest celebrates innovation, creativity, and curiosity in Science, Technology, Engineering, and Mathematics through interactive exhibits, presentations, and activities 🔬💡🚀.",
-  "Volunteering offers valuable experience in teamwork, leadership, communication, and problem-solving while building confidence and responsibility 🤝🌟. All selected volunteers will receive an official certificate 📜 and gain meaningful experiences, connections, and skills for future opportunities.",
-  "We look forward to welcoming dedicated and enthusiastic volunteers to help make STEM Fest a success 🎉🙌.",
+  "STEM Fest celebrates innovation, creativity, and curiosity in Science, Technology, Engineering, and Mathematics through interactive exhibits, presentations, and activities .",
+  "Volunteering offers valuable experience in teamwork, leadership, communication, and problem-solving while building confidence and responsibility . All selected volunteers will receive an official certificate  and gain meaningful experiences, connections, and skills for future opportunities.",
+  "We look forward to welcoming dedicated and enthusiastic volunteers to help make STEM Fest a success .",
 ];
 
 export interface VolunteerFormSection {

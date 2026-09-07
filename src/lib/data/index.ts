@@ -236,7 +236,7 @@ export const currentMembers: Member[] = [
       {
     id: "current-rose",
     name: "Tarannum Rose",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/rose.png",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/rose.heif",
     batch: "2026–2027",
     role: "Coordinator",
     socials: {},

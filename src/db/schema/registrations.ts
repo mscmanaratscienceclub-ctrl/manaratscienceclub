@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const campusAmbassadorRegistrations = pgTable(
   "campus_ambassador_registrations",
@@ -21,6 +21,7 @@ export const campusAmbassadorRegistrations = pgTable(
       .notNull(),
   },
   (table) => [
+    index("campus_ambassador_registrations_created_at_idx").on(table.createdAt.desc()),
     check(
       "campus_ambassador_registrations_type_check",
       sql`${table.type} in ('campus', 'batch')`

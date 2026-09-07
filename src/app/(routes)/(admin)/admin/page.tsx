@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { GraduationCap, FlaskConical, Users, CalendarDays, CalendarRange, School, HandHeart } from "lucide-react";
-import { getAllAmbassadorRegistrations, getAllVolunteerRegistrations } from "@/lib/actions/registrations";
+import {
+  getAmbassadorStats,
+  getRecentAmbassadorRegistrations,
+  getVolunteerCount,
+} from "@/lib/actions/registrations";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -8,32 +12,20 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 });
 
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
 export default async function AdminDashboardPage() {
-  const [registrations, volunteers] = await Promise.all([
-    getAllAmbassadorRegistrations(),
-    getAllVolunteerRegistrations(),
+  // Aggregate in SQL (counts + a 5-row recent feed) instead of pulling every
+  // column of both tables into memory — the dashboard only renders numbers.
+  const [ambassadorStats, volunteerCount, recent] = await Promise.all([
+    getAmbassadorStats(),
+    getVolunteerCount(),
+    getRecentAmbassadorRegistrations(5),
   ]);
 
-  const now = Date.now();
-  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
-  const totalRegistrations = registrations.length;
-  const thisWeek = registrations.filter(
-    (r) => now - new Date(r.createdAt).getTime() <= WEEK_MS
-  ).length;
-  const thisMonth = registrations.filter(
-    (r) => new Date(r.createdAt).getTime() >= monthStart
-  ).length;
-  const uniqueSchools = new Set(registrations.map((r) => r.school.trim().toLowerCase())).size;
-
-  const recent = registrations.slice(0, 5);
-
   const stats = [
-    { label: "Total Registrations", count: totalRegistrations, icon: Users, color: "text-manara-teal", bg: "bg-manara-teal/10" },
-    { label: "This Week", count: thisWeek, icon: CalendarDays, color: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: "This Month", count: thisMonth, icon: CalendarRange, color: "text-manara-yellow", bg: "bg-manara-yellow/15" },
-    { label: "Unique Schools", count: uniqueSchools, icon: School, color: "text-manara-purple", bg: "bg-manara-purple/10" },
+    { label: "Ambassador Registrations", count: ambassadorStats.total, icon: Users, color: "text-manara-teal", bg: "bg-manara-teal/10" },
+    { label: "This Week", count: ambassadorStats.thisWeek, icon: CalendarDays, color: "text-emerald-600", bg: "bg-emerald-50" },
+    { label: "This Month", count: ambassadorStats.thisMonth, icon: CalendarRange, color: "text-manara-yellow", bg: "bg-manara-yellow/15" },
+    { label: "Unique Schools", count: ambassadorStats.uniqueSchools, icon: School, color: "text-manara-purple", bg: "bg-manara-purple/10" },
   ];
 
   return (
@@ -79,7 +71,7 @@ export default async function AdminDashboardPage() {
               Campus Ambassador
             </h2>
             <p className="mt-1 font-body text-sm text-ink/60">
-              {totalRegistrations} {totalRegistrations === 1 ? "registration" : "registrations"} collected. View every response.
+              {ambassadorStats.total} {ambassadorStats.total === 1 ? "registration" : "registrations"} collected. View every response.
             </p>
           </div>
         </Link>
@@ -101,7 +93,7 @@ export default async function AdminDashboardPage() {
               STEM Fest Volunteer
             </h2>
             <p className="mt-1 font-body text-sm text-ink/60">
-              {volunteers.length} {volunteers.length === 1 ? "application" : "applications"} collected. View every response.
+              {volunteerCount} {volunteerCount === 1 ? "application" : "applications"} collected. View every response.
             </p>
           </div>
         </Link>

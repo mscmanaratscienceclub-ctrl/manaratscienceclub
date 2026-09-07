@@ -1,6 +1,6 @@
 ---
 tags: [meta, changelog]
-updated: 2026-09-04
+updated: 2026-09-06
 ---
 
 # Changelog
@@ -15,6 +15,41 @@ remembering. Routine commits do not need an entry.
 For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
+
+## 2026-09-06 — DB pool `max: 1` → `3` + `max_lifetime` (local-dev freeze)
+
+- Local dev kept freezing: every DB-backed route (`/`, `/blogs`, `/admin`) hung
+  100s+ while non-DB routes (`/signin`, `/events`, static assets) stayed instant
+  (~75ms). The queries were **not** the cause — a fresh `postgres` connection
+  answered `select 1` in ~730ms (that's just Seoul `ap-northeast-2` pooler
+  latency). A transient Supavisor blip (we caught one real `57014 canceling
+  statement due to statement timeout`) wedged the app's **single** connection,
+  and `src/db/index.ts` used `max: 1`, so every query queued behind the dead one
+  until a manual restart.
+- Fix: pool `max: 3` + `max_lifetime: 5min`. `DATABASE_URL` is the Supavisor
+  **transaction** pooler (`:6543`), so a few client connections are cheap; one
+  stuck connection can no longer block the whole app, and recycling self-heals.
+- **Requires a full dev-server restart** to take effect — the client is cached on
+  `globalThis`, so HMR re-imports reuse the old (wedged) instance and the new
+  options never apply.
+
+## 2026-09-06 — Admin dashboard: SQL aggregates + `created_at` index
+
+- The `/admin` dashboard was fetching **every column of every row** from both
+  `campus_ambassador_registrations` and `volunteer_registrations` on each load
+  (long `experience` text and all six volunteer answers included), then counting
+  and slicing in JS — cost grew linearly with applications. It now issues three
+  fixed-size queries via `getAmbassadorStats()`, `getVolunteerCount()` and
+  `getRecentAmbassadorRegistrations(5)` in `src/lib/actions/registrations.ts`
+  (`count(*) filter (…)`, `count(distinct lower(btrim(school)))`, `limit 5`).
+  Displayed numbers are unchanged; `getAll…Registrations()` still back the two
+  list pages.
+- Added `campus_ambassador_registrations_created_at_idx (created_at desc)`. The
+  ambassador table lacked it while `volunteer_registrations` already had one, so
+  every admin `ORDER BY created_at DESC` full-scanned and sorted. Mirrored in
+  `src/db/schema/registrations.ts`.
+- **Manual step:** run `drizzle/add_ambassador_created_at_index.sql` in the
+  Supabase SQL Editor — the schema change alone does not create the live index.
 
 ## 2026-09-04 — Ambassador forms: contact & social questions
 
