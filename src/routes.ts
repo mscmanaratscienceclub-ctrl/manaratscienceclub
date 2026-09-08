@@ -8,6 +8,7 @@ export const publicRoutes: string[] = [
   "/robotics",
   "/join",
   "/register",
+  "/stemfestreg",
   "/verify-email",
   "/forgot-password",
   "/reset-password",

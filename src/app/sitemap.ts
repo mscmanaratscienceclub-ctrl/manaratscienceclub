@@ -17,6 +17,7 @@ const staticRoutes: MetadataRoute.Sitemap = [
   { url: `${baseUrl}/opportunities`, changeFrequency: "weekly", priority: 0.7 },
   { url: `${baseUrl}/join`, changeFrequency: "monthly", priority: 0.7 },
   { url: `${baseUrl}/register`, changeFrequency: "monthly", priority: 0.6 },
+  { url: `${baseUrl}/stemfestreg`, changeFrequency: "weekly", priority: 0.7 },
   { url: `${baseUrl}/legacy`, changeFrequency: "yearly", priority: 0.5 },
   { url: `${baseUrl}/privacy-policy`, changeFrequency: "yearly", priority: 0.2 },
   { url: `${baseUrl}/terms`, changeFrequency: "yearly", priority: 0.2 },

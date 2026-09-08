@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ChevronDown, GraduationCap, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAdminSearch } from "@/lib/hooks/use-admin-search";
+import Pagination from "@/components/admin/pagination";
 import type { AmbassadorType } from "@/app/(routes)/(site)/register/validate";
 
 export interface RegistrationRow {
@@ -27,23 +29,26 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 });
 
-export default function RegistrationsTable({ registrations }: { registrations: RegistrationRow[] }) {
-  const [query, setQuery] = useState("");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+interface RegistrationsTableProps {
+  registrations: RegistrationRow[];
+  query: string;
+  total: number;
+  page: number;
+  totalPages: number;
+}
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return registrations;
-    return registrations.filter(
-      (r) =>
-        r.name.toLowerCase().includes(q) ||
-        r.type.includes(q) ||
-        r.school.toLowerCase().includes(q) ||
-        r.class.toLowerCase().includes(q) ||
-        r.phone.toLowerCase().includes(q) ||
-        r.email.toLowerCase().includes(q)
-    );
-  }, [query, registrations]);
+export default function RegistrationsTable({
+  registrations,
+  query,
+  total,
+  page,
+  totalPages,
+}: RegistrationsTableProps) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const { input, setInput, isPending, goToPage } = useAdminSearch({
+    query,
+    basePath: "/admin/campus-ambassador",
+  });
 
   return (
     <div className="rounded-2xl bg-surface shadow-subtle">
@@ -52,53 +57,57 @@ export default function RegistrationsTable({ registrations }: { registrations: R
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
           <input
             type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
             placeholder="Search by name, school, or class…"
             className="w-full rounded-xl border border-ink/10 bg-cream/40 py-2 pl-9 pr-3 font-body text-sm text-ink outline-none transition-colors placeholder:text-ink/35 focus:border-manara-teal"
           />
         </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-          <GraduationCap className="mb-3 h-10 w-10 text-ink/20" />
-          <p className="font-body text-ink/50">
-            {registrations.length === 0
-              ? "No registrations yet."
-              : "No registrations match your search."}
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-ink/5 text-left">
-                <th className="w-8 px-3 py-3" aria-label="Expand" />
-                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Type</th>
-                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Name</th>
-                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Class</th>
-                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">School</th>
-                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">First time</th>
-                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Submitted</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-ink/5">
-              {filtered.map((row) => {
-                const expanded = expandedId === row.id;
-                return (
-                  <FragmentRow
-                    key={row.id}
-                    row={row}
-                    expanded={expanded}
-                    onToggle={() => setExpandedId(expanded ? null : row.id)}
-                  />
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <div className={cn("transition-opacity", isPending && "pointer-events-none opacity-50")}>
+        {registrations.length === 0 ? (
+          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <GraduationCap className="mb-3 h-10 w-10 text-ink/20" />
+            <p className="font-body text-ink/50">
+              {query.trim()
+                ? "No registrations match your search."
+                : "No registrations yet."}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-ink/5 text-left">
+                  <th className="w-8 px-3 py-3" aria-label="Expand" />
+                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Type</th>
+                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Name</th>
+                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Class</th>
+                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">School</th>
+                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">First time</th>
+                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Submitted</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ink/5">
+                {registrations.map((row) => {
+                  const expanded = expandedId === row.id;
+                  return (
+                    <FragmentRow
+                      key={row.id}
+                      row={row}
+                      expanded={expanded}
+                      onToggle={() => setExpandedId(expanded ? null : row.id)}
+                    />
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {total > 0 && <Pagination page={page} totalPages={totalPages} onPage={goToPage} />}
     </div>
   );
 }

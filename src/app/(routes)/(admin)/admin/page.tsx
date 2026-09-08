@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { GraduationCap, FlaskConical, Users, CalendarDays, CalendarRange, School, HandHeart } from "lucide-react";
+import { AlertTriangle, GraduationCap, FlaskConical, Users, CalendarDays, CalendarRange, School, HandHeart } from "lucide-react";
 import {
   getAmbassadorStats,
   getRecentAmbassadorRegistrations,
+  getStemfestStats,
   getVolunteerCount,
 } from "@/lib/actions/registrations";
+import { captureException } from "@/lib/sentry-helpers";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -12,20 +14,51 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 });
 
+const UNAVAILABLE = "—";
+
+/**
+ * The dashboard aggregates four independent sources. A single one failing —
+ * a dropped pooler connection, a table that has not been migrated yet — used to
+ * reject the whole `Promise.all` and blank the page, hiding the sources that
+ * were perfectly healthy. Degrade that source instead and report it.
+ */
+function unwrap<T>(result: PromiseSettledResult<T>, source: string): T | null {
+  if (result.status === "fulfilled") return result.value;
+  captureException(result.reason, { adminDashboardSource: source });
+  return null;
+}
+
+function formatCount(count: number | null | undefined): string {
+  return typeof count === "number" ? String(count) : UNAVAILABLE;
+}
+
+function describeCollected(count: number | null | undefined, noun: string): string {
+  if (typeof count !== "number") return "Count unavailable. View every response.";
+  return `${count} ${count === 1 ? noun : `${noun}s`} collected. View every response.`;
+}
+
 export default async function AdminDashboardPage() {
   // Aggregate in SQL (counts + a 5-row recent feed) instead of pulling every
   // column of both tables into memory — the dashboard only renders numbers.
-  const [ambassadorStats, volunteerCount, recent] = await Promise.all([
+  const settled = await Promise.allSettled([
     getAmbassadorStats(),
     getVolunteerCount(),
     getRecentAmbassadorRegistrations(5),
+    getStemfestStats(),
   ]);
 
+  const ambassadorStats = unwrap(settled[0], "ambassadorStats");
+  const volunteerCount = unwrap(settled[1], "volunteerCount");
+  const recent = unwrap(settled[2], "recentAmbassadorRegistrations");
+  const stemfestStats = unwrap(settled[3], "stemfestStats");
+
+  const degraded = settled.some((result) => result.status === "rejected");
+
   const stats = [
-    { label: "Ambassador Registrations", count: ambassadorStats.total, icon: Users, color: "text-manara-teal", bg: "bg-manara-teal/10" },
-    { label: "This Week", count: ambassadorStats.thisWeek, icon: CalendarDays, color: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: "This Month", count: ambassadorStats.thisMonth, icon: CalendarRange, color: "text-manara-yellow", bg: "bg-manara-yellow/15" },
-    { label: "Unique Schools", count: ambassadorStats.uniqueSchools, icon: School, color: "text-manara-purple", bg: "bg-manara-purple/10" },
+    { label: "Ambassador Registrations", count: ambassadorStats?.total, icon: Users, color: "text-manara-teal", bg: "bg-manara-teal/10" },
+    { label: "This Week", count: ambassadorStats?.thisWeek, icon: CalendarDays, color: "text-emerald-600", bg: "bg-emerald-50" },
+    { label: "This Month", count: ambassadorStats?.thisMonth, icon: CalendarRange, color: "text-manara-yellow", bg: "bg-manara-yellow/15" },
+    { label: "Unique Schools", count: ambassadorStats?.uniqueSchools, icon: School, color: "text-manara-purple", bg: "bg-manara-purple/10" },
   ];
 
   return (
@@ -37,6 +70,19 @@ export default async function AdminDashboardPage() {
         </p>
       </div>
 
+      {degraded && (
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-2xl bg-amber-50 p-4 text-amber-900"
+        >
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+          <p className="font-body text-sm">
+            Some figures could not be loaded and show as “{UNAVAILABLE}”. The
+            numbers below are incomplete — reload to retry.
+          </p>
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
@@ -45,7 +91,7 @@ export default async function AdminDashboardPage() {
               <stat.icon className={`h-6 w-6 ${stat.color}`} />
             </div>
             <div>
-              <p className="font-display text-3xl font-bold text-ink">{stat.count}</p>
+              <p className="font-display text-3xl font-bold text-ink">{formatCount(stat.count)}</p>
               <p className="font-body text-sm text-ink/60">{stat.label}</p>
             </div>
           </div>
@@ -71,7 +117,7 @@ export default async function AdminDashboardPage() {
               Campus Ambassador
             </h2>
             <p className="mt-1 font-body text-sm text-ink/60">
-              {ambassadorStats.total} {ambassadorStats.total === 1 ? "registration" : "registrations"} collected. View every response.
+              {describeCollected(ambassadorStats?.total, "registration")}
             </p>
           </div>
         </Link>
@@ -98,22 +144,27 @@ export default async function AdminDashboardPage() {
           </div>
         </Link>
 
-        <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-ink/15 bg-surface/50 p-6">
+        <Link
+          href="/admin/science-competition"
+          className="group flex flex-col gap-3 rounded-2xl bg-surface p-6 shadow-subtle transition-shadow hover:shadow-academic"
+        >
           <div className="flex items-center justify-between">
             <div className="rounded-xl bg-manara-purple/10 p-3">
               <FlaskConical className="h-6 w-6 text-manara-purple" />
             </div>
-            <span className="rounded-full bg-gray-100 px-2.5 py-0.5 font-body text-xs font-medium text-ink/50">
-              Coming soon
+            <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 font-body text-xs font-medium text-emerald-700">
+              Live
             </span>
           </div>
           <div>
-            <h2 className="font-display text-lg font-semibold text-ink">Science Competition</h2>
+            <h2 className="font-display text-lg font-semibold text-ink group-hover:text-manara-teal">
+              STEM Fest Events
+            </h2>
             <p className="mt-1 font-body text-sm text-ink/60">
-              Submissions for the upcoming science competition form will appear here once it launches.
+              {stemfestStats.total} {stemfestStats.total === 1 ? "registration" : "registrations"} collected. View every response.
             </p>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Recent Registrations */}

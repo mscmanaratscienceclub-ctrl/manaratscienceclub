@@ -1,6 +1,6 @@
 ---
 tags: [meta, changelog]
-updated: 2026-09-06
+updated: 2026-09-07
 ---
 
 # Changelog
@@ -15,6 +15,28 @@ remembering. Routine commits do not need an entry.
 For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
+
+## 2026-09-07 — Admin tables: server-side search + SQL pagination
+
+- `/admin/campus-ambassador` and `/admin/volunteer` used to fetch **every** row
+  (`getAllAmbassadorRegistrations` / `getAllVolunteerRegistrations`) and filter
+  client-side with `useMemo`. Fine for a handful of rows, but it pulled the whole
+  result set — including long `experience` text and all six volunteer answers —
+  into the browser on every visit. A scaling risk for the STEM Fest surge.
+- Now filtering + paging happen in SQL. New `searchAmbassadorRegistrations` /
+  `searchVolunteerRegistrations` in `src/lib/actions/registrations.ts` run a
+  case-insensitive `ilike` across the relevant columns (wildcards escaped via an
+  `escapeLike` helper) plus a `count(*)::int` total, and return one page
+  (`PAGE_SIZE = 25`, `orderBy desc(createdAt)`, `limit/offset`) with `totalPages`.
+  The two fetch-all actions were removed.
+- The pages read `searchParams` (Next 16 `Promise<{ q?, page? }>` idiom) and the
+  client tables drive the query through the URL: new `useAdminSearch` hook
+  (`src/lib/hooks/use-admin-search.ts`) debounces input (`useDebouncedValue`,
+  `src/lib/hooks/use-debounce.ts`), `router.replace`s inside a transition
+  (table dims while `isPending`), and resyncs on back/forward. New shared
+  `src/components/admin/pagination.tsx` footer. Both routes are now dynamic (`ƒ`).
+- Note: `"use server"` files may only export async functions, so `PAGE_SIZE` is
+  internal and the actions return `totalPages` rather than exporting the constant.
 
 ## 2026-09-06 — DB pool `max: 1` → `3` + `max_lifetime` (local-dev freeze)
 

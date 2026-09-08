@@ -1,8 +1,14 @@
-import { getAllVolunteerRegistrations } from "@/lib/actions/registrations";
+import { searchVolunteerRegistrations } from "@/lib/actions/registrations";
 import VolunteerRegistrationsTable from "./volunteer-registrations-table";
 
-export default async function VolunteerAdminPage() {
-  const rows = await getAllVolunteerRegistrations();
+export default async function VolunteerAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; page?: string }>;
+}) {
+  const { q = "", page = "1" } = await searchParams;
+  const pageNum = Math.max(1, Number.parseInt(page, 10) || 1);
+  const { rows, total, totalPages } = await searchVolunteerRegistrations(q, pageNum);
 
   const registrations = rows.map((row) => ({
     id: row.id,
@@ -23,16 +29,25 @@ export default async function VolunteerAdminPage() {
     createdAt: new Date(row.createdAt).toISOString(),
   }));
 
+  const trimmed = q.trim();
+
   return (
     <div className="flex flex-col gap-8 p-6 md:p-10">
       <div>
         <h1 className="font-display text-3xl font-bold text-ink">Volunteer Registrations</h1>
         <p className="mt-1 font-body text-ink/60">
-          All {registrations.length} {registrations.length === 1 ? "application" : "applications"} from the
-          STEM Fest volunteer form.
+          {trimmed
+            ? `${registrations.length} of ${total} ${total === 1 ? "application" : "applications"} match “${trimmed}”.`
+            : `All ${total} ${total === 1 ? "application" : "applications"} from the STEM Fest volunteer form.`}
         </p>
       </div>
-      <VolunteerRegistrationsTable registrations={registrations} />
+      <VolunteerRegistrationsTable
+        registrations={registrations}
+        query={q}
+        total={total}
+        page={pageNum}
+        totalPages={totalPages}
+      />
     </div>
   );
 }

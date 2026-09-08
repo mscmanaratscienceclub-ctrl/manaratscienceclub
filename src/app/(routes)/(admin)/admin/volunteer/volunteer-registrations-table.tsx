@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ChevronDown, HandHeart, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAdminSearch } from "@/lib/hooks/use-admin-search";
+import Pagination from "@/components/admin/pagination";
 
 export interface VolunteerRow {
   id: string;
@@ -65,22 +67,22 @@ const detailGroups: {
 
 export default function VolunteerRegistrationsTable({
   registrations,
+  query,
+  total,
+  page,
+  totalPages,
 }: {
   registrations: VolunteerRow[];
+  query: string;
+  total: number;
+  page: number;
+  totalPages: number;
 }) {
-  const [query, setQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return registrations;
-    return registrations.filter((r) =>
-      [r.fullName, r.classSection, r.roll, r.shift, r.studentCode]
-        .join(" ")
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [query, registrations]);
+  const { input, setInput, isPending, goToPage } = useAdminSearch({
+    query,
+    basePath: "/admin/volunteer",
+  });
 
   return (
     <div className="rounded-2xl bg-surface shadow-subtle">
@@ -89,54 +91,58 @@ export default function VolunteerRegistrationsTable({
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
           <input
             type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
             placeholder="Search by name, roll, class, shift, or code…"
             className="w-full rounded-xl border border-ink/10 bg-cream/40 py-2 pl-9 pr-3 font-body text-sm text-ink outline-none transition-colors placeholder:text-ink/35 focus:border-manara-teal"
           />
         </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-          <HandHeart className="mb-3 h-10 w-10 text-ink/20" />
-          <p className="font-body text-ink/50">
-            {registrations.length === 0
-              ? "No volunteer applications yet."
-              : "No applications match your search."}
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-ink/5 text-left">
-                <th className="w-8 px-3 py-3" aria-label="Expand" />
-                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Name</th>
-                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Class section</th>
-                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Roll</th>
-                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Shift</th>
-                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Student code</th>
-                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Phone</th>
-                <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Submitted</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-ink/5">
-              {filtered.map((row) => {
-                const expanded = expandedId === row.id;
-                return (
-                  <FragmentRow
-                    key={row.id}
-                    row={row}
-                    expanded={expanded}
-                    onToggle={() => setExpandedId(expanded ? null : row.id)}
-                  />
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <div className={cn("transition-opacity", isPending && "pointer-events-none opacity-50")}>
+        {registrations.length === 0 ? (
+          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <HandHeart className="mb-3 h-10 w-10 text-ink/20" />
+            <p className="font-body text-ink/50">
+              {query.trim()
+                ? "No applications match your search."
+                : "No volunteer applications yet."}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-ink/5 text-left">
+                  <th className="w-8 px-3 py-3" aria-label="Expand" />
+                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Name</th>
+                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Class section</th>
+                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Roll</th>
+                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Shift</th>
+                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Student code</th>
+                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Phone</th>
+                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Submitted</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ink/5">
+                {registrations.map((row) => {
+                  const expanded = expandedId === row.id;
+                  return (
+                    <FragmentRow
+                      key={row.id}
+                      row={row}
+                      expanded={expanded}
+                      onToggle={() => setExpandedId(expanded ? null : row.id)}
+                    />
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {total > 0 && <Pagination page={page} totalPages={totalPages} onPage={goToPage} />}
     </div>
   );
 }

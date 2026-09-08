@@ -14,6 +14,7 @@ const navigation = [
   { label: "Home", href: "/" },
   { label: "Members", href: "/legacy" },
   { label: "Research", href: "/blogs" },
+  { label: "STEM Fest", href: "/stemfestreg" },
 ];
 
 function isActive(href: string, pathname: string) {
