@@ -139,7 +139,7 @@ export default async function AdminDashboardPage() {
               STEM Fest Volunteer
             </h2>
             <p className="mt-1 font-body text-sm text-ink/60">
-              {volunteerCount} {volunteerCount === 1 ? "application" : "applications"} collected. View every response.
+              {describeCollected(volunteerCount, "application")}
             </p>
           </div>
         </Link>
@@ -161,7 +161,7 @@ export default async function AdminDashboardPage() {
               STEM Fest Events
             </h2>
             <p className="mt-1 font-body text-sm text-ink/60">
-              {stemfestStats.total} {stemfestStats.total === 1 ? "registration" : "registrations"} collected. View every response.
+              {describeCollected(stemfestStats?.total, "registration")}
             </p>
           </div>
         </Link>
@@ -176,10 +176,12 @@ export default async function AdminDashboardPage() {
           </Link>
         </div>
 
-        {recent.length === 0 ? (
+        {!recent || recent.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
             <GraduationCap className="mb-3 h-10 w-10 text-ink/20" />
-            <p className="font-body text-ink/50">No ambassador registrations yet.</p>
+            <p className="font-body text-ink/50">
+              {recent === null ? "Could not load registrations." : "No ambassador registrations yet."}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
