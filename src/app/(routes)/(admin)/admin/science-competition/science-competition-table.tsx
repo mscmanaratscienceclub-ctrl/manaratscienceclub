@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Search, Trophy } from "lucide-react";
+import { CheckCircle2, ChevronDown, Clock, Search, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminSearch } from "@/lib/hooks/use-admin-search";
 import Pagination from "@/components/admin/pagination";
@@ -14,6 +14,7 @@ export interface StemfestRow {
   segments: string;
   transactionId: string;
   paymentNumber: string;
+  isVerified?: boolean;
   createdAt: string;
 }
 
@@ -97,6 +98,9 @@ export default function ScienceCompetitionTable({
                     TrxID
                   </th>
                   <th className="px-4 py-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
                     Submitted
                   </th>
                 </tr>
@@ -168,6 +172,19 @@ function RegistrationRow({
         <td className="px-4 py-4 font-body text-sm font-medium text-ink">
           {row.transactionId}
         </td>
+        <td className="px-4 py-4 font-body text-sm">
+          {row.isVerified ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Verified
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+              <Clock className="h-3.5 w-3.5" />
+              Pending
+            </span>
+          )}
+        </td>
         <td className="px-4 py-4 font-body text-sm text-ink/60">
           {dateFormatter.format(new Date(row.createdAt))}
         </td>
@@ -176,7 +193,7 @@ function RegistrationRow({
       {expanded && (
         <tr className="bg-cream/60">
           <td />
-          <td colSpan={7} className="px-4 pt-1 pb-6">
+          <td colSpan={8} className="px-4 pt-1 pb-6">
             <section className="mt-4">
               <h3 className="mb-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
                 Registration Details
@@ -189,6 +206,12 @@ function RegistrationRow({
                   { label: "Segments / Events", value: row.segments },
                   { label: "Payment Number", value: row.paymentNumber },
                   { label: "Transaction ID", value: row.transactionId },
+                  {
+                    label: "Payment Verification",
+                    value: row.isVerified
+                      ? "Verified (Matched with Forwarded SMS)"
+                      : "Pending (Awaiting Confirmation SMS)",
+                  },
                   {
                     label: "Submitted",
                     value: new Date(row.createdAt).toLocaleString("en-US", {

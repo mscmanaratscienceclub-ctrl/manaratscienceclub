@@ -1,4 +1,4 @@
-import { CalendarDays, School, Trophy } from "lucide-react";
+import { BadgeCheck, CalendarDays, School, Trophy } from "lucide-react";
 import {
   getStemfestStats,
   searchStemfestRegistrations,
@@ -14,10 +14,12 @@ export default async function ScienceCompetitionAdminPage({
   const { q = "", page = "1" } = await searchParams;
   const pageNum = Math.max(1, Number.parseInt(page, 10) || 1);
 
-  const [{ rows, total, totalPages }, stats] = await Promise.all([
+  const [{ rows, verifiedTrxIds, total, totalPages }, stats] = await Promise.all([
     searchStemfestRegistrations(q, pageNum),
     getStemfestStats(),
   ]);
+
+  const verifiedSet = new Set(verifiedTrxIds.map((id) => id.toUpperCase()));
 
   const registrations = rows.map((row) => ({
     id: row.id,
@@ -27,6 +29,7 @@ export default async function ScienceCompetitionAdminPage({
     segments: row.segments,
     transactionId: row.transactionId,
     paymentNumber: row.paymentNumber,
+    isVerified: verifiedSet.has(row.transactionId.toUpperCase()),
     createdAt: new Date(row.createdAt).toISOString(),
   }));
 
@@ -39,11 +42,18 @@ export default async function ScienceCompetitionAdminPage({
       bg: "bg-manara-teal/10",
     },
     {
+      label: "Verified Payments",
+      value: String(stats.verifiedCount),
+      icon: BadgeCheck,
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+    },
+    {
       label: "This Week",
       value: String(stats.thisWeek),
       icon: CalendarDays,
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
+      color: "text-manara-yellow",
+      bg: "bg-manara-yellow/15",
     },
     {
       label: "Unique Schools",
@@ -69,7 +79,7 @@ export default async function ScienceCompetitionAdminPage({
         </p>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (
           <div
             key={stat.label}

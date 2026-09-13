@@ -13,8 +13,9 @@ import {
   stemfestRegistrations,
   type StemfestRegistration,
 } from "@/db/schema/stemfest-registrations";
+import { stemfestPaymentSms } from "@/db/schema/stemfest-payment-sms";
 import { getServerSession } from "@/lib/auth/get-session";
-import { desc, ilike, or, sql, type SQL } from "drizzle-orm";
+import { desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 
 function assertAdmin(role: string) {
   if (role !== "admin") throw new Error("Unauthorized: Admin only");
@@ -143,6 +144,7 @@ export async function searchVolunteerRegistrations(
 
 export interface StemfestSearchResult {
   rows: StemfestRegistration[];
+  verifiedTrxIds: string[];
   total: number;
   page: number;
   totalPages: number;
@@ -182,9 +184,26 @@ export async function searchStemfestRegistrations(
     db.select({ total: sql<number>`count(*)::int` }).from(t).where(where),
   ]);
 
+  const verifiedTrxIds: string[] = [];
+  try {
+    const verifiedSms = await db
+      .select({ transactionId: stemfestPaymentSms.transactionId })
+      .from(stemfestPaymentSms)
+      .where(eq(stemfestPaymentSms.status, "matched"));
+
+    for (const item of verifiedSms) {
+      if (item.transactionId) {
+        verifiedTrxIds.push(item.transactionId.toUpperCase());
+      }
+    }
+  } catch {
+    // stem_fest_payment_sms table might not be migrated yet in Supabase
+  }
+
   const total = countRow[0]?.total ?? 0;
   return {
     rows,
+    verifiedTrxIds,
     total,
     page: safePage,
     totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
@@ -195,6 +214,7 @@ export interface StemfestStats {
   total: number;
   thisWeek: number;
   uniqueSchools: number;
+  verifiedCount: number;
 }
 
 export async function getStemfestStats(): Promise<StemfestStats> {
@@ -208,10 +228,22 @@ export async function getStemfestStats(): Promise<StemfestStats> {
     })
     .from(t);
 
+  let verifiedCount = 0;
+  try {
+    const [smsRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(stemfestPaymentSms)
+      .where(eq(stemfestPaymentSms.status, "matched"));
+    verifiedCount = smsRow?.count ?? 0;
+  } catch {
+    // Graceful fallback
+  }
+
   return {
     total: row?.total ?? 0,
     thisWeek: row?.thisWeek ?? 0,
     uniqueSchools: row?.uniqueSchools ?? 0,
+    verifiedCount,
   };
 }
 

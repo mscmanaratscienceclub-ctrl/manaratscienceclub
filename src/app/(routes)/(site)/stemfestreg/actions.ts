@@ -69,6 +69,21 @@ export async function submitStemfestRegistration(
     return { success: false, error: submissionErrorMessage() };
   }
 
+  // Auto-link any incoming SMS that arrived before the user submitted the form
+  try {
+    const trxId = data.bkashTrxId.toUpperCase();
+    await supabase
+      .from("stem_fest_payment_sms")
+      .update({
+        matched_registration_id: inserted.id,
+        status: "matched",
+      })
+      .eq("status", "unmatched")
+      .ilike("transaction_id", trxId);
+  } catch {
+    // Non-critical background link failure should not fail user registration
+  }
+
   return {
     success: true,
     id: inserted.id,
