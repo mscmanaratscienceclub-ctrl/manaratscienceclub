@@ -10,7 +10,7 @@ import {
 
 /**
  * Validation for the STEM Fest event registration form.
- * Mirrors `public.stemfest_registrations`
+ * Mirrors `public.stem_fest_registrations`
  * (drizzle/create_stemfest_registrations.sql).
  *
  * The same schema guards the browser and the server action, and categories are

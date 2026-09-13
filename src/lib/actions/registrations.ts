@@ -164,12 +164,10 @@ export async function searchStemfestRegistrations(
     where = or(
       ilike(t.name, pattern),
       ilike(t.class, pattern),
-      ilike(t.phone, pattern),
-      ilike(t.bkashNumber, pattern),
-      ilike(t.bkashTrxId, pattern),
-      // Lets admins find rows by event or teammate name; the GIN index on
-      // `entries` covers containment, not text search, so this casts.
-      sql`${t.entries}::text ilike ${pattern}`,
+      ilike(t.school, pattern),
+      ilike(t.segments, pattern),
+      ilike(t.paymentNumber, pattern),
+      ilike(t.transactionId, pattern),
     );
   }
 
@@ -196,13 +194,9 @@ export async function searchStemfestRegistrations(
 export interface StemfestStats {
   total: number;
   thisWeek: number;
-  expectedRevenue: number;
+  uniqueSchools: number;
 }
 
-/**
- * `expectedRevenue` is what registrations say should have arrived via bKash —
- * the number the club reconciles its actual bKash statements against.
- */
 export async function getStemfestStats(): Promise<StemfestStats> {
   await requireAdmin();
   const t = stemfestRegistrations;
@@ -210,14 +204,14 @@ export async function getStemfestStats(): Promise<StemfestStats> {
     .select({
       total: sql<number>`count(*)::int`,
       thisWeek: sql<number>`count(*) filter (where ${t.createdAt} >= now() - interval '7 days')::int`,
-      expectedRevenue: sql<number>`coalesce(sum(${t.totalFee}), 0)::int`,
+      uniqueSchools: sql<number>`count(distinct lower(btrim(${t.school})))::int`,
     })
     .from(t);
 
   return {
     total: row?.total ?? 0,
     thisWeek: row?.thisWeek ?? 0,
-    expectedRevenue: row?.expectedRevenue ?? 0,
+    uniqueSchools: row?.uniqueSchools ?? 0,
   };
 }
 

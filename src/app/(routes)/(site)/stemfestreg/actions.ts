@@ -4,7 +4,10 @@ import {
   getSupabaseAdmin,
   submissionErrorMessage,
 } from "@/lib/supabase-admin";
-import { computeTotalFee } from "@/lib/data/stemfest-registration";
+import {
+  computeTotalFee,
+  describeEntry,
+} from "@/lib/data/stemfest-registration";
 import {
   buildEntries,
   stemfestRegistrationSchema,
@@ -20,11 +23,7 @@ export type StemfestSubmitResult =
   | { success: false; error: string };
 
 /**
- * Insert a STEM Fest event registration into `stemfest_registrations`.
- *
- * Categories and the fee are both recomputed here from the class and the chosen
- * event ids. Anything the browser claims about those is ignored — `total_fee`
- * is money, so it must not be settable by the client.
+ * Insert a STEM Fest event registration into `stem_fest_registrations`.
  */
 export async function submitStemfestRegistration(
   input: StemfestFormValues,
@@ -49,21 +48,21 @@ export async function submitStemfestRegistration(
   }
 
   const totalFee = computeTotalFee(entries);
+  const segments = entries.map((entry) => describeEntry(entry)).join(", ");
 
   const { data: inserted, error } = await supabase
-    .from("stemfest_registrations")
+    .from("stem_fest_registrations")
     .insert([
       {
         name: data.name,
         class: data.classId,
-        phone: data.phone,
-        bkash_number: data.bkashNumber,
-        bkash_trx_id: data.bkashTrxId.toUpperCase(),
-        entries,
-        total_fee: totalFee,
+        school: "Manarat Dhaka International School and College",
+        segments: segments || "General",
+        transaction_id: data.bkashTrxId.toUpperCase(),
+        payment_number: data.bkashNumber,
       },
     ])
-    .select("id, created_at, total_fee")
+    .select("id, created_at")
     .single();
 
   if (error) {
@@ -74,6 +73,6 @@ export async function submitStemfestRegistration(
     success: true,
     id: inserted.id,
     submittedAt: inserted.created_at,
-    totalFee: inserted.total_fee,
+    totalFee,
   };
 }

@@ -5,22 +5,15 @@ import { ChevronDown, Search, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminSearch } from "@/lib/hooks/use-admin-search";
 import Pagination from "@/components/admin/pagination";
-import { formatBdt } from "@/lib/data/stemfest-registration";
-
-export interface StemfestEntryRow {
-  label: string;
-  teammates: string[];
-}
 
 export interface StemfestRow {
   id: string;
   name: string;
   classLabel: string;
-  phone: string;
-  bkashNumber: string;
-  bkashTrxId: string;
-  entries: StemfestEntryRow[];
-  totalFee: number;
+  school: string;
+  segments: string;
+  transactionId: string;
+  paymentNumber: string;
   createdAt: string;
 }
 
@@ -58,7 +51,7 @@ export default function ScienceCompetitionTable({
             type="search"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Search by name, class, event, bKash number or TrxID…"
+            placeholder="Search by name, class, school, segments, or TrxID…"
             className="w-full rounded-xl border border-ink/10 bg-cream/40 py-2 pr-3 pl-9 font-body text-sm text-ink outline-none transition-colors placeholder:text-ink/35 focus:border-manara-teal"
           />
         </div>
@@ -92,13 +85,16 @@ export default function ScienceCompetitionTable({
                     Class
                   </th>
                   <th className="px-4 py-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
-                    Events
+                    School
                   </th>
                   <th className="px-4 py-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
-                    Total
+                    Segments
                   </th>
                   <th className="px-4 py-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
-                    bKash TrxID
+                    Payment No.
+                  </th>
+                  <th className="px-4 py-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
+                    TrxID
                   </th>
                   <th className="px-4 py-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
                     Submitted
@@ -161,13 +157,16 @@ function RegistrationRow({
           {row.classLabel}
         </td>
         <td className="px-4 py-4 font-body text-sm text-ink/60">
-          {row.entries.length}
+          {row.school}
         </td>
-        <td className="px-4 py-4 font-body text-sm font-semibold text-ink tabular-nums">
-          {formatBdt(row.totalFee)}
+        <td className="max-w-xs truncate px-4 py-4 font-body text-sm text-ink/60">
+          {row.segments}
         </td>
         <td className="px-4 py-4 font-body text-sm text-ink/60">
-          {row.bkashTrxId}
+          {row.paymentNumber}
+        </td>
+        <td className="px-4 py-4 font-body text-sm font-medium text-ink">
+          {row.transactionId}
         </td>
         <td className="px-4 py-4 font-body text-sm text-ink/60">
           {dateFormatter.format(new Date(row.createdAt))}
@@ -177,35 +176,26 @@ function RegistrationRow({
       {expanded && (
         <tr className="bg-cream/60">
           <td />
-          <td colSpan={6} className="px-4 pt-1 pb-6">
-            <section className="mt-5">
+          <td colSpan={7} className="px-4 pt-1 pb-6">
+            <section className="mt-4">
               <h3 className="mb-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
-                Entered
-              </h3>
-              <ul className="space-y-2">
-                {row.entries.map((entry) => (
-                  <li key={entry.label} className="font-body text-sm text-ink/80">
-                    {entry.label}
-                    {entry.teammates.length > 0 && (
-                      <span className="ml-2 text-ink/50">
-                        — with {entry.teammates.join(", ")}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </section>
-
-            <section className="mt-6">
-              <h3 className="mb-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
-                Payment & contact
+                Registration Details
               </h3>
               <dl className="space-y-3">
                 {[
-                  { label: "Amount recorded", value: formatBdt(row.totalFee) },
-                  { label: "bKash number", value: row.bkashNumber },
-                  { label: "Transaction ID", value: row.bkashTrxId },
-                  { label: "Phone", value: row.phone },
+                  { label: "Full Name", value: row.name },
+                  { label: "Class", value: row.classLabel },
+                  { label: "School / College", value: row.school },
+                  { label: "Segments / Events", value: row.segments },
+                  { label: "Payment Number", value: row.paymentNumber },
+                  { label: "Transaction ID", value: row.transactionId },
+                  {
+                    label: "Submitted",
+                    value: new Date(row.createdAt).toLocaleString("en-US", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    }),
+                  },
                 ].map((field) => (
                   <div
                     key={field.label}

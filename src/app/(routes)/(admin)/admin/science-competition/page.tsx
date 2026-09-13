@@ -1,13 +1,9 @@
-import { CalendarDays, Trophy, Wallet } from "lucide-react";
+import { CalendarDays, School, Trophy } from "lucide-react";
 import {
   getStemfestStats,
   searchStemfestRegistrations,
 } from "@/lib/actions/registrations";
-import {
-  describeEntry,
-  formatBdt,
-  getStemfestClassLabel,
-} from "@/lib/data/stemfest-registration";
+import { getStemfestClassLabel } from "@/lib/data/stemfest-registration";
 import ScienceCompetitionTable from "./science-competition-table";
 
 export default async function ScienceCompetitionAdminPage({
@@ -26,15 +22,11 @@ export default async function ScienceCompetitionAdminPage({
   const registrations = rows.map((row) => ({
     id: row.id,
     name: row.name,
-    classLabel: getStemfestClassLabel(row.class),
-    phone: row.phone,
-    bkashNumber: row.bkashNumber,
-    bkashTrxId: row.bkashTrxId,
-    entries: row.entries.map((entry) => ({
-      label: describeEntry(entry),
-      teammates: entry.teammates,
-    })),
-    totalFee: row.totalFee,
+    classLabel: getStemfestClassLabel(row.class) || row.class,
+    school: row.school,
+    segments: row.segments,
+    transactionId: row.transactionId,
+    paymentNumber: row.paymentNumber,
     createdAt: new Date(row.createdAt).toISOString(),
   }));
 
@@ -54,9 +46,9 @@ export default async function ScienceCompetitionAdminPage({
       bg: "bg-emerald-50",
     },
     {
-      label: "Expected via bKash",
-      value: formatBdt(stats.expectedRevenue),
-      icon: Wallet,
+      label: "Unique Schools",
+      value: String(stats.uniqueSchools),
+      icon: School,
       color: "text-manara-purple",
       bg: "bg-manara-purple/10",
     },
