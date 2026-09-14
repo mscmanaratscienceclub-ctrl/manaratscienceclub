@@ -1,3 +1,5 @@
+import { siteConfig } from "@/lib/data";
+
 interface VerificationEmailOptions {
   name: string;
   url: string;
@@ -10,7 +12,7 @@ export function getVerificationEmailHtml({ name, url }: VerificationEmailOptions
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verify Your Email - Manara Science Club</title>
+  <title>Verify Your Email - ${siteConfig.name}</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f7f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1a1a1a;">
   <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f7f6; padding: 40px 20px;">
@@ -22,7 +24,7 @@ export function getVerificationEmailHtml({ name, url }: VerificationEmailOptions
           <tr>
             <td align="center" style="background-color: #ff7053; padding: 32px 24px;">
               <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px;">
-                Manara Science Club
+                ${siteConfig.name}
               </h1>
             </td>
           </tr>
@@ -37,7 +39,7 @@ export function getVerificationEmailHtml({ name, url }: VerificationEmailOptions
                 Hello ${name ? name : "there"},
               </p>
               <p style="font-size: 15px; line-height: 1.6; color: #4b5563; margin: 0 0 32px 0;">
-                Thank you for signing up for Manara Science Club! Please confirm your email address by clicking the button below.
+                Thank you for signing up for ${siteConfig.name}! Please confirm your email address by clicking the button below.
               </p>
 
               <!-- CTA Button -->
@@ -70,7 +72,7 @@ export function getVerificationEmailHtml({ name, url }: VerificationEmailOptions
           <tr>
             <td align="center" style="background-color: #f9fafb; padding: 20px 32px; border-top: 1px solid #f3f4f6;">
               <p style="font-size: 12px; color: #9ca3af; margin: 0;">
-                &copy; ${new Date().getFullYear()} Manara Science Club. All rights reserved.
+                &copy; ${new Date().getFullYear()} ${siteConfig.name}. All rights reserved.
               </p>
             </td>
           </tr>

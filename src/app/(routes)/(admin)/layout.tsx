@@ -9,9 +9,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (role !== "admin") redirect("/");
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div
+      data-print="shell"
+      className="flex h-screen overflow-hidden bg-gray-50"
+    >
       <AdminSidebar user={{ name: session.user.name, email: session.user.email, role }} />
-      <div className="flex flex-1 flex-col overflow-auto">{children}</div>
+      <div data-print="content" className="flex flex-1 flex-col overflow-auto">
+        {children}
+      </div>
     </div>
   );
 }

@@ -69,7 +69,15 @@ better-auth's 5-minute cookie cache to expire.
 ### Data layer
 
 - **Drizzle ORM** against the Supabase-hosted Postgres (`src/db/index.ts` —
-  pgbouncer-safe singleton: `max: 1`, `prepare: false`).
+  singleton on `globalThis`, `max: 5`, `prepare: false`). The pool is deliberately
+  sized **above** the app's query concurrency: `postgres.js` pipelines extra
+  queries onto a busy pooled connection, and Supavisor can then lose the response
+  — the backend reads `state = idle` while the client waits forever (no
+  `statement_timeout` can fire). See [[decisions-log]] ADR-0026.
+- Every admin read goes through `withDbTimeout()` (`src/db/query.ts`), which adds
+  a `SET LOCAL statement_timeout` (8s) plus a client-side watchdog (12s) and
+  issues statements **sequentially**, never `Promise.all`. `pnpm db:verify` runs
+  the live regression harness.
 - Schema lives in `src/db/schema/` (`auth/*`, `posts.ts`, `registrations.ts`),
   exported through `schema/index.ts`. Migrations are generated with
   `drizzle-kit` into `drizzle/`.
@@ -289,11 +297,12 @@ Fill in `.env.local`:
 | `BETTER_AUTH_SECRET` | Yes | Long random string (`openssl rand -base64 32`) |
 | `NEXT_PUBLIC_BASE_URL` | Yes | App base URL (production URL on Vercel) |
 | `RESEND_API_KEY` | Yes* | Resend key for transactional email |
-| `EMAIL_FROM` | Yes* | Verified sender address |
+| `EMAIL_FROM` | Yes* | Sender identity for transactional email — `Manarat Science Club <info@manaratscience.club>`. *Currently only `onboarding@resend.dev` works* until the domain is verified in Resend |
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes* | Supabase project URL (uploads + ambassador form) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes* | Server-only service role key — **never** `NEXT_PUBLIC_` |
 | `NEXT_PUBLIC_GOOGLE_FORM_URL` | No | Destination of `/join` |
 | `NEXT_PUBLIC_SENTRY_DSN` | No | Sentry error tracking |
+| `SMS_FORWARDER_SECRET` | No* | Shared secret for the Android SMS-forwarder app that posts bKash payment SMS to `/api/webhooks/sms` |
 
 Then push the schema and start developing:
 

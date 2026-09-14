@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, GraduationCap, FlaskConical, ExternalLink, LogOut, ShieldCheck, PenSquare, HandHeart } from "lucide-react";
+import { LayoutDashboard, GraduationCap, FlaskConical, ExternalLink, LogOut, ShieldCheck, PenSquare, HandHeart, MessageSquareText } from "lucide-react";
 import { signOut } from "@/lib/auth/client";
 import { trackEvent, resetAnalytics } from "@/lib/analytics";
 import { clearSentryUser } from "@/lib/sentry-helpers";
@@ -17,6 +17,7 @@ const formItems = [
   { href: "/admin/campus-ambassador", label: "Campus Ambassador", icon: GraduationCap, exact: false },
   { href: "/admin/volunteer", label: "Volunteer", icon: HandHeart, exact: false },
   { href: "/admin/science-competition", label: "Science Competition", icon: FlaskConical, exact: false },
+  { href: "/admin/sms-logs", label: "SMS Logs", icon: MessageSquareText, exact: false },
 ];
 
 export default function AdminSidebar({ user }: SidebarProps) {
@@ -47,7 +48,10 @@ export default function AdminSidebar({ user }: SidebarProps) {
     ));
 
   return (
-    <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-white/8 bg-ink">
+    <aside
+      data-print="chrome"
+      className="flex h-screen w-56 shrink-0 flex-col border-r border-white/8 bg-ink"
+    >
       <div className="flex items-center gap-3 border-b border-white/8 px-4 py-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-manara-purple"><ShieldCheck className="size-4 text-white" /></div>
         <div>
@@ -90,3 +94,4 @@ export default function AdminSidebar({ user }: SidebarProps) {
     </aside>
   );
 }
+

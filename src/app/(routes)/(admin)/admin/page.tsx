@@ -6,31 +6,13 @@ import {
   getStemfestStats,
   getVolunteerCount,
 } from "@/lib/actions/registrations";
-import { captureException } from "@/lib/sentry-helpers";
+import { UNAVAILABLE, formatCount, unwrap } from "@/lib/admin/source-status";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
   year: "numeric",
 });
-
-const UNAVAILABLE = "—";
-
-/**
- * The dashboard aggregates four independent sources. A single one failing —
- * a dropped pooler connection, a table that has not been migrated yet — used to
- * reject the whole `Promise.all` and blank the page, hiding the sources that
- * were perfectly healthy. Degrade that source instead and report it.
- */
-function unwrap<T>(result: PromiseSettledResult<T>, source: string): T | null {
-  if (result.status === "fulfilled") return result.value;
-  captureException(result.reason, { adminDashboardSource: source });
-  return null;
-}
-
-function formatCount(count: number | null | undefined): string {
-  return typeof count === "number" ? String(count) : UNAVAILABLE;
-}
 
 function describeCollected(count: number | null | undefined, noun: string): string {
   if (typeof count !== "number") return "Count unavailable. View every response.";

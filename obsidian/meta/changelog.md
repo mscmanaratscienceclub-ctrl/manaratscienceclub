@@ -1,6 +1,6 @@
 ---
 tags: [meta, changelog]
-updated: 2026-09-07
+updated: 2026-09-14
 ---
 
 # Changelog
@@ -15,6 +15,257 @@ remembering. Routine commits do not need an entry.
 For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
+
+## 2026-09-14 — Transactional email: the sender identity was wrong in two ways
+
+A verified bKash payment produced a confirmation mail that arrived as
+`Manara Science Club <onboarding@resend.dev>` — the club's name was misspelled
+(the real name is *Manarat*, with a `t`) and the `From:` address was Resend's
+sandbox one, not the club's.
+
+- **Cause, second part:** `EMAIL_FROM` was set in no environment — only
+  `RESEND_API_KEY` sits in `.env`/`.env.local` — so the hardcoded fallback in
+  `src/lib/email/resend.ts` was what every send actually used, and that fallback
+  was the sandbox address.
+- **Cause, first part:** the brand name was copy-pasted as a literal into 14
+  places (3 templates × title/header/footer + 4 subjects), so it drifted from
+  `siteConfig.name` and nobody noticed.
+- **Fix:** all three templates (`verification-email`, `reset-password`,
+  `payment-verified`) and every subject now read `siteConfig.name` from
+  `src/lib/data`, and `EMAIL_FROM` falls back to
+  `` `${siteConfig.name} <${siteConfig.email}>` `` — i.e.
+  `Manarat Science Club <info@manaratscience.club>` (hard rule #3: config lives
+  in one place). `EMAIL_FROM` is now actually set in `.env` / `.env.local`, and
+  `env.example` + the README table document the value and the constraint below.
+- **Still required outside the code:** `manaratscience.club` must be added and
+  DNS-verified in Resend → Domains, and `RESEND_API_KEY` must not be a
+  test-mode key (a test key may only send to the account owner's own address).
+  Until then Resend refuses the send — which is the intended behaviour, and the
+  reason the old fallback (silently sending from `resend.dev`) was removed.
+
+---
+
+
+## 2026-09-14 — Admin panel: one filter contract, four tables, and a report that prints what you filtered
+
+All four admin tables — Campus Ambassador, Science Competition, Volunteer and SMS
+Logs — now filter, sort and export the same way, and each has a printable report
+that honours the filters it was opened with. Documented in
+[[admin/filters-reports]]; the decision is ADR-0029 in [[decisions-log]].
+
+- **`src/lib/admin/filters.ts` is the whole contract.** An `AdminSourceConfig`
+  per source declares its filter fields, their kind (`text`/`select`/`date`/
+  `number`), sort options, all the copy and its report columns. The filter bar
+  renders from it, `parseAdminQuery` validates the URL against it, and the report
+  route re-parses the same query string — so table, chips, empty state and PDF
+  cannot drift apart. A component no longer knows what a filter *is*.
+- **A change is applied to the state already in flight.** The server only renders
+  the new state when its round trip finishes, so two changes inside one round trip
+  (two filter picks, or a pick plus a debounced search term) each used to derive
+  from the state before either and the second silently dropped the first. The hook
+  now composes onto the state it has already sent while `isPending` is true, which
+  is also the signal that the sent state has been rendered.
+- **Every table is filtered and sorted server-side.** The WHERE builders live in
+  `src/lib/actions/registrations.ts` beside the queries, and the report runs the
+  same builders with the paging removed. Before this, the "export" was a
+  client-side print of whatever happened to be on screen and could silently
+  ignore a filter.
+- **The search box is no longer per-page state.** `q`, `sort` and `page` live in
+  the URL, so a filtered view is linkable and reloadable. `DEFAULT_SORT` is left
+  out of generated links and filter values are emitted in sorted key order, so an
+  href describes the filter *set* rather than the order it was assembled in —
+  which is what stops the search box re-navigating forever, since the hook's
+  no-op guard compares hrefs as strings. (Building the href from the caller's
+  object order made the same filters serialise as `?school=x&type=campus` from
+  the hook and `?type=campus&school=x` once the page parsed them back.)
+- **Date filters stopped being off by a day.** Bounds now convert through
+  `ADMIN_TIME_ZONE` (`Asia/Dhaka`) in one place; previously a bare date was read
+  as UTC, splitting a Dhaka calendar day at 6am local.
+- **`/admin/reports/[kind]` prints the filtered set**, not the page: heading,
+  resolved filter list, row count, sort and a server-formatted table. Capped at
+  `REPORT_ROW_LIMIT` (2 000) with a visible notice when it truncates — a report
+  reads every matching row, so it needs the bound the paged table does not, or an
+  unfiltered export of an unexpectedly large table would pin a pool connection
+  until the statement timeout.
+- **Printing is CSS, and the shell declares itself.** `data-print` attributes on
+  the admin layout, the sidebar and the report page drive a new `@media print`
+  block in `src/app/globals.css`, with the sizes as tokens (`--print-page-margin`,
+  `--print-title-size`, `--print-body-size`, `--print-cell-padding`,
+  `--print-rule`). The admin shell is a fixed-height scroll viewport, so without
+  unwinding it a long report is clipped at the fold and every page after it
+  prints blank. No PDF library was added.
+- **STEM Fest payment status is resolved in SQL** by the same `EXISTS` the
+  `payment` filter uses. It used to be computed in JS from a second query for the
+  TrxIDs on the current page — which could only answer for rows already fetched
+  and left the filter itself impossible to express.
+- **A failing source degrades instead of blanking a page.** Admin pages that read
+  more than one source use `Promise.allSettled` + `unwrap`
+  (`src/lib/admin/source-status.ts`): the failed figure renders as `—` and files
+  one Sentry exception, because a missing number and a real zero must not look
+  the same.
+
+
+## 2026-09-14 — SMS forwarder, part 2: production sits behind Vercel's challenge, and the phone can no longer lose an SMS
+
+Follow-on from the entry below, after the phone kept reporting "connection timed
+out" against a route that answered `200` on a preview URL.
+
+- **Production is unreachable for *any* API client — it is behind Vercel's Attack
+  Challenge Mode.** Measured: `/`, `/robots.txt` and a nonsense
+  `/api/webhooks/sms-nonsense-probe` all answer `403` with
+  `X-Vercel-Mitigated: challenge`, identically, for curl's own UA, a desktop
+  Chrome UA and an Android OkHttp UA. The edge answers *before* routing, so
+  `X-Matched-Path` is absent from every response and the "404 — route not
+  deployed" reading below can no longer be re-verified from outside (it may have
+  been this same challenge rendered differently at the time). A browser challenge
+  cannot be solved by an HTTP client, so on the phone this is either the `403` or
+  a request held open until it times out, and both surface as "server
+  unavailable". The fix is in the Vercel Firewall, not this repo: turn Attack
+  Challenge Mode off, or better, keep it on and add a **bypass rule for
+  `/api/webhooks/sms`**.
+- **The route no longer relies on default routing behaviour.** `dynamic =
+  "force-dynamic"` and `runtime = "nodejs"` are pinned. The forwarder retries the
+  *same* request until it gets a verdict, so a cached `401` — or a cached `"ok"` —
+  would be read as that verdict and silently stand in for work that never ran.
+- **A missing `SMS_FORWARDER_SECRET` is now loud.** It still fails **open**, and
+  deliberately so: a `401` makes the forwarder park a real payment SMS as failed,
+  so tightening a live integration can itself destroy data. But the route now
+  warns once per process and files one Sentry `warning`, because silence was the
+  dangerous half — without the variable the ingest accepts any caller's POST and
+  looks exactly like a healthy deployment.
+- **The Android forwarder gained the rule this pipeline needed.** The app lives
+  outside this repo (`android app/`, not version-controlled); its contract is in
+  [[sms-forwarder]]. A **host-level** answer — the `403` challenge above, a Vercel
+  HTML `404`, a dropped connection — is now treated as infrastructure, not as a
+  verdict on the message: only the webhook's *own* JSON rejection marks an SMS
+  `FAILED`, everything else stays queued and spends no retry budget. That
+  distinction is what stops a misconfigured deployment from silently deleting real
+  bKash payment SMS. The suite is now 52 tests (32 added here); disabling the
+  interception detector fails 6 of them, so the rule is enforced rather than
+  merely documented. See [[decisions-log]] (ADR-0028).
+
+## 2026-09-14 — SMS forwarder: documented, and the ingest can no longer hang the phone
+
+The bKash payment-SMS pipeline (`/api/webhooks/sms` → `stem_fest_payment_sms` →
+TrxID match against `stem_fest_registrations` → `/admin/sms-logs`) had no note in
+this vault at all. It does now: [[sms-forwarder]] — contract, phone-app config,
+and the ordered checklist for the forwarder app's "connection timed out".
+
+- **The ingest could hang forever.** The route's three database round trips ran
+  unwrapped, i.e. outside `withDbTimeout()`. That is exactly the failure measured
+  on 2026-09-13 (the pooler loses a response, the backend reads `idle`, nothing
+  server-side can ever time out). To a phone it is indistinguishable from a
+  network timeout, so the forwarder retries into the same wall. Reads and the
+  insert now run in one `withDbTimeout("smsWebhookIngest", …)` transaction, and a
+  failure answers **503** (retryable) with a Sentry event instead of a bare 500.
+- **Duplicate rows on retry.** Retries only deduped when the forwarder sent
+  `clientMessageId`. When it did not — the common case — every retry inserted
+  another copy. The route now derives a stable id
+  (`derived:sha256(sender|body|receivedAt)`) so a re-delivery collapses onto the
+  existing row, and the insert is `ON CONFLICT DO NOTHING` + read-back so a
+  lost-response retry returns the winner's row rather than a duplicate-key error.
+- **Deployment gap, verified live:** production
+  `https://manaratscience.club/api/webhooks/sms` returns **404**. The webhook, the
+  parser and `/admin/sms-logs` exist only on branch `finalstemfestcaba`, not on
+  `origin/main`. A phone pointed at production cannot succeed until that branch is
+  deployed — with `SMS_FORWARDER_SECRET` set in the Vercel env vars.
+- Still open: the endpoint **fails open** when `SMS_FORWARDER_SECRET` is unset
+  (any POST is accepted and written to the database). Left as a follow-up rather
+  than changing a live integration's behaviour.
+
+
+## 2026-09-13 — Supabase audit: a live service-role key was in git, plus index + schema drift
+
+Full write-up with measurements: [[supabase-audit-2026-09-13]]. Reproduce with
+`node --env-file=.env scripts/db-arch-audit.mjs` (new, read-only).
+
+- **A live `service_role` JWT was committed.** `drizzle/setup-ambassador-table.mjs`
+  hard-coded a JWT byte-identical to the production `SUPABASE_SERVICE_ROLE_KEY`,
+  in commit `93c7605`, pushed to GitHub. A service-role key carries `BYPASSRLS`,
+  so it defeats every RLS policy in the project and can write to the `user`
+  table (privilege escalation to CMS admin). The literal is removed and the
+  script now reads `process.env` — **but the key still has to be rotated in
+  Supabase and Vercel**, which is the only step that actually revokes it.
+- **`drizzle-kit push` would have broken the SMS TrxID lookup.** The schema
+  declared `stem_fest_payment_sms_trx_idx` on the plain column while the live
+  index is on `upper(transaction_id)`. `pnpm db:migrate` would have dropped the
+  functional index and created a plain one, silently turning the webhook's
+  reconciliation into a sequential scan. Both sides now agree.
+- **The webhook's own lookup had no index at all.** `stem_fest_registrations`
+  was sequential-scanning `upper(transaction_id) = $1` — the one query on a
+  public unauthenticated endpoint whose cost grows with registrations.
+- Added the missing indexes for query shapes that were scanning and sorting:
+  the published-posts listing (partial index), the CMS listing, and four
+  foreign keys with no leading-column index (`posts.author_id`,
+  `session."userId"`, `account."userId"`,
+  `stem_fest_payment_sms.matched_registration_id`).
+- `getSmsLogs` sorted by `received_at` while the only timestamp index was on
+  `created_at`. Those diverge whenever the forwarder replays an offline backlog.
+- Confirmed the security posture is otherwise sound: `public` **is** exposed via
+  the Data API and `anon` holds `SELECT` on all 13 tables, but RLS returns `[]`
+  for every one of them under the publishable key.
+- Flagged four orphan `public` tables (`applications`, `form_fields`,
+  `form_settings`, `form_submissions`) that no schema or migration knows about —
+  `form_fields` and `form_settings` hold 12 and 2 rows of real data, so they
+  need adopting or archiving rather than a reflexive `drop`.
+- `avatars` bucket had no size/mime limits (enforced only in the upload route);
+  remediation sets them on the bucket.
+
+Remediation DDL (not yet applied): `drizzle/audit-2026-09-13-remediation.sql`.
+
+
+## 2026-09-13 — Admin panel hang: root cause was pooler pipelining, not slow queries
+
+- `/admin` "sometimes" failed with a network error / `57014 statement timeout`.
+  It was **not** a slow-query problem: every `stem_fest_*` read measured ≤48 ms in
+  `pg_stat_statements`. The cause was `postgres.js` **pipelining** — when a page
+  load issues more statements at once than there are pooled connections, the
+  extras are written onto an already-busy connection and Supavisor can drop the
+  response. The backend then reads `state = idle` (the work is *finished*) while
+  the client waits forever, which is exactly why no server-side timeout could
+  ever rescue it. It looked random because it only happened when two page loads
+  overlapped.
+- **Pool `max: 3` → `5`** (`src/db/index.ts`), deliberately sized above the
+  statements a single page load issues, with the failure mode documented in the
+  file so the number is not "tidied" back down later.
+- **New `src/db/query.ts` → `withDbTimeout(label, read)`** gives every admin read
+  three guarantees in one place: a `SET LOCAL statement_timeout = '8000ms'`
+  server-side cap, a 12s client-side watchdog for the case where the pooler never
+  replies, and one retry. Server-side `statement_timeout` cannot be set at
+  connection time — Supavisor **discards startup GUCs**, verified by probe — and
+  must be `SET LOCAL` because transaction pooling may route each transaction to a
+  different backend.
+- **`src/lib/actions/registrations.ts` rewritten** around it: all seven actions
+  wrapped, and the `Promise.all` (count + page rows) replaced with **sequential**
+  statements inside one transaction — so the rows and their total also come from
+  the same snapshot. `searchStemfestRegistrations`' verified-TrxID lookup is now
+  bounded to the page's own transaction IDs instead of reading the whole table,
+  and `getStemfestStats` folds its second query in as a scalar subquery.
+- **Bug found while verifying: the retry never ran.** Drizzle wraps driver errors
+  as `Error("Failed query: …")` with the real `PostgresError` on `.cause`, so
+  `error.code` is `undefined` and every entry in `isRetryableDbError`'s retryable
+  set was unreachable. It now walks the `cause` chain. `57014` was also removed
+  from the retryable set on purpose: our 8s budget always beats the 12s watchdog,
+  so retrying would double the wait to ~16s and fail identically.
+- **Degradation instead of blanking.** New `src/lib/admin/source-status.ts`
+  (`unwrap`, `formatCount`, `UNAVAILABLE`) applied to `/admin`,
+  `/admin/science-competition` and `/admin/sms-logs`: one failing source now
+  renders "—" plus an amber banner, rather than rejecting a `Promise.all` and
+  taking the whole shell down with it.
+- **New `pnpm db:verify`** (`scripts/verify-admin-db.ts`, run via
+  `scripts/verify-admin-db.run.mjs` and the esbuild copy already in the store) —
+  a live regression harness that drives the real `withDbTimeout` and Drizzle
+  tables: the previously-hanging concurrency shape, four repeat rounds, the
+  dashboard's four sources, real `statement_timeout` cancellation, and the retry
+  decision per error class. All 25 checks pass. See [[decisions-log]] ADR-0026.
+- **Action needed outside the repo:** set `idle_in_transaction_session_timeout`
+  to `30000` in Supabase — it currently reads `0` (disabled), so an orphaned open
+  transaction can pin a pooled connection indefinitely.
+- Database diagnostics used during the hunt are kept under `scripts/`
+  (`db-diagnose`, `db-concurrency-clean`, `db-hang-matrix`, `db-pool-stress`,
+  `db-session-watchdog`, `db-slow-query-probe`, `db-timeout-probe`,
+  `db-tx-timeout-test`) — all read `DATABASE_URL` and run with
+  `node --env-file=.env scripts/<name>.mjs`.
 
 ## 2026-09-07 — Admin tables: server-side search + SQL pagination
 

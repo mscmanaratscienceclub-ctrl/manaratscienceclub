@@ -1,9 +1,22 @@
-// Quick probe script — run with: node drizzle/setup-ambassador-table.mjs
+// Quick probe script — run with: node --env-file=.env drizzle/setup-ambassador-table.mjs
+//
+// SECURITY: this file used to hard-code the project URL *and* the live
+// service-role JWT. A service-role key bypasses RLS completely — read it, and
+// you own every row in `public`, including the registrant PII tables. Both are
+// now read from the environment, which `.gitignore` keeps out of version
+// control. See [[supabase-audit-2026-09-13]] finding F1.
 import { createClient } from "@supabase/supabase-js";
 
-const url = "https://ipmdyrxfptdsulfhxjkb.supabase.co";
-const key =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwbWR5cnhmcHRkc3VsZmh4amtiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTkyODY1NCwiZXhwIjoyMDk3NTA0NjU0fQ.sclTZC6k5rME2DHBw0OldPk4qTsP1s1S6jf43bYn01g";
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!url || !key) {
+  console.error(
+    "Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY.\n" +
+      "Run with:  node --env-file=.env drizzle/setup-ambassador-table.mjs",
+  );
+  process.exit(1);
+}
 
 const supabase = createClient(url, key, {
   auth: { persistSession: false, autoRefreshToken: false },

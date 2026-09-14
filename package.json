@@ -11,7 +11,9 @@
     "images:optimize:dry": "node scripts/optimize-bucket-images.mjs --dry-run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:verify": "node scripts/verify-admin-db.run.mjs",
+    "db:audit": "node --env-file=.env scripts/db-arch-audit.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

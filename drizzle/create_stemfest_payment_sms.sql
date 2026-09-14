@@ -1,4 +1,4 @@
-﻿-- ─────────────────────────────────────────────────────────────────────────────
+-- ─────────────────────────────────────────────────────────────────────────────
 -- STEM Fest Payment Verification SMS Log
 -- Run this SQL in the Supabase SQL Editor (Project → SQL Editor).
 --
@@ -29,11 +29,11 @@ create index if not exists stem_fest_payment_sms_status_idx
 create index if not exists stem_fest_payment_sms_created_at_idx
   on public.stem_fest_payment_sms (created_at desc);
 
--- ── Row-Level Security ───────────────────────────────────────────────────────
+-- ── Row-Level Security ─────────────────────────────────────────────────────────
 alter table public.stem_fest_payment_sms enable row level security;
 
-drop policy if exists stemfest sms service role all on public.stem_fest_payment_sms;
-create policy stemfest sms service role all
+drop policy if exists "stemfest_sms_service_role_all" on public.stem_fest_payment_sms;
+create policy "stemfest_sms_service_role_all"
   on public.stem_fest_payment_sms
   for all
   to service_role

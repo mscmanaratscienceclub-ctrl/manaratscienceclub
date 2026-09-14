@@ -186,6 +186,7 @@ export default function StemfestRegistrationForm() {
         name: submitted.name,
         classId: submitted.classId,
         phone: submitted.phone,
+        email: submitted.email,
         bkashNumber: submitted.bkashNumber,
         bkashTrxId: submitted.bkashTrxId.toUpperCase(),
       },
@@ -315,6 +316,27 @@ export default function StemfestRegistrationForm() {
                   className={fieldClass}
                   aria-invalid={Boolean(errors.phone)}
                   {...register("phone")}
+                />
+              </FieldShell>
+            </Field>
+            <Field
+              index={nextIndex()}
+              id="stemfest-email"
+              label="Email address"
+              error={errors.email?.message}
+              hint="Your payment confirmation — and your receipt — is emailed here."
+            >
+              <FieldShell invalid={Boolean(errors.email)}>
+                <Input
+                  id="stemfest-email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  spellCheck={false}
+                  placeholder="you@example.com"
+                  className={fieldClass}
+                  aria-invalid={Boolean(errors.email)}
+                  {...register("email")}
                 />
               </FieldShell>
             </Field>

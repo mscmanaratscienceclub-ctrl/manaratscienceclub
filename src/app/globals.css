@@ -82,6 +82,16 @@
   --sh-subtle: 0 10px 30px rgba(20, 35, 38, 0.08);
   --sh-yellow: 0 16px 36px rgba(255, 183, 3, 0.25);
   --sh-red: 0 16px 36px rgba(220, 38, 38, 0.2);
+
+  /* ── Print tokens ──────────────────────────────────────────────
+     Absolute units on purpose: paper has no viewport to be relative to, so
+     points and millimetres are the only honest measure here. Used by the
+     `@media print` block at the end of this file. */
+  --print-page-margin: 12mm;
+  --print-title-size: 16pt;
+  --print-body-size: 9.5pt;
+  --print-cell-padding: 3pt 4pt;
+  --print-rule: color-mix(in srgb, var(--ink) 30%, transparent);
 }
 
 @theme inline {
@@ -521,5 +531,99 @@ html {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* ── Print ────────────────────────────────────────────────────────────────────
+   The printed report is a real route (`/admin/reports/[kind]`), but it renders
+   inside the admin shell — a fixed-height, sidebar-led viewport built for
+   scrolling. On paper there is no scrolling, so without unwinding that shell a
+   long report is clipped at the first screenful and every page after it comes
+   out blank. These rules do three things and nothing else:
+
+     1. unwind the shell — no sidebar, no fixed height, no overflow clip;
+     2. let a long table paginate — a header row that repeats on every page,
+        rows that never split across a break;
+     3. drop screen affordances (shadows, rounded surfaces) and darken the
+        hairlines that only read at all on a backlit screen.
+
+   The hooks are `data-print` attributes set by the admin layout, the sidebar
+   and the report page, so no component has to know how it is printed. They are
+   attribute selectors rather than utilities because each one has to outweigh a
+   flex/height/overflow rule already sitting on that element.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@media print {
+  @page {
+    size: A4;
+    margin: var(--print-page-margin);
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  body {
+    background-color: var(--color-surface);
+  }
+
+  [data-print="shell"] {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  [data-print="chrome"] {
+    display: none !important;
+  }
+
+  [data-print="content"] {
+    display: block;
+    flex: none;
+    overflow: visible;
+  }
+
+  [data-print="report"] {
+    max-width: none;
+    padding: 0;
+    font-size: var(--print-body-size);
+    /* Keep the status pills and the amber ceiling warning from being washed
+       out by the browser's default ink-saving adjustment. */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  [data-print="report"] h1 {
+    font-size: var(--print-title-size);
+  }
+
+  [data-print="report"] *,
+  [data-print="report"] *::before,
+  [data-print="report"] *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* The caption and the filter list belong with the first rows, not alone at
+     the foot of a page. */
+  [data-print="report"] header {
+    break-after: avoid;
+    break-inside: avoid;
+  }
+
+  [data-print="report"] thead {
+    display: table-header-group;
+  }
+
+  [data-print="report"] tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* A 5%-opacity hairline is invisible on paper; the report gets a real rule. */
+  [data-print="report"] th,
+  [data-print="report"] td {
+    padding: var(--print-cell-padding);
+    border-bottom: 1px solid var(--print-rule);
   }
 }

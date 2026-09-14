@@ -72,6 +72,17 @@ export const stemfestRegistrationSchema = z
       .max(100, "Name must be under 100 characters"),
     classId: z.string().trim().min(1, "Choose your class").max(30),
     phone: phoneField("Phone number"),
+    /**
+     * Where the bKash confirmation — the participant's receipt — is emailed. Asked
+     * for here because the admin's verification flow sends to this address; the
+     * column stays nullable for rows collected before the form asked.
+     */
+    email: z
+      .string()
+      .trim()
+      .min(1, "Email address is required")
+      .max(254, "Email address looks too long")
+      .pipe(z.email("Enter a valid email address")),
     bkashNumber: phoneField("bKash number"),
     bkashTrxId: z
       .string()
@@ -228,6 +239,7 @@ export const EMPTY_STEMFEST_VALUES: StemfestFormValues = {
   name: "",
   classId: "",
   phone: "",
+  email: "",
   bkashNumber: "",
   bkashTrxId: "",
   eventIds: [],

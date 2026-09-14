@@ -1,25 +1,41 @@
-import { BadgeCheck, CalendarDays, School, Trophy } from "lucide-react";
+import {
+  BadgeCheck,
+  CalendarDays,
+  Clock,
+  School,
+  Trophy,
+  XCircle,
+} from "lucide-react";
 import {
   getStemfestStats,
   searchStemfestRegistrations,
 } from "@/lib/actions/registrations";
 import { getStemfestClassLabel } from "@/lib/data/stemfest-registration";
+import {
+  describeList,
+  parseAdminQuery,
+  stemfestSource,
+  type RawSearchParams,
+} from "@/lib/admin/filters";
 import ScienceCompetitionTable from "./science-competition-table";
+
+/** Timestamps cross to the client as ISO strings, as `createdAt` already does. */
+function toIso(value: Date | null): string | null {
+  return value ? new Date(value).toISOString() : null;
+}
 
 export default async function ScienceCompetitionAdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<RawSearchParams>;
 }) {
-  const { q = "", page = "1" } = await searchParams;
-  const pageNum = Math.max(1, Number.parseInt(page, 10) || 1);
+  const source = stemfestSource;
+  const state = parseAdminQuery(source, await searchParams);
 
-  const [{ rows, verifiedTrxIds, total, totalPages }, stats] = await Promise.all([
-    searchStemfestRegistrations(q, pageNum),
+  const [{ rows, total, totalPages, page }, stats] = await Promise.all([
+    searchStemfestRegistrations(state),
     getStemfestStats(),
   ]);
-
-  const verifiedSet = new Set(verifiedTrxIds.map((id) => id.toUpperCase()));
 
   const registrations = rows.map((row) => ({
     id: row.id,
@@ -29,7 +45,15 @@ export default async function ScienceCompetitionAdminPage({
     segments: row.segments,
     transactionId: row.transactionId,
     paymentNumber: row.paymentNumber,
-    isVerified: verifiedSet.has(row.transactionId.toUpperCase()),
+    email: row.email,
+    // Resolved in SQL by `stemfestEffectivePaymentStatus`, so the pill, the filter,
+    // the stat cards and the printed report cannot disagree about this row.
+    status: row.status,
+    decision: row.decision,
+    decidedAt: toIso(row.decidedAt),
+    decidedBy: row.decidedBy,
+    emailSentAt: toIso(row.emailSentAt),
+    amount: row.amount,
     createdAt: new Date(row.createdAt).toISOString(),
   }));
 
@@ -48,6 +72,23 @@ export default async function ScienceCompetitionAdminPage({
       color: "text-emerald-600",
       bg: "bg-emerald-50",
     },
+    // Pending and Rejected are printed beside Verified because they are what an
+    // admin works through: all three count the same effective status the pill and
+    // the `payment` filter use, so a card can never contradict the table below it.
+    {
+      label: "Pending Payments",
+      value: String(stats.pendingCount),
+      icon: Clock,
+      color: "text-amber-600",
+      bg: "bg-amber-50",
+    },
+    {
+      label: "Rejected Payments",
+      value: String(stats.rejectedCount),
+      icon: XCircle,
+      color: "text-rose-600",
+      bg: "bg-rose-50",
+    },
     {
       label: "This Week",
       value: String(stats.thisWeek),
@@ -64,29 +105,25 @@ export default async function ScienceCompetitionAdminPage({
     },
   ];
 
-  const trimmed = q.trim();
-
   return (
     <div className="flex flex-col gap-8 p-6 md:p-10">
       <div>
         <h1 className="font-display text-3xl font-bold text-ink">
-          STEM Fest Registrations
+          {source.reportTitle}
         </h1>
         <p className="mt-1 font-body text-ink/60">
-          {trimmed
-            ? `${registrations.length} of ${total} ${total === 1 ? "registration" : "registrations"} match “${trimmed}”.`
-            : `All ${total} ${total === 1 ? "registration" : "registrations"} from the STEM Fest event form at /stemfestreg.`}
+          {describeList(source, state, registrations.length, total)}
         </p>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {statCards.map((stat) => (
           <div
             key={stat.label}
             className="flex items-center gap-4 rounded-2xl bg-surface p-6 shadow-subtle"
           >
             <div className={`rounded-xl ${stat.bg} p-3`}>
-              <stat.icon className={`h-6 w-6 ${stat.color}`} />
+              <stat.icon className={`h-6 w-6 ${stat.color}`} aria-hidden="true" />
             </div>
             <div>
               <p className="font-display text-3xl font-bold text-ink">
@@ -99,10 +136,11 @@ export default async function ScienceCompetitionAdminPage({
       </div>
 
       <ScienceCompetitionTable
+        source={source}
+        state={state}
         registrations={registrations}
-        query={q}
         total={total}
-        page={pageNum}
+        page={page}
         totalPages={totalPages}
       />
     </div>

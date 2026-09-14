@@ -1,9 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, HandHeart, Search } from "lucide-react";
+import { ChevronDown, HandHeart } from "lucide-react";
+import {
+  activeFilterCount,
+  emptyStateLabel,
+  type AdminQueryState,
+  type AdminSourceConfig,
+} from "@/lib/admin/filters";
+import { useAdminFilters } from "@/lib/hooks/use-admin-filters";
 import { cn } from "@/lib/utils";
-import { useAdminSearch } from "@/lib/hooks/use-admin-search";
+import AdminEmptyState from "@/components/admin/admin-empty-state";
+import FilterBar from "@/components/admin/filter-bar";
 import Pagination from "@/components/admin/pagination";
 
 export interface VolunteerRow {
@@ -65,70 +73,78 @@ const detailGroups: {
   },
 ];
 
-export default function VolunteerRegistrationsTable({
-  registrations,
-  query,
-  total,
-  page,
-  totalPages,
-}: {
+const COLUMNS = [
+  "Name",
+  "Class section",
+  "Roll",
+  "Shift",
+  "Student code",
+  "Phone",
+  "Submitted",
+];
+
+interface VolunteerRegistrationsTableProps {
+  source: AdminSourceConfig;
+  state: AdminQueryState;
   registrations: VolunteerRow[];
-  query: string;
   total: number;
   page: number;
   totalPages: number;
-}) {
+}
+
+export default function VolunteerRegistrationsTable({
+  source,
+  state,
+  registrations,
+  total,
+  page,
+  totalPages,
+}: VolunteerRegistrationsTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const { input, setInput, isPending, goToPage } = useAdminSearch({
-    query,
-    basePath: "/admin/volunteer",
+  const controls = useAdminFilters({
+    sourceId: source.id,
+    basePath: source.path,
+    state,
   });
+  const filtering = activeFilterCount(source, state) > 0;
 
   return (
     <div className="rounded-2xl bg-surface shadow-subtle">
-      <div className="border-b border-ink/5 px-6 py-4">
-        <div className="relative max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/35" />
-          <input
-            type="search"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Search by name, roll, class, shift, or code…"
-            className="w-full rounded-xl border border-ink/10 bg-cream/40 py-2 pl-9 pr-3 font-body text-sm text-ink outline-none transition-colors placeholder:text-ink/35 focus:border-manara-teal"
-          />
-        </div>
-      </div>
+      <FilterBar source={source} state={state} controls={controls} />
 
-      <div className={cn("transition-opacity", isPending && "pointer-events-none opacity-50")}>
+      <div
+        className={cn(
+          "transition-opacity",
+          controls.isPending && "pointer-events-none opacity-50",
+        )}
+      >
         {registrations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <HandHeart className="mb-3 h-10 w-10 text-ink/20" />
-            <p className="font-body text-ink/50">
-              {query.trim()
-                ? "No applications match your search."
-                : "No volunteer applications yet."}
-            </p>
-          </div>
+          <AdminEmptyState
+            icon={HandHeart}
+            label={emptyStateLabel(source, state)}
+            onClearAll={filtering ? controls.clearAll : undefined}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-ink/5 text-left">
                   <th className="w-8 px-3 py-3" aria-label="Expand" />
-                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Name</th>
-                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Class section</th>
-                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Roll</th>
-                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Shift</th>
-                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Student code</th>
-                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Phone</th>
-                  <th className="px-4 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">Submitted</th>
+                  {COLUMNS.map((label) => (
+                    <th
+                      key={label}
+                      className="px-4 py-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase"
+                    >
+                      {label}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink/5">
                 {registrations.map((row) => {
                   const expanded = expandedId === row.id;
                   return (
-                    <FragmentRow
+                    <VolunteerRowView
                       key={row.id}
                       row={row}
                       expanded={expanded}
@@ -136,18 +152,25 @@ export default function VolunteerRegistrationsTable({
                     />
                   );
                 })}
+
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {total > 0 && <Pagination page={page} totalPages={totalPages} onPage={goToPage} />}
+      {total > 0 && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPage={controls.goToPage}
+        />
+      )}
     </div>
   );
 }
 
-function FragmentRow({
+function VolunteerRowView({
   row,
   expanded,
   onToggle,
@@ -160,33 +183,60 @@ function FragmentRow({
     <>
       <tr
         onClick={onToggle}
-        className={cn("cursor-pointer transition-colors", expanded ? "bg-cream/60" : "hover:bg-cream/40")}
+        className={cn(
+          "cursor-pointer transition-colors",
+          expanded ? "bg-cream/60" : "hover:bg-cream/40",
+        )}
       >
         <td className="px-3 py-4">
-          <ChevronDown className={cn("h-4 w-4 text-ink/40 transition-transform", expanded && "rotate-180")} />
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 text-ink/40 transition-transform",
+              expanded && "rotate-180",
+            )}
+            aria-hidden="true"
+          />
         </td>
-        <td className="px-4 py-4 font-body font-medium text-ink">{row.fullName}</td>
-        <td className="px-4 py-4 font-body text-sm text-ink/60">{row.classSection}</td>
+        <td className="px-4 py-4 font-body font-medium text-ink">
+          {row.fullName}
+        </td>
+        <td className="px-4 py-4 font-body text-sm text-ink/60">
+          {row.classSection}
+        </td>
         <td className="px-4 py-4 font-body text-sm text-ink/60">{row.roll}</td>
-        <td className="px-4 py-4 font-body text-sm text-ink/60">{row.shift}</td>
-        <td className="px-4 py-4 font-body text-sm text-ink/60">{row.studentCode}</td>
-        <td className="px-4 py-4 font-body text-sm text-ink/60">{row.personalPhone}</td>
-        <td className="px-4 py-4 font-body text-sm text-ink/60">{dateFormatter.format(new Date(row.createdAt))}</td>
+        <td className="px-4 py-4 font-body text-sm text-ink/60 capitalize">
+          {row.shift}
+        </td>
+        <td className="px-4 py-4 font-mono text-sm text-ink/60">
+          {row.studentCode}
+        </td>
+        <td className="px-4 py-4 font-body text-sm text-ink/60">
+          {row.personalPhone}
+        </td>
+        <td className="px-4 py-4 font-body text-sm text-ink/60">
+          {dateFormatter.format(new Date(row.createdAt))}
+        </td>
       </tr>
+
       {expanded && (
         <tr className="bg-cream/60">
           <td />
-          <td colSpan={7} className="px-4 pb-6 pt-1">
+          <td colSpan={7} className="px-4 pt-1 pb-6">
             {detailGroups.map((group) => (
-              <section key={group.title} className="mt-5">
-                <h3 className="mb-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">
+              <section key={group.title} className="mt-4">
+                <h3 className="mb-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
                   {group.title}
                 </h3>
                 <dl className="space-y-3">
                   {group.fields.map((field) => (
-                    <div key={field.key} className="grid gap-1 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-6">
-                      <dt className="font-body text-sm text-ink/50">{field.label}</dt>
-                      <dd className="max-w-3xl whitespace-pre-wrap font-body text-sm leading-relaxed text-ink/80">
+                    <div
+                      key={field.label}
+                      className="grid gap-1 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-6"
+                    >
+                      <dt className="font-body text-sm text-ink/50">
+                        {field.label}
+                      </dt>
+                      <dd className="max-w-3xl font-body text-sm leading-relaxed break-words whitespace-pre-wrap text-ink/80">
                         {row[field.key]}
                       </dd>
                     </div>

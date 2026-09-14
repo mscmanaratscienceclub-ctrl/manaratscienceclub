@@ -17,7 +17,249 @@ Template: [[templates/adr-note]].
 
 ---
 
-## ADR-0025 — Pre-optimise bucket images instead of using the Vercel image optimizer
+## ADR-0029 — One filter contract, parsed from the URL and honoured by the printed report
+
+**Status:** Accepted · 2026-09-14
+
+**Decision.** Every admin table reads a single declarative contract in
+`src/lib/admin/filters.ts`: an `AdminSourceConfig` per source naming its filter
+fields, their `kind` (`text` | `select` | `date` | `number`), its sort options,
+its copy and its report columns. The filter bar renders from that config, the
+table page parses the query string into an `AdminQueryState` with
+`parseAdminQuery`, and the printed report at `/admin/reports/[kind]` re-parses
+the very same query string and runs the very same WHERE builders through
+`getAdminReportRows`. Adding a filter to a source's array plus its WHERE branch
+carries it the whole way — table, chips, empty state, PDF — without touching a
+component.
+
+**Why.** The four admin tables had grown four separate filter stories: each
+re-implemented its own search, some had no filtering at all, and the "export"
+was a client-side print of whatever happened to be rendered. That made three
+classes of bug reachable and unremarkable:
+
+1. **An export that disagreed with the screen.** There was nothing forcing the
+   report's query to be the table's query, so an export could silently ignore a
+   filter — and a spreadsheet derived from it would be wrong in a way nobody
+   could see from inside the app.
+2. **Copy that contradicted the data.** "No registrations yet" on a table that
+   had 4 000 rows and one active filter reads as a bug in the data, not in the
+   view. `emptyStateLabel` now has one place to know the difference, and it is
+   the config's `empty` block.
+3. **A country-specific off-by-one-day.** Date bounds are stored as
+   `timestamptz`; a bare date is read as UTC and splits a Dhaka calendar day at
+   6am local, so "from 14 September" quietly meant 13 Sep 18:00 → 14 Sep 18:00.
+   `ADMIN_TIME_ZONE` is now applied centrally by `dayRange` rather than
+   re-derived at each call site.
+
+The URL is the state, deliberately. An admin's filtered view is then
+linkable, shareable, reloadable and reachable from the printed report's back
+link — none of which is true of component state, and a hand-edited
+`?page=999` lands on the last real page instead of an empty one that reads as
+"no matches". `DEFAULT_SORT` is omitted from generated links so one canonical
+URL means the search box cannot re-navigate forever.
+
+The report is capped by `REPORT_ROW_LIMIT` (2 000) and says so when it hits the
+ceiling. A report reads every matching row, not one page, so it needs a bound
+the table does not: without one, an unfiltered export of a table that grew
+unexpectedly would pin a pooled connection until the statement timeout. It
+truncates loudly rather than silently.
+
+**What it constrains.**
+
+- A filter's `kind` fully describes its SQL behaviour, and the action layer
+  implements exactly the four in the table at the top of `filters.ts`. **No
+  fifth comparison may be added in a component.** A filter that needs different
+  semantics gets a new `kind`, added in both places.
+- `filters.ts` is imported by Server Components *and* client leaves, so it
+  stays plain data and pure functions — no `env`, no database, no `next/headers`.
+  `REPORT_ROW_LIMIT` lives there rather than next to the query for this reason:
+  a `"use server"` module may only export async functions.
+- `AdminReportColumn.id` is a string because report rows are
+  `Record<string, string>`. TypeScript therefore **cannot** catch a column id
+  that no mapper produces. The ids and the mappers in `getAdminReportRows` are
+  kept in step by hand and listed in [[admin/filters-reports]] → "Report
+  columns"; a mismatch ships as a blank column on paper.
+- Print behaviour is CSS, not JS: the report route is server-rendered plain
+  HTML and the admin shell declares itself to the print stylesheet with
+  `data-print` attributes. No PDF library is added to the stack — the browser's
+  print dialog is the PDF renderer.
+- An admin page that aggregates several independent sources reads them with
+  `Promise.allSettled` and resolves each through `unwrap`
+  (`src/lib/admin/source-status.ts`), so one failing source degrades to `—` and
+  reports itself to Sentry instead of blanking the page. A missing figure and a
+  real zero must not be distinguishable only by absence.
+
+Supersedes nothing; extends ADR-0026 (admin reads: sequential statements,
+layered timeouts, pool above concurrency), whose timeout wrapper every query
+above runs inside.
+
+
+## ADR-0028 — A host-level answer never discards a forwarded SMS
+
+**Status:** Accepted · 2026-09-14
+
+**Decision.** The Android forwarder app sorts a failed POST into three outcomes,
+and which one it picks is decided by *whose* answer it was — not by the status
+code alone:
+
+1. **The webhook's own permanent rejection** — `400`, `401`, `409`, `413`, `422`
+   answered by `/api/webhooks/sms` itself. That is a statement about this message
+   or this configuration, and it will fail identically next time, so the SMS is
+   parked `FAILED` (`PERMANENT_CODES` in `SyncMessagesUseCase`).
+2. **A host-level answer** — Vercel's `403` challenge
+   (`x-vercel-mitigated: challenge`), an HTML `404` because the running deployment
+   does not carry the route, a dropped connection, a timeout, a `5xx`. None of
+   these says anything about the message. It stays `PENDING`, it is **not** charged
+   a retry against `MAX_RETRIES` (10), and the app names the condition instead:
+   `TestConnectionResult.HostSecurityChallenge` for the challenge,
+   `InvalidUrl("No webhook route at …")` for a missing route, `ServerUnavailable`
+   for a timeout.
+3. **Everything else** — retryable, exponential backoff from 30s to a 30min cap,
+   `Retry-After` honoured.
+
+Classification is **signature**-based (`HostChallenge`), because the status is not
+trustworthy on its own: the challenge headers, the content type, and whether the
+body parses as the webhook's own JSON are what decide.
+
+**Why.** Production sat behind Vercel's Attack Challenge Mode (2026-09-14
+changelog), so every forward was answered `403` at the edge, before routing ran.
+Under the previous "any 4xx means this message is bad" rule the app marked each
+real bKash payment SMS `FAILED` for good — and spent its whole retry budget on a
+condition no retry could ever change. That is the worst failure available to this
+pipeline: the queue on the phone is the *only* copy of an SMS that has already
+arrived and been deleted from the handset, so a bad day on the host must not be
+allowed to destroy the payment record it was holding.
+
+**Consequences.** A misconfigured or undeployed host now *strands* messages
+instead of deleting them, so `PENDING` rows piling up is the alarm that matters —
+that is the deliberate trade, and `/admin/sms-logs` is where it is watched. Two
+rules follow for anyone touching this pipeline: a newly-handled status code has to
+be classified against the three outcomes above before it ships, and nothing may
+join `PERMANENT_CODES` that is not literally the webhook's own permanent
+rejection. The rule is enforced by tests, not just written down — `HostChallengeTest`,
+`SyncMessagesUseCaseTest`, `PreferIpv4DnsTest` — and disabling the interception
+detector fails six of them. Contract and phone-side setup: [[sms-forwarder]].
+
+---
+
+## ADR-0027 — Supabase audit: rotate the leaked key, keep RLS owner-only, index the query shapes
+
+**Status:** Accepted · 2026-09-13
+
+**Decision.** Five things follow from the architecture audit recorded in
+[[supabase-audit-2026-09-13]]:
+
+1. **The service-role key is treated as compromised and must be rotated.**
+   `drizzle/setup-ambassador-table.mjs` had shipped a service-role JWT that was
+   byte-identical to the live one, in a git commit pushed to GitHub. The literal
+   is gone from the tree; rotation is the part that actually revokes the
+   exposure. No secret may be written into a tracked file again — read from
+   `process.env`, and fail loudly when it is absent.
+2. **RLS stays owner-only for the better-auth tables, and is understood as
+   such.** All 13 `public` tables have RLS on; the registrant tables have
+   permissive policies for `service_role` only, and the auth tables have none.
+   This is deliberate (ADR-0024) but it means **RLS is not a safety net** — it
+   holds because the app connects as the owner, and `FORCE ROW LEVEL SECURITY`
+   is off. Changing the connecting role would turn every read into a silent
+   empty result.
+3. **Indexes are declared in the Drizzle schema, not only applied by hand.**
+   The deployed `upper(transaction_id)` functional index and its Drizzle
+   declaration had diverged; `pnpm db:migrate` (`drizzle-kit push`) would have
+   replaced the functional index with a useless plain one. A hand-written index
+   and its schema declaration are two descriptions of one thing, and only the
+   schema one is what migrations enforce.
+4. **`idle_in_transaction_session_timeout` and `lock_timeout` are set at the
+   database level.** A client-side watchdog stops the client waiting; it cannot
+   stop the server running. Leaving the idle-in-transaction timeout at `0` means
+   an abandoned transaction pins a backend indefinitely.
+5. **Unindexable `%ILIKE%` admin search is accepted for now.** It becomes a
+   trigram GIN index when the largest searchable table passes ~50k rows, not
+   before.
+
+**Why.** The audit measured the live project rather than reading the repo, which
+is how F7 in particular surfaced: a change that would have silently degraded
+performance with no error, invisible from either the database or the code alone.
+
+**When building.** Indexing a new query shape means declaring the index in
+`src/db/schema` *and* applying it — a schema-only or SQL-only change is drift.
+Never put a key or connection string in a tracked file. Before changing the
+database role the app connects as, re-read point 2.
+
+---
+
+
+## ADR-0026 — Admin reads: sequential statements, layered timeouts, pool above concurrency
+
+**Status:** Accepted · 2026-09-13
+
+**Decision.** Three changes to how the app talks to Supabase, all in service of
+one goal — an admin page must never hang:
+
+1. **Pool `max: 5`,** sized deliberately *above* the number of statements a
+   single page load issues. (`src/db/index.ts`)
+2. **Every admin read goes through `withDbTimeout(label, read)`**
+   (`src/db/query.ts`), which wraps the read in one transaction, applies
+   `SET LOCAL statement_timeout = '8000ms'`, races it against a 12s client-side
+   watchdog, and retries once on a retryable failure.
+3. **Statements are issued sequentially inside a read**, never through
+   `Promise.all` — a `count(*)` first, then the page `SELECT`. Independent
+   *sources* are still fetched concurrently, but degraded individually via
+   `Promise.allSettled` + `unwrap()` (`src/lib/admin/source-status.ts`).
+
+**Why.** The admin panel failed intermittently with a network error / `57014`.
+The queries were **not** slow (every `stem_fest_*` read measured ≤48 ms in
+`pg_stat_statements`). The actual failure was in `postgres.js`'s pipelining:
+when more statements are issued at once than there are pooled connections, the
+extras are written onto an already-busy connection, and Supavisor can drop the
+response. The server-side backend then reads `state = idle` — the work is
+*finished* — while the client waits forever. That is why no server-side timeout
+could ever rescue it, and why the symptom looked random: it depended purely on
+whether two page loads overlapped.
+
+`SET LOCAL` (rather than `SET`) is required because the transaction pooler may
+route each transaction to a different backend, so a session-level setting would
+leak onto the next client that uses that backend. It also cannot be set at
+connection time: Supavisor discards startup GUCs, so a `connection: {
+statement_timeout }` option on the `postgres()` client is silently ignored and
+reads back as Supabase's default `2min`.
+
+Independent sources are still concurrent, but one failing source must not blank
+the page — previously a single rejection took down the whole `Promise.all` and
+hid the sources that were healthy.
+
+**When building.** Use `withDbTimeout()` for any new admin read; never
+`Promise.all` two statements onto the same `tx` (the `count(*)` then page
+`SELECT` pattern in `src/lib/actions/registrations.ts` is the reference). If a
+page gains a new independent data source, add it to the `Promise.allSettled`
+list and render `UNAVAILABLE` for it via `formatCount()`/`unwrap()` rather than
+letting it reject.
+
+Two traps worth remembering, both measured against the live pooler:
+
+- **Drizzle wraps driver errors.** A Postgres failure arrives as
+  `Error("Failed query: …")` with the real `PostgresError` on `.cause`, so
+  `error.code` is `undefined`. `isRetryableDbError()` must walk the `cause`
+  chain or every entry in its retryable set is dead code (it was, until
+  ADR-0026).
+- **`57014` is deliberately not retried.** Our own 8s budget cancels the
+  statement before the 12s client watchdog can fire, so a retry would double the
+  wait to ~16s and fail identically. Only connection-class failures
+  (`08xxx`, `53300`, `57P0x`), bare pooler disconnect messages, and the client
+  watchdog itself are retried.
+
+`pnpm db:verify` (`scripts/verify-admin-db.ts`) verifies all of this against the
+live database: the old concurrency shape, four repeat rounds, the dashboard's
+four sources, real `statement_timeout` cancellation, and the retry decision for
+each error class.
+
+**Recommended Supabase setting (not code):** set
+`idle_in_transaction_session_timeout = 30000` on the database. It currently
+reads `0` (disabled), which lets an orphaned open transaction pin a pooled
+connection indefinitely. `scripts/db-diagnose.mjs` reports the current value.
+
+---
+
+
 
 **Status:** Accepted · 2026-08-30
 

@@ -6,6 +6,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { stemfestRegistrations } from "./stemfest-registrations";
 
 /**
@@ -35,9 +36,22 @@ export const stemfestPaymentSms = pgTable(
       .notNull(),
   },
   (table) => [
-    index("stem_fest_payment_sms_trx_idx").on(table.transactionId),
+    // The deployed index is on `upper(transaction_id)`, NOT the bare column,
+    // because src/app/api/webhooks/sms/route.ts matches with
+    // `sql`upper(${…transactionId}) = ${parsedSms.transactionId}``. Declaring it
+    // as a plain column index here made `drizzle-kit push` want to drop the live
+    // functional index and create a useless one — leaving the webhook
+    // sequential-scanning. Keep this expression in step with the query.
+    // See obsidian/backend/supabase-audit-2026-09-13.md finding F2.
+    index("stem_fest_payment_sms_trx_idx").on(sql`upper(${table.transactionId})`),
     index("stem_fest_payment_sms_status_idx").on(table.status),
+    index("stem_fest_payment_sms_received_at_idx").on(table.receivedAt.desc()),
     index("stem_fest_payment_sms_created_at_idx").on(table.createdAt.desc()),
+    // The FK below is ON DELETE SET NULL, which still scans this table without
+    // a leading-column index. (audit F5)
+    index("stem_fest_payment_sms_matched_registration_id_idx").on(
+      table.matchedRegistrationId,
+    ),
   ]
 ).enableRLS();
 

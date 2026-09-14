@@ -1,6 +1,6 @@
 ---
 tags: [moc, home]
-updated: 2026-08-19
+updated: 2026-09-14
 ---
 
 # 🧠 Manarat Science Club — Project Brain
@@ -47,14 +47,20 @@ how to extend it — for both humans and AI agents (Claude Code, Cursor, Qoder).
 - [[seo-metadata]] — metadata generation & bot detection
 - [[components/animation-springs|Spring components catalog]]
 - [[components/common|Common components catalog]]
+- [[components/admin|Admin components catalog]]
 - [[hooks]] — custom hooks catalog
 - [[utils]] — utility functions catalog
 
 ### 03 — Backend
 - [[backend/README|Backend overview]] — API layer, CMS & database
 - [[api-architecture]] — `app/api` route-handler convention & secret handling
+- [[backend/sms-forwarder|SMS forwarder]] — bKash payment SMS webhook: contract, phone-app config, "connection timed out" checklist
 - [[cms-payload]] — Payload CMS, installed per project into this Next app
 - [[database-supabase]] — Supabase Postgres: connections, keys, RLS, migrations
+
+### 05 — Admin
+- [[admin/filters-reports|Admin filters & printed reports]] — the filter contract, the four tables, the report route and print CSS
+
 
 ### 04 — Workflows
 - [[ai-agent-guide]] — rules of engagement for AI agents working in this repo

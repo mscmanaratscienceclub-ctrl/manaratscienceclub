@@ -1,14 +1,23 @@
 import { searchAmbassadorRegistrations } from "@/lib/actions/registrations";
+import {
+  ambassadorSource,
+  describeList,
+  parseAdminQuery,
+  type RawSearchParams,
+} from "@/lib/admin/filters";
 import RegistrationsTable from "./registrations-table";
 
 export default async function CampusAmbassadorAdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<RawSearchParams>;
 }) {
-  const { q = "", page = "1" } = await searchParams;
-  const pageNum = Math.max(1, Number.parseInt(page, 10) || 1);
-  const { rows, total, totalPages } = await searchAmbassadorRegistrations(q, pageNum);
+  const source = ambassadorSource;
+  // Validated against the source's own filter catalogue, so the table, its filter
+  // bar and the report route all work from one state object.
+  const state = parseAdminQuery(source, await searchParams);
+  const { rows, total, totalPages, page } =
+    await searchAmbassadorRegistrations(state);
 
   const registrations = rows.map((row) => ({
     id: row.id,
@@ -26,23 +35,22 @@ export default async function CampusAmbassadorAdminPage({
     createdAt: new Date(row.createdAt).toISOString(),
   }));
 
-  const trimmed = q.trim();
-
   return (
     <div className="flex flex-col gap-8 p-6 md:p-10">
       <div>
-        <h1 className="font-display text-3xl font-bold text-ink">Ambassador Registrations</h1>
+        <h1 className="font-display text-3xl font-bold text-ink">
+          {source.reportTitle}
+        </h1>
         <p className="mt-1 font-body text-ink/60">
-          {trimmed
-            ? `${registrations.length} of ${total} ${total === 1 ? "response" : "responses"} match “${trimmed}”.`
-            : `All ${total} ${total === 1 ? "response" : "responses"} from the Campus and Batch Ambassador forms.`}
+          {describeList(source, state, registrations.length, total)}
         </p>
       </div>
       <RegistrationsTable
+        source={source}
+        state={state}
         registrations={registrations}
-        query={q}
         total={total}
-        page={pageNum}
+        page={page}
         totalPages={totalPages}
       />
     </div>

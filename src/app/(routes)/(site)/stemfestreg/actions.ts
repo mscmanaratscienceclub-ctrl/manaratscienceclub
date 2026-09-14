@@ -60,6 +60,10 @@ export async function submitStemfestRegistration(
         segments: segments || "General",
         transaction_id: data.bkashTrxId.toUpperCase(),
         payment_number: data.bkashNumber,
+        // Where the admin's verification emails the confirmation. Lower-cased here
+        // rather than in SQL, so the address the participant reads back on their
+        // receipt and the one Resend is handed are the same string.
+        email: data.email.toLowerCase(),
       },
     ])
     .select("id, created_at")
