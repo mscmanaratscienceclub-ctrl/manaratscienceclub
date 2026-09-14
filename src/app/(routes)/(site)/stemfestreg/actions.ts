@@ -10,6 +10,7 @@ import {
 } from "@/lib/data/stemfest-registration";
 import {
   buildEntries,
+  resolveSchoolName,
   stemfestRegistrationSchema,
   type StemfestFormValues,
 } from "./validate";
@@ -56,7 +57,9 @@ export async function submitStemfestRegistration(
       {
         name: data.name,
         class: data.classId,
-        school: "Manarat Dhaka International School and College",
+        // The dropdown's value resolved to the school's name — the catalogue's
+        // for a listed school, the participant's own words for "not listed".
+        school: resolveSchoolName(data),
         segments: segments || "General",
         transaction_id: data.bkashTrxId.toUpperCase(),
         payment_number: data.bkashNumber,

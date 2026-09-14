@@ -20,6 +20,8 @@ export interface SavedStemfestSubmission {
   entries: StemfestEntry[];
   participant: {
     name: string;
+    /** Absent on a receipt cached by a build from before the form asked for one. */
+    school?: string;
     classId: string;
     phone: string;
     /** Absent on a receipt cached by a build from before the form asked for one. */
@@ -89,6 +91,7 @@ export function SubmissionReceipt({
 
         <dl className="divide-y divide-space-line-soft border-y border-space-line-soft">
           <ReceiptRow label="Name" value={participant.name} />
+          <ReceiptRow label="School / college" value={participant.school || "—"} />
           <ReceiptRow label="Class" value={getStemfestClassLabel(participant.classId)} />
           <ReceiptRow label="Phone" value={participant.phone} />
           <ReceiptRow label="Email" value={participant.email || "—"} />

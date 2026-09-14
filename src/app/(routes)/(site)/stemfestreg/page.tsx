@@ -4,7 +4,7 @@ import StemfestRegistrationForm from "./stemfest-registration-form";
 import { stemfestFormCopy } from "@/lib/data/stemfest-registration";
 
 export const metadata: Metadata = {
-  title: "STEM Fest Registration — Olympiads, Robotics, Project Display & E-sports",
+  title: "STEM Fest Registration — Olympiads, Project Display & E-sports",
   description:
     "Register for Manarat Science Club STEM Fest. Pick your class, choose your events with your category filled in automatically, and confirm your bKash payment.",
 };

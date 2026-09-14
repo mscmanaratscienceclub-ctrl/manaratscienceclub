@@ -1,8 +1,10 @@
 import { z } from "zod";
 import {
+  STEMFEST_OTHER_SCHOOL_ID,
   buildEntry,
   stemfestClasses,
   stemfestEvents,
+  stemfestSchools,
   type StemfestClassId,
   type StemfestEntry,
   type StemfestTeamSize,
@@ -62,6 +64,7 @@ export const teamEventIds = stemfestEvents
 
 const eventIds = new Set(stemfestEvents.map((event) => event.id));
 const classIds = new Set<string>(stemfestClasses.map((entry) => entry.id));
+const schoolIds = new Set<string>(stemfestSchools.map((entry) => entry.id));
 
 export const stemfestRegistrationSchema = z
   .object({
@@ -70,6 +73,14 @@ export const stemfestRegistrationSchema = z
       .trim()
       .min(2, "Name must be at least 2 characters")
       .max(100, "Name must be under 100 characters"),
+    /**
+     * The dropdown's value: a known school id, or `STEMFEST_OTHER_SCHOOL_ID`.
+     * The name that reaches the row is resolved by `resolveSchoolName`, so the
+     * catalogue can be re-pointed without rewriting stored rows.
+     */
+    school: z.string().trim().min(1, "Choose your school").max(120),
+    /** Only read when `school` is the "not listed" sentinel. */
+    schoolOther: z.string().trim().max(120, "School name looks too long"),
     classId: z.string().trim().min(1, "Choose your class").max(30),
     phone: phoneField("Phone number"),
     /**
@@ -96,6 +107,21 @@ export const stemfestRegistrationSchema = z
     teams: z.record(z.string(), teamFieldsSchema),
   })
   .superRefine((values, ctx) => {
+    const otherSchool = values.school === STEMFEST_OTHER_SCHOOL_ID;
+    if (!otherSchool && !schoolIds.has(values.school)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["school"],
+        message: "Choose your school",
+      });
+    } else if (otherSchool && values.schoolOther.trim().length < 2) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["schoolOther"],
+        message: "Enter your school's name",
+      });
+    }
+
     if (!classIds.has(values.classId)) {
       ctx.addIssue({
         code: "custom",
@@ -227,6 +253,18 @@ export function buildEntries(values: StemfestFormValues): StemfestEntry[] {
   return entries;
 }
 
+/**
+ * The school name stored on the row: the catalogue's name for a listed school,
+ * or the participant's own words when they picked "not listed".
+ *
+ * Resolution happens here rather than in SQL or the admin so a school can be
+ * renamed in the catalogue without rewriting registrations already filed.
+ */
+export function resolveSchoolName(values: StemfestFormValues): string {
+  const listed = stemfestSchools.find((entry) => entry.id === values.school);
+  return listed ? listed.name : values.schoolOther.trim();
+}
+
 const emptyTeam = (): TeamFields => ({
   size: "",
   teammate1: "",
@@ -237,6 +275,8 @@ const emptyTeam = (): TeamFields => ({
 
 export const EMPTY_STEMFEST_VALUES: StemfestFormValues = {
   name: "",
+  school: "",
+  schoolOther: "",
   classId: "",
   phone: "",
   email: "",

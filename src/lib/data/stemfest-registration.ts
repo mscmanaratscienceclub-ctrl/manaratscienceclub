@@ -14,7 +14,6 @@
 
 export type StemfestSegmentId =
   | "olympiads"
-  | "robotics"
   | "project-display"
   | "esports";
 
@@ -74,22 +73,43 @@ export const stemfestClassGroups: {
   { label: "Higher education", classIds: ["university"] },
 ];
 
-/** Classes admitted to Robotics, which runs from Class 7 all the way up. */
-const roboticsClasses: StemfestClassId[] = [
-  "class-7",
-  "class-8",
-  "class-9",
-  "class-10",
-  "as",
-  "a2",
-  "university",
+// ── Schools ──────────────────────────────────────────────────────────────────
+
+/**
+ * Sentinel select value for "my school isn't in the list". Picking it reveals a
+ * free-text field, and the typed name is what gets stored.
+ *
+ * Deliberately not an entry in `stemfestSchools`: the catalogue stays a plain
+ * list of real schools and the escape hatch can never be mistaken for one.
+ */
+export const STEMFEST_OTHER_SCHOOL_ID = "other";
+
+/** The escape hatch's option label, kept here with the rest of the copy. */
+export const stemfestOtherSchoolLabel = "My school isn’t listed";
+
+export interface StemfestSchoolOption {
+  id: string;
+  name: string;
+}
+
+/**
+ * The schools offered in the registration form's dropdown.
+ *
+ * TODO(before launch): the club is supplying the participating-schools list —
+ * add one `{ id, name }` per school, keeping the host school first. Only the
+ * resolved *name* is stored, so a school missing from here can still register
+ * through the "not listed" option.
+ */
+export const stemfestSchools: StemfestSchoolOption[] = [
+  { id: "manarat-disc", name: "Manarat Dhaka International School & College" },
 ];
 
+/** Classes admitted to every event — E-sports runs open brackets. */
 const everyClass: StemfestClassId[] = stemfestClasses.map((c) => c.id);
 
 /**
  * A `categoryId` of `null` means the event has no category split — the classes
- * list is purely an eligibility gate. Robotics and E-sports work that way.
+ * list is purely an eligibility gate. E-sports works that way.
  */
 export interface StemfestCategoryRule {
   categoryId: string | null;
@@ -118,12 +138,6 @@ export const stemfestSegments: StemfestSegmentOption[] = [
     name: "Olympiads",
     blurb: "Written rounds, split into categories by your class.",
     pricing: "olympiad-tier",
-  },
-  {
-    id: "robotics",
-    name: "Robotics",
-    blurb: "Open from Class 7 to University. Enter as a team of 4 or 5.",
-    pricing: "team",
   },
   {
     id: "project-display",
@@ -207,29 +221,6 @@ export const stemfestEvents: StemfestEventOption[] = [
       { categoryId: "junior", label: "Junior", classes: ["class-7", "class-8", "class-9"] },
       { categoryId: "senior", label: "Senior", classes: ["class-10", "as", "a2"] },
     ],
-  },
-
-  // ── Robotics ───────────────────────────────────────────────────────────────
-  {
-    id: "robosoccer",
-    name: "Robosoccer",
-    segmentId: "robotics",
-    teamBased: true,
-    categories: openTo(roboticsClasses),
-  },
-  {
-    id: "lfr",
-    name: "LFR",
-    segmentId: "robotics",
-    teamBased: true,
-    categories: openTo(roboticsClasses),
-  },
-  {
-    id: "roborace",
-    name: "Roborace",
-    segmentId: "robotics",
-    teamBased: true,
-    categories: openTo(roboticsClasses),
   },
 
   // ── Project Display ────────────────────────────────────────────────────────
@@ -354,7 +345,7 @@ export function resolveCategoryRule(
 
 export interface EligibleEvent {
   event: StemfestEventOption;
-  /** Null for events with no category split (Robotics, E-sports). */
+  /** Null for events with no category split (E-sports). */
   rule: StemfestCategoryRule;
 }
 

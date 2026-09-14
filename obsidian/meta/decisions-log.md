@@ -17,7 +17,75 @@ Template: [[templates/adr-note]].
 
 ---
 
-## ADR-0029 — One filter contract, parsed from the URL and honoured by the printed report
+## ADR-0030 — A catalogue-backed dropdown carries the id; the row stores the label
+
+**Status:** Accepted · 2026-09-14
+
+**Decision.** Where a form field's options come from a catalogue in
+`src/lib/data`, the **submitted value is the option's `id`** and the value
+*stored* is the option's display name, resolved at submit time by a named
+function next to the schema. The first field to work this way is the STEM Fest
+registration form's School dropdown (`stemfestSchools`, resolved by
+`resolveSchoolName` in
+`src/app/(routes)/(site)/stemfestreg/validate.ts`), with
+`STEMFEST_OTHER_SCHOOL_ID` as the sentinel whose "id" resolves to a typed-in
+name instead.
+
+Three rules follow from it:
+
+1. The schema validates the **id** against the catalogue (`schoolIds`, built
+   once from `stemfestSchools`), and the free-text companion field is validated
+   only when the sentinel is chosen. Both checks live in the same
+   `superRefine`, so the two can't disagree about which branch is active.
+2. The label is resolved on the **server**, in the action that writes the row —
+   never in the component. A client-supplied display string is untrusted input;
+   resolving server-side means the row can only ever hold a name the catalogue
+   or the participant actually produced.
+3. A catalogue entry may be **renamed or reordered freely**, because no stored
+   row holds its index or a pointer into the array.
+
+**Why.** The immediate reason is that `stem_fest_registrations.school` already
+existed and was `not null`, yet the action wrote the host school as a literal
+into every row. Introducing a real field meant choosing what to persist, and the
+two obvious options both have a trap:
+
+- **Store the id.** Cheapest to validate, but the column is read by the admin
+  table's search filter, its printed report and the `Unique Schools` stat — all
+  of which compare on human text (`contains(t.school, …)`,
+  `count(distinct lower(btrim(school)))`). Storing ids would have meant a join or
+  a lookup in each, and would have retired the report column's meaning.
+- **Store whatever the browser sent.** Skips the resolution step, but it hands
+  the *stored school name* to the client. A "not listed" free-text field is the
+  realistic case, and a client that can write an arbitrary school string can
+  also write a name that sorts next to a real one in the schools report.
+
+Keeping the id as the wire format and the name as the stored format gets both:
+the schema still rejects an option that isn't in the catalogue, and the column
+stays exactly as queryable as it was. It also means the schools list is data —
+adding a school is one array entry (the launch TODO) with no migration.
+
+**What it constrains.**
+
+- **A catalogue-backed field needs both halves.** An id-only field with no
+  resolution function has no defined stored representation; a label-only field
+  has nothing to validate against. Add the resolver beside the schema, and have
+  the action call it rather than the component.
+- **`resolveSchoolName` is the only place the sentinel becomes text.** It
+  returns the typed name trimmed, or the catalogue's name, and nothing else —
+  the form and the receipt both call it so the receipt can't show a different
+  string from the one stored.
+- **The stored column keeps its old semantics.** `school` remains a plain
+  human-readable name, so the pre-existing admin filters, report column and
+  `Unique Schools` stat needed no change at all. A future field that breaks this
+  is making a different decision and needs its own ADR.
+- **Rows are not rewritten when the catalogue changes.** Renaming a school in
+  `stemfestSchools` affects new submissions only; `Unique Schools` would then
+  count both spellings. That is accepted for now — the list isn't live yet — but
+  it is the reason to settle the school names *before* launch rather than after.
+
+---
+
+
 
 **Status:** Accepted · 2026-09-14
 

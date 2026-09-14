@@ -3,8 +3,12 @@
 -- Run this SQL in the Supabase SQL Editor (Project → SQL Editor).
 --
 -- This is NOT the ambassador or volunteer table: those record people staffing
--- the fest, this records people entering Olympiads, Robotics, Project Display
--- and E-sports, along with the bKash payment reference they report back.
+-- the fest, this records people entering Olympiads, Project Display and
+-- E-sports, along with the bKash payment reference they report back.
+--
+-- `school` is stored as the resolved *name*: the catalogue's name for a school
+-- picked from the dropdown, or the participant's own words when they chose the
+-- "not listed" option (see `resolveSchoolName` in the form's validate.ts).
 --
 -- `entries` holds one object per event the participant chose:
 --   { "segmentId": "olympiads", "eventId": "physics",

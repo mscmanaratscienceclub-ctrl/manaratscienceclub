@@ -16,6 +16,45 @@ For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
 
+## 2026-09-14 — STEM Fest drops Robotics; the registration form asks for a school
+
+Four content/UX changes to the STEM Fest surface, plus the data decision behind
+the new field (ADR-0030).
+
+- **Robotics is gone from STEM Fest.** The segment and its three events
+  (Robosoccer, LFR, Roborace) are out of the registration catalogue
+  (`stemfestSegments` / `stemfestEvents` in `src/lib/data/stemfest-registration.ts`),
+  out of the homepage hero dive (`src/lib/data/stemfest.ts` — the remaining four
+  segments were renumbered `01`–`04` so the on-screen indices stay contiguous),
+  and off the page `<title>`. `StemfestSegmentId` lost `"robotics"` too, so a
+  stray `segmentId: "robotics"` is now a type error rather than a silently
+  unfetched row. A returning visitor's saved draft that still holds `roborace`
+  is *pruned* rather than submitted: `buildEntry` returns `null` for an unknown
+  event id, so `buildEntries` drops it and the class-eligibility re-check runs as
+  before. Rows already filed keep the segment text they were written with —
+  `segments` is a denormalised string, so history is not rewritten.
+- **"STEM Fest" left the navbar.** `src/components/home/msc-nav.tsx` now reads
+  Home · Members · Research; the mobile drawer numbers itself from the array
+  index, so it renumbered itself. The footer link and the `/stemfestreg` route
+  are untouched — the page is still reachable and still linked.
+- **The form asks for a school.** `stem_fest_registrations.school` was `not null`
+  and existed already, but every row was written with the host school hardcoded
+  in `actions.ts`. It is now a real dropdown fed by `stemfestSchools`, with a
+  **"My school isn't listed"** option (`STEMFEST_OTHER_SCHOOL_ID`) that reveals a
+  free-text input. See ADR-0030 for why the id is what the form carries and the
+  *name* is what the row stores.
+- **TODO(before launch):** `stemfestSchools` holds only the host school until the
+  club supplies the participating-schools list. Adding one `{ id, name }` per
+  school is the whole change — nothing else reads that array.
+- Verified: `pnpm exec tsc --noEmit` and `pnpm build` clean (the build
+  type-checks), `.claude/scripts/verify.sh` 0 FAIL, and a throwaway script
+  asserted the catalogue, eligibility, school resolution and fee maths
+  (10/10) — including that a stale `roborace` pick is dropped.
+
+---
+
+
+
 ## 2026-09-14 — Transactional email: the sender identity was wrong in two ways
 
 A verified bKash payment produced a confirmation mail that arrived as

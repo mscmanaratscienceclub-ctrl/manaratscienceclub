@@ -22,20 +22,8 @@ export const stemfestSegments: StemfestSegment[] = [
     ],
   },
   {
-    id: "robotics",
-    index: "02",
-    title: "Robotics",
-    description: "Innovate and showcase the next generation of robots",
-    items: [
-      "Robotics",
-      "Robosoccer",
-      "LFR",
-      "Roborace",
-    ],
-  },
-  {
     id: "project-display",
-    index: "03",
+    index: "02",
     title: "Project Display",
     description:
       "Every division puts its work on the floor. Prototypes, papers and live demos, judged in person.",
@@ -43,14 +31,14 @@ export const stemfestSegments: StemfestSegment[] = [
   },
   {
     id: "esports",
-    index: "04",
+    index: "03",
     title: "E-sports",
     description: "The arena goes digital. Three titles, open brackets, crowns on stage.",
     items: ["EA FC 26", "Clash Royale", "Minecraft Bedwars (Solos)"],
   },
   {
     id: "fun-segment",
-    index: "05",
+    index: "04",
     title: "Fun Segment",
     description: "Two days, all classes. The whole campus becomes the game board.",
     items: [

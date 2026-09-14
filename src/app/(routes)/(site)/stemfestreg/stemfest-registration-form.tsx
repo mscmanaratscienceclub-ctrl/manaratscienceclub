@@ -20,18 +20,22 @@ import {
   SelectGroup,
   SelectItem,
   SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { useReducedMotion } from "@/lib/hooks/use-reduced-motion";
 import {
+  STEMFEST_OTHER_SCHOOL_ID,
   computeFeeSummary,
   eligibleSegmentsForClass,
   stemfestClasses,
   stemfestClassGroups,
   stemfestEvents,
   stemfestFormCopy,
+  stemfestOtherSchoolLabel,
   stemfestPaymentCopy,
+  stemfestSchools,
   type StemfestClassId,
 } from "@/lib/data/stemfest-registration";
 import {
@@ -52,6 +56,7 @@ import {
 import {
   EMPTY_STEMFEST_VALUES,
   buildEntries,
+  resolveSchoolName,
   stemfestRegistrationSchema,
   type StemfestFormValues,
 } from "./validate";
@@ -107,6 +112,7 @@ export default function StemfestRegistrationForm() {
   const values = watch();
   const classId = values.classId as StemfestClassId | "";
   const selectedEventIds = values.eventIds ?? [];
+  const isOtherSchool = values.school === STEMFEST_OTHER_SCHOOL_ID;
 
   // ── Hydration: restore the draft, or the receipt if they already submitted ──
   useEffect(() => setMounted(true), []);
@@ -184,6 +190,7 @@ export default function StemfestRegistrationForm() {
       entries: buildEntries(submitted),
       participant: {
         name: submitted.name,
+        school: resolveSchoolName(submitted),
         classId: submitted.classId,
         phone: submitted.phone,
         email: submitted.email,
@@ -258,6 +265,83 @@ export default function StemfestRegistrationForm() {
                 />
               </FieldShell>
             </Field>
+
+            <Field
+              index={nextIndex()}
+              id="stemfest-school"
+              label="School / college"
+              error={errors.school?.message}
+              hint="Pick your school — if it isn’t listed, add its name yourself."
+            >
+              <Controller
+                control={control}
+                name="school"
+                render={({ field }) => (
+                  <FieldShell invalid={Boolean(errors.school)}>
+                    <Select
+                      value={field.value || undefined}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger
+                        id="stemfest-school"
+                        aria-invalid={Boolean(errors.school)}
+                      >
+                        <SelectValue placeholder="Select your school" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Participating schools</SelectLabel>
+                          {stemfestSchools.map((school) => (
+                            <SelectItem key={school.id} value={school.id}>
+                              {school.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                        {/* The escape hatch sits below the list so it reads as
+                            "none of these", never as just another school. */}
+                        <SelectSeparator />
+                        <SelectItem value={STEMFEST_OTHER_SCHOOL_ID}>
+                          {stemfestOtherSchoolLabel}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FieldShell>
+                )}
+              />
+            </Field>
+
+            <AnimatePresence initial={false}>
+              {isOtherSchool ? (
+                <motion.div
+                  key="stemfest-school-other"
+                  initial={reducedMotion ? false : { opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <Field
+                    index={nextIndex()}
+                    id="stemfest-school-other"
+                    label="Your school’s name"
+                    error={errors.schoolOther?.message}
+                    hint="The full name, as it appears on your ID card."
+                  >
+                    <FieldShell invalid={Boolean(errors.schoolOther)}>
+                      <Input
+                        id="stemfest-school-other"
+                        type="text"
+                        autoComplete="organization"
+                        placeholder="Type your school or college name"
+                        className={fieldClass}
+                        aria-invalid={Boolean(errors.schoolOther)}
+                        {...register("schoolOther")}
+                      />
+                    </FieldShell>
+                  </Field>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
 
             <Field
               index={nextIndex()}
