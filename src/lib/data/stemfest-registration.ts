@@ -279,7 +279,7 @@ export const stemfestFees = {
   olympiadFirst: 400,
   olympiadAdditional: 350,
   esportsPerTitle: 200,
-  teamOfFour: 1600,
+  teamOfFour: 1500,
   teamOfFive: 2000,
 } as const;
 

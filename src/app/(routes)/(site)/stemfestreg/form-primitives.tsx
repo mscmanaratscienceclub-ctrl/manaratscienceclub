@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 import { useReducedMotion } from "@/lib/hooks/use-reduced-motion";
 
 /**
- * Presentation primitives shared by the ambassador and volunteer application
- * forms. Visual only — no behaviour or form state lives in here.
+ * Presentation primitives for the STEM Fest registration form. Visual only —
+ * no behaviour or form state lives in here.
  */
 
 export function FormSection({

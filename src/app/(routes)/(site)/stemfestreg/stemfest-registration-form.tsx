@@ -43,8 +43,8 @@ import {
   FieldShell,
   FormSection,
   fieldClass,
-} from "../register/form-primitives";
-import { readStored, removeStored, writeStored } from "../register/form-storage";
+} from "./form-primitives";
+import { readStored, removeStored, writeStored } from "./form-storage";
 import { submitStemfestRegistration } from "./actions";
 import { EventPicker } from "./event-picker";
 import { FeeSummary } from "./fee-summary";

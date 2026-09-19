@@ -1,7 +1,7 @@
 /**
- * localStorage helpers for the application forms' draft + "already submitted"
- * state. Every form namespaces its own keys so switching programme never leaks
- * one form's answers into another.
+ * localStorage helpers for the registration form's draft + "already submitted"
+ * state. Keys stay namespaced per form so one form's answers can never leak
+ * into another's.
  */
 
 export function readStored<T>(key: string): T | null {

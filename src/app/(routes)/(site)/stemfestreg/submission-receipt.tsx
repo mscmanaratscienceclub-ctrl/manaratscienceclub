@@ -10,7 +10,7 @@ import {
   stemfestFormCopy,
   type StemfestEntry,
 } from "@/lib/data/stemfest-registration";
-import { formatDate } from "../register/form-primitives";
+import { formatDate } from "./form-primitives";
 
 /** What gets persisted to localStorage so a reload still shows the receipt. */
 export interface SavedStemfestSubmission {
