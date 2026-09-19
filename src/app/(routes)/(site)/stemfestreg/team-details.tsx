@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FieldShell, fieldClass } from "../register/form-primitives";
+import { FieldShell, fieldClass } from "./form-primitives";
 import {
   stemfestTeamSizes,
   type StemfestEventOption,

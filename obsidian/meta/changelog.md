@@ -1,6 +1,6 @@
 ---
 tags: [meta, changelog]
-updated: 2026-09-14
+updated: 2026-09-19
 ---
 
 # Changelog
@@ -15,6 +15,35 @@ remembering. Routine commits do not need an entry.
 For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
+
+## 2026-09-19 — Ambassador & Volunteer forms retired; `/register` redirects
+
+The public application forms are gone; the stored responses and the admin
+screens that read them are untouched.
+
+- **`/register` no longer renders anything.** The Campus/Batch Ambassador form,
+  the Volunteer form, the programme selector, both server actions and both zod
+  schemas are deleted, along with `src/lib/data/volunteer-form.ts` (the question
+  catalogue that only the volunteer form read). The route directory is gone.
+- **`/register` → `/stemfestreg`, 308.** Handled in `src/proxy.ts` via a
+  `permanentRedirects` map, checked before the auth gate, so the entry in
+  `publicRoutes` was removed as dead. Put here rather than in
+  `next.config.ts` because redirects are proxy work by convention
+  (`.claude/rules/routing-views.md`) and because this ordering is explicit
+  rather than relying on where config redirects sit relative to the proxy.
+  `/stemfestreg` stays the canonical URL — it is the one on printed material.
+- **The shared form primitives moved.** `form-primitives.tsx` and
+  `form-storage.ts` lived under `register/` and were imported across the folder
+  boundary by the STEM Fest form. They now sit in `stemfestreg/` beside their
+  only remaining consumer; the three `../register/…` imports became `./…`.
+- **The admin table kept its type.** `admin/campus-ambassador/registrations-table.tsx`
+  imported `AmbassadorType` from the deleted `register/validate.ts`; it now
+  derives it from `CampusAmbassadorRegistration["type"]` in the Drizzle schema —
+  the table the historical rows actually live in.
+- **Link hygiene.** The footer's "Campus Ambassador" entry is removed; the navbar
+  and hero CTAs (both labelled for STEM Fest, both previously pointing at the
+  ambassador page — a live mislink) now go straight to `/stemfestreg` rather
+  than through the redirect. `/register` is out of the sitemap.
 
 ## 2026-09-14 — STEM Fest drops Robotics; the registration form asks for a school
 

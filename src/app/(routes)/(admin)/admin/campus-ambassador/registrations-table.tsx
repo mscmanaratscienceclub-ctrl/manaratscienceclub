@@ -13,7 +13,13 @@ import { cn } from "@/lib/utils";
 import AdminEmptyState from "@/components/admin/admin-empty-state";
 import FilterBar from "@/components/admin/filter-bar";
 import Pagination from "@/components/admin/pagination";
-import type { AmbassadorType } from "@/app/(routes)/(site)/register/validate";
+import type { CampusAmbassadorRegistration } from "@/db/schema/registrations";
+
+/**
+ * The public ambassador form was retired; the table still reads historical rows,
+ * so the type now comes from the table these rows actually live in.
+ */
+type AmbassadorType = CampusAmbassadorRegistration["type"];
 
 export interface RegistrationRow {
   id: string;

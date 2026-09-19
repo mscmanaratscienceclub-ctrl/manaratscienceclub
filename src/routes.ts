@@ -7,7 +7,6 @@ export const publicRoutes: string[] = [
   "/opportunities",
   "/robotics",
   "/join",
-  "/register",
   "/stemfestreg",
   "/verify-email",
   "/forgot-password",
