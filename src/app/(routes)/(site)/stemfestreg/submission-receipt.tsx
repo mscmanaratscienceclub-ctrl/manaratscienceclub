@@ -7,6 +7,7 @@ import {
   describeEntry,
   formatBdt,
   getStemfestClassLabel,
+  normalizeTeammate,
   stemfestFormCopy,
   type StemfestEntry,
 } from "@/lib/data/stemfest-registration";
@@ -120,9 +121,23 @@ export function SubmissionReceipt({
               >
                 {describeEntry(entry)}
                 {entry.teammates.length > 0 ? (
-                  <span className="mt-0.5 block text-xs text-space-muted">
-                    With {entry.teammates.join(", ")}
-                  </span>
+                  <ul className="mt-1 space-y-1">
+                    {entry.teammates.map((teammate, position) => {
+                      const member = normalizeTeammate(teammate);
+                      const meta = [member.school, member.email]
+                        .filter(Boolean)
+                        .join(" · ");
+                      return (
+                        <li
+                          key={`${member.name}-${position}`}
+                          className="text-xs text-space-muted"
+                        >
+                          {member.name}
+                          {meta ? <span className="block">{meta}</span> : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
                 ) : null}
               </li>
             ))}

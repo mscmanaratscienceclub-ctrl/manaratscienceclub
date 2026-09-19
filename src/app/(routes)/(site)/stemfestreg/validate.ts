@@ -8,6 +8,7 @@ import {
   stemfestSchools,
   type StemfestClassId,
   type StemfestEntry,
+  type StemfestTeammate,
   type StemfestTeamSize,
 } from "@/lib/data/stemfest-registration";
 
@@ -36,6 +37,18 @@ function phoneField(label: string) {
     );
 }
 
+/** Shared email rule — the participant's address and every teammate's. */
+function emailField(label: string) {
+  return z
+    .string()
+    .trim()
+    .min(1, `${label} is required`)
+    .max(254, `${label} looks too long`)
+    .pipe(z.email("Enter a valid email address"));
+}
+
+const emailSchema = z.email();
+
 /**
  * Teammate names live in fixed slots rather than an array so react-hook-form
  * can register them plainly — no `useFieldArray` needed for at most four names.
@@ -47,19 +60,30 @@ export interface TeamFields {
   size: string;
   /** Optional: a team without a name on the results sheet is still a team. */
   teamName: string;
-  teammate1: string;
-  teammate2: string;
-  teammate3: string;
-  teammate4: string;
+  teammate1: StemfestTeammate;
+  teammate2: StemfestTeammate;
+  teammate3: StemfestTeammate;
+  teammate4: StemfestTeammate;
 }
+
+/**
+ * One teammate's three answers. They are plain strings here even though only
+ * slots below the chosen team size are required — the superRefine pass enforces
+ * which ones must be filled, so the shape stays uniform for react-hook-form.
+ */
+const teammateFieldsSchema = z.object({
+  name: z.string(),
+  email: z.string(),
+  school: z.string(),
+});
 
 const teamFieldsSchema = z.object({
   size: z.string(),
   teamName: z.string(),
-  teammate1: z.string(),
-  teammate2: z.string(),
-  teammate3: z.string(),
-  teammate4: z.string(),
+  teammate1: teammateFieldsSchema,
+  teammate2: teammateFieldsSchema,
+  teammate3: teammateFieldsSchema,
+  teammate4: teammateFieldsSchema,
 });
 
 /** Team names are printed on a results sheet, so the bound is a name, not a story. */
@@ -103,12 +127,7 @@ export const stemfestRegistrationSchema = z
      * for here because the admin's verification flow sends to this address; the
      * column stays nullable for rows collected before the form asked.
      */
-    email: z
-      .string()
-      .trim()
-      .min(1, "Email address is required")
-      .max(254, "Email address looks too long")
-      .pipe(z.email("Enter a valid email address")),
+    email: emailField("Email address"),
     bkashNumber: phoneField("bKash number"),
     bkashTrxId: z
       .string()
@@ -211,13 +230,40 @@ export const stemfestRegistrationSchema = z
       }
 
       const required = size - 1;
-      const provided = countTeammates(team);
-      if (provided < required) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["teams", eventId, `teammate${provided + 1}`],
-          message: `A team of ${size} needs ${required} teammate ${required === 1 ? "name" : "names"}`,
-        });
+      for (const slot of TEAMMATE_SLOTS) {
+        if (slot > required) break;
+        const teammate = team?.[`teammate${slot}`];
+
+        if (!teammate?.name?.trim()) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["teams", eventId, `teammate${slot}`, "name"],
+            message: `Teammate ${slot}'s name is required`,
+          });
+        }
+
+        const teammateEmail = teammate?.email?.trim() ?? "";
+        if (!teammateEmail) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["teams", eventId, `teammate${slot}`, "email"],
+            message: `Teammate ${slot}'s email is required`,
+          });
+        } else if (!emailSchema.safeParse(teammateEmail).success) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["teams", eventId, `teammate${slot}`, "email"],
+            message: `Teammate ${slot}'s email looks invalid`,
+          });
+        }
+
+        if (!teammate?.school?.trim()) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["teams", eventId, `teammate${slot}`, "school"],
+            message: `Teammate ${slot}'s school is required`,
+          });
+        }
       }
     }
   });
@@ -233,28 +279,26 @@ export function parseTeamSize(
   return null;
 }
 
-function countTeammates(team: TeamFields | undefined): number {
-  if (!team) return 0;
-  let count = 0;
-  for (const slot of TEAMMATE_SLOTS) {
-    if (team[`teammate${slot}`].trim()) count += 1;
-    else break;
-  }
-  return count;
-}
-
 function collectTeammates(
   team: TeamFields | undefined,
   size: StemfestTeamSize,
-): string[] {
+): StemfestTeammate[] {
   if (!team) return [];
-  const names: string[] = [];
+  const members: StemfestTeammate[] = [];
   for (const slot of TEAMMATE_SLOTS) {
-    if (names.length >= size - 1) break;
-    const value = team[`teammate${slot}`].trim();
-    if (value) names.push(value);
+    if (members.length >= size - 1) break;
+    const value = team[`teammate${slot}`];
+    const name = value?.name?.trim() ?? "";
+    if (!name) continue;
+    members.push({
+      name,
+      // Lower-cased like the registrant's address, so the two agree wherever
+      // they are compared or emailed.
+      email: value.email.trim().toLowerCase(),
+      school: value.school.trim(),
+    });
   }
-  return names;
+  return members;
 }
 
 /**
@@ -312,14 +356,75 @@ export function resolveSchoolName(values: StemfestFormValues): string {
   return listed ? listed.name : values.schoolOther.trim();
 }
 
+const emptyTeammate = (): StemfestTeammate => ({
+  name: "",
+  email: "",
+  school: "",
+});
+
 const emptyTeam = (): TeamFields => ({
   size: "",
   teamName: "",
-  teammate1: "",
-  teammate2: "",
-  teammate3: "",
-  teammate4: "",
+  teammate1: emptyTeammate(),
+  teammate2: emptyTeammate(),
+  teammate3: emptyTeammate(),
+  teammate4: emptyTeammate(),
 });
+
+/**
+ * Reads one teammate out of a stored draft, tolerating the bare-name shape a
+ * draft saved before the email/school questions existed still holds, and missing
+ * objects generally. Returns a complete teammate either way.
+ */
+function hydrateTeammate(value: unknown): StemfestTeammate {
+  if (typeof value === "string") return { name: value, email: "", school: "" };
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return {
+      name: typeof record.name === "string" ? record.name : "",
+      email: typeof record.email === "string" ? record.email : "",
+      school: typeof record.school === "string" ? record.school : "",
+    };
+  }
+  return emptyTeammate();
+}
+
+/** The stored draft's team block, filled out to a complete `TeamFields`. */
+function hydrateTeam(value: unknown): TeamFields {
+  const base = emptyTeam();
+  if (!value || typeof value !== "object") return base;
+  const record = value as Record<string, unknown>;
+  return {
+    size: typeof record.size === "string" ? record.size : base.size,
+    teamName: typeof record.teamName === "string" ? record.teamName : base.teamName,
+    teammate1: hydrateTeammate(record.teammate1),
+    teammate2: hydrateTeammate(record.teammate2),
+    teammate3: hydrateTeammate(record.teammate3),
+    teammate4: hydrateTeammate(record.teammate4),
+  };
+}
+
+/**
+ * Rebuilds complete form values from a stored draft, filling anything the draft
+ * predates. Kept here rather than in the form so the shape's rules live with the
+ * schema that owns it.
+ */
+export function restoreStemfestDraft(
+  draft: Partial<StemfestFormValues> | null,
+): StemfestFormValues {
+  return {
+    ...EMPTY_STEMFEST_VALUES,
+    ...draft,
+    // A draft saved before the gender field existed would leave the select empty
+    // while the schema requires it — filled from the defaults, same as a draft
+    // saved before a team event existed is missing its slots.
+    gender: draft?.gender || EMPTY_STEMFEST_VALUES.gender,
+    eventIds: draft?.eventIds ?? [],
+    teams: Object.fromEntries(
+      teamEventIds.map((id) => [id, hydrateTeam(draft?.teams?.[id])]),
+    ),
+  };
+}
 
 export const EMPTY_STEMFEST_VALUES: StemfestFormValues = {
   name: "",

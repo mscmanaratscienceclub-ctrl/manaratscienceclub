@@ -59,6 +59,7 @@ import {
   EMPTY_STEMFEST_VALUES,
   buildEntries,
   resolveSchoolName,
+  restoreStemfestDraft,
   stemfestRegistrationSchema,
   type StemfestFormValues,
 } from "./validate";
@@ -131,15 +132,7 @@ export default function StemfestRegistrationForm() {
 
     setPreviousSubmission(null);
     const draft = readStored<Partial<StemfestFormValues>>(DRAFT_KEY);
-    reset({
-      ...EMPTY_STEMFEST_VALUES,
-      ...draft,
-      // A draft saved before the gender field existed would leave the select
-      // empty while the schema requires it — filled from the defaults, same as
-      // a draft saved before a team event existed is missing its slots.
-      gender: draft?.gender || EMPTY_STEMFEST_VALUES.gender,
-      teams: { ...EMPTY_STEMFEST_VALUES.teams, ...draft?.teams },
-    });
+    reset(restoreStemfestDraft(draft));
   }, [mounted, reset]);
 
   // ── Auto-save draft ────────────────────────────────────────────────────────
@@ -287,7 +280,10 @@ export default function StemfestRegistrationForm() {
                 render={({ field }) => (
                   <FieldShell invalid={Boolean(errors.school)}>
                     <Select
-                      value={field.value || undefined}
+                      // Always controlled (`""` shows the placeholder) — Radix
+                      // resets an initially-uncontrolled Select when its value
+                      // later becomes defined, which wiped restored drafts.
+                      value={field.value ?? ""}
                       onValueChange={field.onChange}
                     >
                       <SelectTrigger
@@ -364,7 +360,7 @@ export default function StemfestRegistrationForm() {
                 render={({ field }) => (
                   <FieldShell invalid={Boolean(errors.classId)}>
                     <Select
-                      value={field.value || undefined}
+                      value={field.value ?? ""}
                       onValueChange={field.onChange}
                     >
                       <SelectTrigger
@@ -404,7 +400,7 @@ export default function StemfestRegistrationForm() {
                 render={({ field }) => (
                   <FieldShell invalid={Boolean(errors.gender)}>
                     <Select
-                      value={field.value || undefined}
+                      value={field.value ?? ""}
                       onValueChange={field.onChange}
                     >
                       <SelectTrigger

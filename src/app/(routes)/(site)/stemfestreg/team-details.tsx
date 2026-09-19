@@ -38,6 +38,10 @@ import {
 
 /** RHF types deeply-partial records loosely; index them concretely instead. */
 type TeamErrorBag = Record<string, Record<string, { message?: string }>>;
+type TeammateErrorBag = Record<
+  string,
+  Record<string, Record<string, { message?: string }>>
+>;
 
 function teamError(
   errors: FieldErrors<StemfestFormValues>,
@@ -45,6 +49,16 @@ function teamError(
   key: string,
 ): string | undefined {
   return (errors.teams as TeamErrorBag | undefined)?.[eventId]?.[key]?.message;
+}
+
+function teammateError(
+  errors: FieldErrors<StemfestFormValues>,
+  eventId: string,
+  slotKey: string,
+  field: "name" | "email" | "school",
+): string | undefined {
+  return (errors.teams as TeammateErrorBag | undefined)?.[eventId]?.[slotKey]?.[field]
+    ?.message;
 }
 
 function ErrorNote({ message }: { message?: string }) {
@@ -132,7 +146,10 @@ export function TeamDetails({
                     </Label>
                     <FieldShell invalid={Boolean(sizeError)}>
                       <Select
-                        value={field.value || undefined}
+                        // Controlled from the first render (`""` shows the
+                        // placeholder); an initially-uncontrolled Radix Select
+                        // resets when its value later becomes defined.
+                        value={field.value ?? ""}
                         onValueChange={field.onChange}
                       >
                         <SelectTrigger
@@ -159,7 +176,7 @@ export function TeamDetails({
 
             <div className="mt-6">
               <p className="mb-3 font-space-body text-sm font-medium text-space-ivory/80">
-                Teammate names
+                Teammates
                 {size ? (
                   <span className="ml-2 font-mono text-[0.6rem] tracking-[0.16em] text-space-muted uppercase">
                     {size - 1} needed — you are the team lead
@@ -168,30 +185,89 @@ export function TeamDetails({
               </p>
 
               {size ? (
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-4">
+                  <p className="font-space-body text-xs leading-relaxed text-space-muted">
+                    {stemfestFormCopy.teammateDetailsHint}
+                  </p>
                   {visibleSlots.map((slot) => {
                     const key = `teammate${slot}`;
-                    const slotError = teamError(errors, event.id, key);
+                    const nameError = teammateError(errors, event.id, key, "name");
+                    const emailError = teammateError(errors, event.id, key, "email");
+                    const schoolError = teammateError(errors, event.id, key, "school");
                     return (
-                      <div key={key}>
-                        <Label
-                          htmlFor={`team-${event.id}-${key}`}
-                          className="mb-1.5 block font-space-body text-xs tracking-normal text-space-muted normal-case"
-                        >
+                      <div
+                        key={key}
+                        className="rounded-xl border border-space-line-soft bg-space-black/20 p-4"
+                      >
+                        <p className="mb-3 font-mono text-[0.6rem] tracking-[0.16em] text-space-muted uppercase">
                           Teammate {slot}
-                        </Label>
-                        <FieldShell invalid={Boolean(slotError)}>
-                          <Input
-                            id={`team-${event.id}-${key}`}
-                            type="text"
-                            autoComplete="off"
-                            placeholder="Full name"
-                            className={fieldClass}
-                            aria-invalid={Boolean(slotError)}
-                            {...register(`teams.${event.id}.${key}`)}
-                          />
-                        </FieldShell>
-                        <ErrorNote message={slotError} />
+                        </p>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="sm:col-span-2">
+                            <Label
+                              htmlFor={`team-${event.id}-${key}-name`}
+                              className="mb-1.5 block font-space-body text-xs tracking-normal text-space-muted normal-case"
+                            >
+                              Full name
+                            </Label>
+                            <FieldShell invalid={Boolean(nameError)}>
+                              <Input
+                                id={`team-${event.id}-${key}-name`}
+                                type="text"
+                                autoComplete="off"
+                                placeholder="Full name"
+                                className={fieldClass}
+                                aria-invalid={Boolean(nameError)}
+                                {...register(`teams.${event.id}.${key}.name`)}
+                              />
+                            </FieldShell>
+                            <ErrorNote message={nameError} />
+                          </div>
+
+                          <div>
+                            <Label
+                              htmlFor={`team-${event.id}-${key}-email`}
+                              className="mb-1.5 block font-space-body text-xs tracking-normal text-space-muted normal-case"
+                            >
+                              Email
+                            </Label>
+                            <FieldShell invalid={Boolean(emailError)}>
+                              <Input
+                                id={`team-${event.id}-${key}-email`}
+                                type="email"
+                                inputMode="email"
+                                autoComplete="off"
+                                spellCheck={false}
+                                placeholder="teammate@example.com"
+                                className={fieldClass}
+                                aria-invalid={Boolean(emailError)}
+                                {...register(`teams.${event.id}.${key}.email`)}
+                              />
+                            </FieldShell>
+                            <ErrorNote message={emailError} />
+                          </div>
+
+                          <div>
+                            <Label
+                              htmlFor={`team-${event.id}-${key}-school`}
+                              className="mb-1.5 block font-space-body text-xs tracking-normal text-space-muted normal-case"
+                            >
+                              School / college
+                            </Label>
+                            <FieldShell invalid={Boolean(schoolError)}>
+                              <Input
+                                id={`team-${event.id}-${key}-school`}
+                                type="text"
+                                autoComplete="off"
+                                placeholder="Their school or college"
+                                className={fieldClass}
+                                aria-invalid={Boolean(schoolError)}
+                                {...register(`teams.${event.id}.${key}.school`)}
+                              />
+                            </FieldShell>
+                            <ErrorNote message={schoolError} />
+                          </div>
+                        </div>
                       </div>
                     );
                   })}

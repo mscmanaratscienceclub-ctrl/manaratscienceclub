@@ -1,6 +1,6 @@
 ---
 tags: [meta, changelog]
-updated: 2026-09-19
+updated: 2026-09-20
 ---
 
 # Changelog
@@ -15,6 +15,18 @@ remembering. Routine commits do not need an entry.
 For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
+
+## 2026-09-20 — Team forms collect every teammate's email and school; real bKash number wired in
+
+Two follow-ups to the STEM Fest registration flow (`/stemfestreg`).
+
+- **The bKash number is real.** `stemfestPaymentCopy.merchantNumber` was a `01XXXXXXXXX` placeholder (with a `TODO(before launch)`) — participants are shown it verbatim and send money to it. It is now **`01911499865`**, and the TODO is gone.
+- **Team forms now ask for every teammate's name, email and school.** Team entries stored teammates as a bare `string[]` (`entries.teammates`), which was enough for a roster but nothing the club could mail or print a certificate from. Each teammate is now an object — `{ name, email, school }` (`StemfestTeammate` in `src/lib/data/stemfest-registration.ts`) — and `TeamDetails` renders three inputs per slot, with all three required for every slot below the chosen team size. Emails are lower-cased like the registrant's, so the two agree wherever they are compared or sent to.
+- **The receipt lists the roster.** Each teammate prints their name with school and email beneath it. `normalizeTeammate()` reads both shapes, so an entry (or a receipt cached in localStorage) written before this change still renders rather than crashing on a string that has no `.name`.
+
+Draft hydration moved into `restoreStemfestDraft()` in the form's `validate.ts`: a draft saved before the email/school questions existed holds bare teammate strings, so it is now normalised slot-by-slot into complete objects and can never fail validation on a shape the form itself wrote.
+
+Verified: `tsc --noEmit`, `pnpm lint`, `pnpm build` clean; `verify.sh` 0 FAIL (4 pre-existing WARNs).
 
 ## 2026-09-19 — Payment-confirmation email rebuilt as a full receipt
 

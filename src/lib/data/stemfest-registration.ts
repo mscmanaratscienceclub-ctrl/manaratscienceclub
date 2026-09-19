@@ -319,6 +319,20 @@ export const stemfestEvents: StemfestEventOption[] = [
 ];
 
 /**
+ * One member of a team entry, other than the registrant.
+ *
+ * Stored as an object rather than a bare name because the fest needs each
+ * teammate's email and school for certificates and results. Entries written by a
+ * build from before this shape existed carry plain strings — read them through
+ * `normalizeTeammate`, which tolerates both.
+ */
+export interface StemfestTeammate {
+  name: string;
+  email: string;
+  school: string;
+}
+
+/**
  * One participant's entry in one event. This is the shape stored in the
  * `entries` jsonb column, and the shape the server rebuilds from scratch —
  * never trusting whatever the browser sent.
@@ -328,7 +342,7 @@ export interface StemfestEntry {
   eventId: string;
   categoryId: string | null;
   teamSize: StemfestTeamSize | null;
-  teammates: string[];
+  teammates: StemfestTeammate[];
   /**
    * What the team calls itself, for team events. Optional by design: a team that
    * has not settled on a name can still register, so this is `null` rather than
@@ -551,7 +565,7 @@ export function buildEntry(
   eventId: string,
   classId: StemfestClassId,
   teamSize: StemfestTeamSize | null,
-  teammates: string[],
+  teammates: StemfestTeammate[],
   teamName: string | null = null,
 ): StemfestEntry | null {
   const event = eventById.get(eventId);
@@ -590,6 +604,24 @@ export function describeEntry(entry: StemfestEntry): string {
 }
 
 /**
+ * Reads one stored teammate, tolerating the bare-name shape written before the
+ * form asked for an email and a school. Missing fields read as empty strings.
+ */
+export function normalizeTeammate(
+  teammate: StemfestTeammate | string | null | undefined,
+): StemfestTeammate {
+  if (!teammate) return { name: "", email: "", school: "" };
+  if (typeof teammate === "string") {
+    return { name: teammate, email: "", school: "" };
+  }
+  return {
+    name: teammate.name ?? "",
+    email: teammate.email ?? "",
+    school: teammate.school ?? "",
+  };
+}
+
+/**
  * The team names across a set of entries, deduplicated and in entry order.
  *
  * A participant can enter more than one team event with the same name, and the
@@ -620,6 +652,8 @@ export const stemfestFormCopy = {
   teamNameHint:
     "Optional — what your team should be called on the results sheet.",
   teamNamePlaceholder: "e.g. Circuit Breakers",
+  teammateDetailsHint:
+    "Every teammate’s name, email and school — we use them for certificates and results.",
   confirmation:
     "We have your entry and your bKash reference. We will match the payment and confirm your slots.",
   resubmitLabel: "Register another participant",
@@ -632,13 +666,8 @@ export const stemfestFormCopy = {
 
 // ── Payment copy ─────────────────────────────────────────────────────────────
 
-/**
- * TODO(before launch): replace `merchantNumber` with the real bKash number the
- * club collects fees on. It was not in the brief and must not be guessed —
- * participants are shown this verbatim and send real money to it.
- */
 export const stemfestPaymentCopy = {
-  merchantNumber: "01XXXXXXXXX",
+  merchantNumber: "01911499865",
   merchantLabel: "Manarat Science Club — bKash (Personal)",
   instructions: [
     "Send the exact total shown in your summary to the bKash number above.",

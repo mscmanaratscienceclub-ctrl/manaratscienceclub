@@ -12,7 +12,10 @@
 --
 -- `entries` holds one object per event the participant chose:
 --   { "segmentId": "olympiads", "eventId": "physics",
---     "categoryId": "A", "teamSize": null, "teammates": [] }
+--     "categoryId": "A", "teamSize": null, "teammates": [],
+--     "teamName": null }
+-- Team events additionally carry the team's optional name and their roster:
+--   "teammates": [{ "name": "…", "email": "…", "school": "…" }]
 -- Categories are derived from `class` server-side, never supplied by the
 -- browser, and `total_fee` is recomputed on insert rather than trusted.
 --
