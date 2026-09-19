@@ -16,6 +16,19 @@ For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
 
+## 2026-09-19 — Project Display team-of-4 fee drops to ৳1,500
+
+`stemfestFees.teamOfFour` 1600 → 1500. Team-of-5 stays at ৳2,000, so the two
+sizes are now ৳1,500 / ৳2,000. One constant carries it: `teamFee()` (what the
+row is charged) and `pricingNote()` (what the page shows) both read it, so the
+quoted price and the stored `total_fee` cannot drift. Rows already filed keep
+the total they were written with — history is not rewritten.
+
+Note for anyone reading this alongside the request that prompted it: it came in
+as "the robotics/project display price". Robotics left STEM Fest on 2026-09-14
+(below), so Project Display is the only team-priced segment left and this is the
+only fee it has.
+
 ## 2026-09-19 — Ambassador & Volunteer forms retired; `/register` redirects
 
 The public application forms are gone; the stored responses and the admin
