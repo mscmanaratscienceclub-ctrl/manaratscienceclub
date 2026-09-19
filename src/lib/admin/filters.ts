@@ -357,6 +357,7 @@ export const stemfestSource: AdminSourceConfig = {
   sort: sortNewestFirst,
   defaultSort: DEFAULT_SORT,
   reportColumns: [
+    { id: "registrationCode", label: "ID" },
     { id: "name", label: "Student" },
     { id: "class", label: "Class" },
     { id: "school", label: "School / college" },

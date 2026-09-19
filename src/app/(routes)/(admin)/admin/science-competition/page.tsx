@@ -39,6 +39,7 @@ export default async function ScienceCompetitionAdminPage({
 
   const registrations = rows.map((row) => ({
     id: row.id,
+    registrationCode: row.registrationCode,
     name: row.name,
     classLabel: getStemfestClassLabel(row.class) || row.class,
     school: row.school,

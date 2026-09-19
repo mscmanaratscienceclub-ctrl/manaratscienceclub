@@ -48,7 +48,10 @@ import {
   stemfestPaymentAmount,
   stemfestPaymentFilter,
 } from "@/db/queries/stemfest-payment";
-import { formatBdt } from "@/lib/data/stemfest-registration";
+import {
+  formatBdt,
+  getStemfestClassLabel,
+} from "@/lib/data/stemfest-registration";
 import { sendPaymentVerifiedEmail } from "@/lib/email/resend";
 import { z } from "zod";
 
@@ -460,6 +463,8 @@ export async function searchVolunteerRegistrations(
 
 export interface StemfestAdminRow {
   id: string;
+  /** `<GENDER><CLASS><NNN>`, minted by the insert trigger — the admin-facing ID. */
+  registrationCode: string;
   name: string;
   class: string;
   school: string;
@@ -515,6 +520,7 @@ export async function searchStemfestRegistrations(
     const rows = await tx
       .select({
         id: t.id,
+        registrationCode: t.registrationCode,
         name: t.name,
         class: t.class,
         school: t.school,
@@ -851,6 +857,7 @@ export async function getAdminReportRows(
         const rows = await tx
           .select({
             id: t.id,
+            registrationCode: t.registrationCode,
             name: t.name,
             class: t.class,
             school: t.school,
@@ -871,6 +878,7 @@ export async function getAdminReportRows(
           total,
           truncated: total > rows.length,
           rows: rows.map((row) => ({
+            registrationCode: reportText(row.registrationCode),
             name: reportText(row.name),
             class: reportText(row.class),
             school: reportText(row.school),
@@ -956,17 +964,25 @@ function parseStatus<TValue extends string>(
  *
  * Read inside the transaction that writes the decision, so the confirmation email
  * quotes the row that was actually stored rather than the one the browser had when
- * the admin pressed the button.
+ * the admin pressed the button. The email doubles as the participant's receipt, so
+ * this carries the whole registration — ID, participant details, payment reference
+ * — not just the payment columns.
  */
 function stemfestDecisionSelection() {
   const t = stemfestRegistrations;
 
   return {
     id: t.id,
+    registrationCode: t.registrationCode,
     name: t.name,
+    class: t.class,
+    school: t.school,
+    phone: t.paymentNumber,
     segments: t.segments,
     transactionId: t.transactionId,
+    paymentNumber: t.paymentNumber,
     email: t.email,
+    createdAt: t.createdAt,
     status: stemfestEffectivePaymentStatus(),
     decision: t.paymentDecision,
     decidedAt: t.paymentDecidedAt,
@@ -976,10 +992,16 @@ function stemfestDecisionSelection() {
 
 interface StemfestDecisionTarget {
   id: string;
+  registrationCode: string;
   name: string;
+  class: string;
+  school: string;
+  phone: string;
   segments: string;
   transactionId: string;
+  paymentNumber: string;
   email: string | null;
+  createdAt: Date;
   /** Effective status *before* the write: the decision, or the forwarded-SMS match. */
   status: StemfestPaymentStatus;
   decision: StemfestPaymentStatus | null;
@@ -1010,6 +1032,11 @@ function confirmationAmount(amount: string | null): string | undefined {
   return Number.isFinite(value) ? formatBdt(value) : undefined;
 }
 
+/** Submission time as the email prints it: the admin's clock, same as `verifiedOn`. */
+function confirmationDate(value: Date | null): string | undefined {
+  return value ? paymentConfirmationFormatter.format(value) : undefined;
+}
+
 
 /**
  * Sends the confirmation and reports what actually happened.
@@ -1025,11 +1052,19 @@ async function deliverConfirmation(
   confirmedAt: Date,
 ): Promise<{ sent: boolean; detail: string }> {
   const result = await sendPaymentVerifiedEmail({
+    registrationCode: target.registrationCode || undefined,
     to,
     name: target.name,
+    classLabel: getStemfestClassLabel(target.class),
+    school: target.school,
+    // The phone the participant gave is their contact number; the row has no
+    // separate phone column, so the wallet number is what the form collected.
+    phone: target.paymentNumber,
     transactionId: target.transactionId,
+    paymentNumber: target.paymentNumber,
     segments: target.segments,
     verifiedOn: paymentConfirmationFormatter.format(confirmedAt),
+    submittedOn: confirmationDate(target.createdAt),
     amount: confirmationAmount(target.amount),
   });
 

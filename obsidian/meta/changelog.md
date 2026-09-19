@@ -16,6 +16,30 @@ For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
 
+## 2026-09-19 — Payment-confirmation email rebuilt as a full receipt
+
+The verified-payment email carried only a TrxID, an amount and the event list — a participant forwarding it to a parent had no proof of *who* had registered or for *what class*. It now carries the whole registration:
+
+- **Registration ID leads** (`M7001`), in a tinted hero block with a "quote this at check-in" line; the subject line carries it too (`Payment confirmed — M7001 · STEM Fest, …`), so the receipt is findable in a mailbox by the ID the club asks for.
+- **Participant table**: name, class (resolved through `getStemfestClassLabel`), school, and phone. The row has no separate contact-phone column, so the email prints the bKash wallet number for both — it is the number the form collected.
+- **Payment section**: TrxID and bKash number in monospace, amount (when a forwarded SMS reported one), plus **Registered on** (row's `created_at`) alongside **Confirmed on** — both formatted in `ADMIN_TIME_ZONE` by the same `Intl.DateTimeFormat`.
+- **Events** unchanged (`describeEntry` output, team names in quotes), footer now notes that one registration covers a whole team.
+
+Plumbing: `stemfestDecisionSelection()` — the columns read inside the decision transaction — selects the new fields, so the email quotes the stored row rather than anything the browser held; `deliverConfirmation` maps them to `sendPaymentVerifiedEmail`'s widened options. `registrationCode` and `submittedOn` are optional, so a legacy row predating the ID trigger still sends (no ID block, no registered-on line) rather than failing verification. The template's HTML structure and escaping are unchanged.
+
+Verified: `tsc --noEmit`, `pnpm lint`, `pnpm build` clean; the rendered email was previewed in a throwaway route and every field checked in the DOM before the route was deleted.
+
+## 2026-09-19 — Robotics returns as a team segment; team names on every team event; every response now gets a registration ID
+
+Three changes to the STEM Fest registration flow (`/stemfestreg`), two of which reverse the 2026-09-14 removal.
+
+- **Robotics is back, with LFR and Robosoccer as its events.** Both are `teamBased` with no category split (`categoryId: null` — the classes list is only an eligibility gate, Class 7 → University), priced by the segment's `pricing: "team"`: **৳1,500 for a team of 4, ৳2,000 for a team of 5** — the same `teamFee()` constants Project Display reads, so the fee maths needed no new code. The homepage hero (`src/lib/data/stemfest.ts`) was left alone deliberately: that file describes segments the fest *runs* and is free to disagree with what registration accepts. The page `<title>` mentions Robotics again.
+- **Every team event now takes a team name.** The field existed end-to-end in the data layer, schema and trigger (`entries.teamName`, optional, ≤60 chars, stored as `null` when blank) but the form never rendered an input. `TeamDetails` now shows it first in every team block, with the catalogue's label/hint/placeholder. Receipts and the admin table's `segments` column show it via `describeEntry` (`Team "…"` in quotes, so it never reads as a catalogue label).
+- **Every response now gets a human ID: `<GENDER><CLASS><NNN>`.** Gender letter (`M`/`F`/`O`, `X` for rows with no gender on file) + class code (`class-7` → `7`, `as` → `AS`, `university` → `U`) + a zero-padded counter that restarts per prefix: the first Class-7 boy is `M7001`, the next `M7002`, the first A-Level girl `FAS001`. The counter lives in a new `stem_fest_registration_counters` table; the bump is a single `insert … on conflict do update … returning`, so two simultaneous submissions serialise on the row lock instead of both reading the same "last number" — a `max()+1` in the Server Action would produce duplicate IDs under exactly the load a registration day creates. It is a `before insert` **trigger** (`drizzle/add_stemfest_registration_ids.sql`, idempotent, with a backfill for existing rows) rather than application code because the form writes through the Supabase client, an admin can insert from the SQL editor, and the SMS forwarder writes rows of its own — a trigger covers every path. Existing IDs are never renumbered; the unique index makes "every response has an ID" a property of the database, not a hope about the app. **Manual step: run `drizzle/add_stemfest_registration_ids.sql` in the Supabase SQL Editor before deploying** — the form's action selects `registration_code` on every submission, so an un-migrated database makes the form fail outright.
+- **The form asks for a gender**, which the ID's first letter is derived from — the field existed in the schema and validation but had no input. It sits between school and class, and the ID hint under it explains what it is for.
+- **Surfaces updated:** the receipt leads with the minted ID (falling back to the row uuid for receipts cached before the trigger existed); the admin table gained an ID column (monospace, first column) and shows it in the expanded row; the printed report leads with it; the admin search covers it.
+- Verified: `pnpm exec tsc --noEmit`, `pnpm lint`, `pnpm build` (with placeholder env — no `.env` in the workspace), `.claude/scripts/verify.sh` 0 FAIL / 4 pre-existing WARNs, and a throwaway Node script asserting the catalogue, eligibility, fees, team-name plumbing, validation and fee summary (15/15).
+
 ## 2026-09-19 — Project Display team-of-4 fee drops to ৳1,500
 
 `stemfestFees.teamOfFour` 1600 → 1500. Team-of-5 stays at ৳2,000, so the two

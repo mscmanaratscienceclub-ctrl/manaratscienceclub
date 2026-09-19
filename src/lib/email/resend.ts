@@ -133,38 +133,67 @@ export async function sendResetPasswordEmail(recipient: EmailRecipient) {
 }
 
 export interface PaymentVerifiedEmailOptions {
+  /** The `<GENDER><CLASS><NNN>` ID minted on insert — the receipt's headline. */
+  registrationCode?: string;
   to: string;
   name: string;
+  /** Class label, already resolved (e.g. `Class 7`). */
+  classLabel: string;
+  /** The school/college name as stored on the row. */
+  school: string;
+  /** The registered participant's phone. */
+  phone: string;
   transactionId: string;
+  /** The bKash wallet the fee was sent from. */
+  paymentNumber: string;
   /** The registration's `segments` value: the events, already described. */
   segments: string;
   /** Confirmation time, already formatted in `ADMIN_TIME_ZONE`. */
   verifiedOn: string;
+  /** Submission time, already formatted. Optional for legacy rows. */
+  submittedOn?: string;
   /** The amount a forwarded SMS reported, already formatted. Omitted if unknown. */
   amount?: string;
 }
 
 /**
  * The mail an admin's "Verified" sends: the participant is told a human checked
- * their bKash payment and their slots are confirmed. Fired from the Server Action
- * that records the decision, never from the SMS webhook — a public, retried,
- * unauthenticated endpoint is the wrong place to depend on a third party.
+ * their bKash payment and their slots are confirmed. It doubles as the
+ * participant's receipt, so it carries the whole registration — ID, participant
+ * details, payment reference and events — rather than only the payment.
+ * Fired from the Server Action that records the decision, never from the SMS
+ * webhook — a public, retried, unauthenticated endpoint is the wrong place to
+ * depend on a third party.
  */
 export async function sendPaymentVerifiedEmail({
+  registrationCode,
   to,
   name,
+  classLabel,
+  school,
+  phone,
   transactionId,
+  paymentNumber,
   segments,
   verifiedOn,
+  submittedOn,
   amount,
 }: PaymentVerifiedEmailOptions): Promise<SendEmailResult> {
   return sendEmail({
-    subject: `Payment confirmed - STEM Fest registration, ${siteConfig.name}`,
+    subject: registrationCode
+      ? `Payment confirmed — ${registrationCode} · STEM Fest, ${siteConfig.name}`
+      : `Payment confirmed - STEM Fest registration, ${siteConfig.name}`,
     html: getPaymentVerifiedEmailHtml({
+      registrationCode,
       name,
+      classLabel,
+      school,
+      phone,
       transactionId,
+      paymentNumber,
       segments,
       verifiedOn,
+      submittedOn,
       amount,
     }),
     label: "PAYMENT CONFIRMED",

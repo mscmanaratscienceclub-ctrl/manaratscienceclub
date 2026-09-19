@@ -4,6 +4,7 @@ import {
   buildEntry,
   stemfestClasses,
   stemfestEvents,
+  stemfestGenders,
   stemfestSchools,
   type StemfestClassId,
   type StemfestEntry,
@@ -44,6 +45,8 @@ export type TeammateSlot = (typeof TEAMMATE_SLOTS)[number];
 
 export interface TeamFields {
   size: string;
+  /** Optional: a team without a name on the results sheet is still a team. */
+  teamName: string;
   teammate1: string;
   teammate2: string;
   teammate3: string;
@@ -52,11 +55,15 @@ export interface TeamFields {
 
 const teamFieldsSchema = z.object({
   size: z.string(),
+  teamName: z.string(),
   teammate1: z.string(),
   teammate2: z.string(),
   teammate3: z.string(),
   teammate4: z.string(),
 });
+
+/** Team names are printed on a results sheet, so the bound is a name, not a story. */
+export const TEAM_NAME_MAX_LENGTH = 60;
 
 export const teamEventIds = stemfestEvents
   .filter((event) => event.teamBased)
@@ -65,6 +72,7 @@ export const teamEventIds = stemfestEvents
 const eventIds = new Set(stemfestEvents.map((event) => event.id));
 const classIds = new Set<string>(stemfestClasses.map((entry) => entry.id));
 const schoolIds = new Set<string>(stemfestSchools.map((entry) => entry.id));
+const genderIds = new Set<string>(stemfestGenders.map((entry) => entry.id));
 
 export const stemfestRegistrationSchema = z
   .object({
@@ -82,6 +90,13 @@ export const stemfestRegistrationSchema = z
     /** Only read when `school` is the "not listed" sentinel. */
     schoolOther: z.string().trim().max(120, "School name looks too long"),
     classId: z.string().trim().min(1, "Choose your class").max(30),
+    /**
+     * Required, and not merely for the record: the first character of the
+     * participant's registration ID comes from here (`M7001`), and the ID is
+     * minted by the database on insert. A missing gender would produce an `X`
+     * prefix, which is reserved for rows that predate the question.
+     */
+    gender: z.string().trim().min(1, "Choose your gender").max(20),
     phone: phoneField("Phone number"),
     /**
      * Where the bKash confirmation — the participant's receipt — is emailed. Asked
@@ -131,6 +146,14 @@ export const stemfestRegistrationSchema = z
       return;
     }
 
+    if (!genderIds.has(values.gender)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["gender"],
+        message: "Choose your gender",
+      });
+    }
+
     const classId = values.classId as StemfestClassId;
 
     if (values.eventIds.length === 0) {
@@ -176,6 +199,15 @@ export const stemfestRegistrationSchema = z
           message: "Choose your team size",
         });
         continue;
+      }
+
+      const teamName = team?.teamName?.trim() ?? "";
+      if (teamName.length > TEAM_NAME_MAX_LENGTH) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["teams", eventId, "teamName"],
+          message: `Team name must be under ${TEAM_NAME_MAX_LENGTH} characters`,
+        });
       }
 
       const required = size - 1;
@@ -226,6 +258,18 @@ function collectTeammates(
 }
 
 /**
+ * The team's name, or `null` when they didn't give one.
+ *
+ * `null` rather than `""`: an unnamed team is a real answer, and storing an empty
+ * string would make "no name" and "a name of spaces" the same thing on every
+ * surface that reads the entry.
+ */
+function collectTeamName(team: TeamFields | undefined): string | null {
+  const value = team?.teamName?.trim() ?? "";
+  return value ? value : null;
+}
+
+/**
  * Turns the raw form into the authoritative entry list stored on the row.
  * Events the participant's class isn't eligible for are dropped rather than
  * stored, so this is safe to call on untrusted input.
@@ -246,6 +290,9 @@ export function buildEntries(values: StemfestFormValues): StemfestEntry[] {
       classId,
       size,
       event.teamBased && size ? collectTeammates(team, size) : [],
+      // Read even when no size was chosen: the name is the team's, not the
+      // roster's, so it survives a participant fixing their team size.
+      event.teamBased ? collectTeamName(team) : null,
     );
     if (entry) entries.push(entry);
   }
@@ -267,6 +314,7 @@ export function resolveSchoolName(values: StemfestFormValues): string {
 
 const emptyTeam = (): TeamFields => ({
   size: "",
+  teamName: "",
   teammate1: "",
   teammate2: "",
   teammate3: "",
@@ -278,6 +326,7 @@ export const EMPTY_STEMFEST_VALUES: StemfestFormValues = {
   school: "",
   schoolOther: "",
   classId: "",
+  gender: "",
   phone: "",
   email: "",
   bkashNumber: "",

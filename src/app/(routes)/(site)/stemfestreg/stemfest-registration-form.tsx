@@ -33,8 +33,10 @@ import {
   stemfestClassGroups,
   stemfestEvents,
   stemfestFormCopy,
+  stemfestGenders,
   stemfestOtherSchoolLabel,
   stemfestPaymentCopy,
+  stemfestRegistrationIdHint,
   stemfestSchools,
   type StemfestClassId,
 } from "@/lib/data/stemfest-registration";
@@ -132,7 +134,10 @@ export default function StemfestRegistrationForm() {
     reset({
       ...EMPTY_STEMFEST_VALUES,
       ...draft,
-      // A draft saved before a team event existed would be missing its slots.
+      // A draft saved before the gender field existed would leave the select
+      // empty while the schema requires it — filled from the defaults, same as
+      // a draft saved before a team event existed is missing its slots.
+      gender: draft?.gender || EMPTY_STEMFEST_VALUES.gender,
       teams: { ...EMPTY_STEMFEST_VALUES.teams, ...draft?.teams },
     });
   }, [mounted, reset]);
@@ -185,6 +190,9 @@ export default function StemfestRegistrationForm() {
 
     const submission: SavedStemfestSubmission = {
       id: result.id,
+      // The code the database minted (`<GENDER><CLASS><NNN>`). The participant
+      // quotes this, not the uuid, so it is what the receipt leads with.
+      registrationCode: result.registrationCode,
       submittedAt: result.submittedAt,
       totalFee: result.totalFee,
       entries: buildEntries(submitted),
@@ -375,6 +383,41 @@ export default function StemfestRegistrationForm() {
                               </SelectItem>
                             ))}
                           </SelectGroup>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FieldShell>
+                )}
+              />
+            </Field>
+
+            <Field
+              index={nextIndex()}
+              id="stemfest-gender"
+              label="Gender"
+              error={errors.gender?.message}
+              hint={stemfestRegistrationIdHint}
+            >
+              <Controller
+                control={control}
+                name="gender"
+                render={({ field }) => (
+                  <FieldShell invalid={Boolean(errors.gender)}>
+                    <Select
+                      value={field.value || undefined}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger
+                        id="stemfest-gender"
+                        aria-invalid={Boolean(errors.gender)}
+                      >
+                        <SelectValue placeholder="Select your gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {stemfestGenders.map((gender) => (
+                          <SelectItem key={gender.id} value={gender.id}>
+                            {gender.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

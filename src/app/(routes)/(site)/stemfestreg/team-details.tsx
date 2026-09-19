@@ -18,11 +18,13 @@ import {
 } from "@/components/ui/select";
 import { FieldShell, fieldClass } from "./form-primitives";
 import {
+  stemfestFormCopy,
   stemfestTeamSizes,
   type StemfestEventOption,
 } from "@/lib/data/stemfest-registration";
 import {
   TEAMMATE_SLOTS,
+  TEAM_NAME_MAX_LENGTH,
   parseTeamSize,
   type StemfestFormValues,
   type TeamFields,
@@ -74,6 +76,7 @@ export function TeamDetails({
         const team = teams[event.id];
         const size = parseTeamSize(team?.size);
         const sizeError = teamError(errors, event.id, "size");
+        const teamNameError = teamError(errors, event.id, "teamName");
         const visibleSlots = size
           ? TEAMMATE_SLOTS.slice(0, size - 1)
           : [];
@@ -89,6 +92,33 @@ export function TeamDetails({
             </h4>
 
             <div className="mt-5">
+              <div>
+                <Label
+                  htmlFor={`team-name-${event.id}`}
+                  className="mb-1.5 block font-space-body text-sm font-medium normal-case tracking-normal text-space-ivory/80"
+                >
+                  {stemfestFormCopy.teamNameLabel}
+                </Label>
+                <FieldShell invalid={Boolean(teamNameError)}>
+                  <Input
+                    id={`team-name-${event.id}`}
+                    type="text"
+                    autoComplete="off"
+                    maxLength={TEAM_NAME_MAX_LENGTH}
+                    placeholder={stemfestFormCopy.teamNamePlaceholder}
+                    className={fieldClass}
+                    aria-invalid={Boolean(teamNameError)}
+                    {...register(`teams.${event.id}.teamName`)}
+                  />
+                </FieldShell>
+                <ErrorNote message={teamNameError} />
+                <p className="mt-2 font-space-body text-xs text-space-muted">
+                  {stemfestFormCopy.teamNameHint}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6">
               <Controller
                 control={control}
                 name={`teams.${event.id}.size`}

@@ -17,6 +17,67 @@ Template: [[templates/adr-note]].
 
 ---
 
+## ADR-0031 — Registration IDs are minted by a database trigger, never by the application
+
+**Status:** Accepted · 2026-09-19
+
+**Decision.** Every row in `stem_fest_registrations` carries a human ID,
+`<GENDER><CLASS><NNN>` (`M7001`, `FAS001`, `OU001`), assigned by a `before insert`
+trigger. The number comes from a per-prefix counter table
+(`stem_fest_registration_counters`) bumped with a single
+`insert … on conflict do update … returning`, which takes a row lock. The column is
+`NOT NULL` with a unique index; the trigger never rewrites an ID that already holds a
+value. No application code sets or generates the ID — it reads it back after insert.
+
+**Why.** The ID is what a participant is told and what the club looks rows up by on
+the results sheet, so two properties matter more than anything else: it exists for
+every row, and no two participants ever share one.
+
+- **Atomicity.** Two participants submitting in the same second is the *normal*
+  case on a registration day. A `select max(...) + 1` in the Server Action reads the
+  same "last number" twice under exactly that load, and the collision surfaces later
+  as two people holding one ID on a printed sheet. The counter's row lock serialises
+  concurrent submissions instead.
+- **Every insert path.** The public form writes through the Supabase service-role
+  client, an admin can correct a row from the SQL editor, and the payment-SMS
+  forwarder writes rows of its own. Application code mints an ID only for the path it
+  was written into; a trigger covers all of them.
+- **IDs are forever.** The trigger leaves a non-empty `registration_code` alone, so an
+  ID cannot change under a participant who has already been told what it is. The
+  unique index is the backstop: if the trigger is ever dropped, the next insert fails
+  loudly instead of storing a row with no ID.
+- **Gender/class semantics live with the trigger.** `X` is the honest letter for a row
+  with no gender on file — distinct from `O` (Other) so a report can never mistake
+  "we did not ask" for "they chose Other" — and an unrecognised class still yields a
+  usable code rather than an ID with no class in it. The form's ID hint copy shows the
+  shape with a worked example (`M7001`) and deliberately does not restate the mapping
+  table, so the two cannot drift.
+
+**What it constrains.**
+
+- **The DDL file and the Drizzle mirror move together by hand.**
+  `drizzle/add_stemfest_registration_ids.sql` (idempotent, with a backfill for rows
+  that predate the trigger) and the `stemfestRegistrations` /
+  `stemfestRegistrationCounters` tables in `src/db/schema/stemfest-registrations.ts`
+  are two descriptions of one thing — the same discipline as the functional index in
+  ADR-0027. Run the SQL in Supabase **before** deploying code that selects the column.
+- **Never write the column from the app.** Readers select it; writers omit it. An
+  explicit value is respected by the trigger (that is what keeps admin corrections from
+  renumbering), so an accidental write would silently win.
+- **New gender/class values need trigger-side letters/codes.** The catalogue in
+  `src/lib/data/stemfest-registration.ts` is the form's vocabulary only; the letter and
+  code each option produces live in `stemfest_gender_letter` / `stemfest_class_code`.
+  Adding an option without extending the functions is how `X`-prefixed IDs start
+  appearing.
+- **The prefix is fixed-width, the counter is not bounded.** Three digits is the
+  documented minimum, not a ceiling — the 1000th Class-7 boy is `M71000`, and it still
+  sorts correctly because the prefix never changes width.
+
+Supersedes nothing; extends ADR-0027's rule that hand-written DDL is mirrored in the
+Drizzle schema.
+
+---
+
 ## ADR-0030 — A catalogue-backed dropdown carries the id; the row stores the label
 
 **Status:** Accepted · 2026-09-14

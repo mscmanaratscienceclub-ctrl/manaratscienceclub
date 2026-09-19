@@ -37,6 +37,8 @@ import Pagination from "@/components/admin/pagination";
 
 export interface StemfestRow {
   id: string;
+  /** `<GENDER><CLASS><NNN>`, minted by the insert trigger — the participant-facing ID. */
+  registrationCode: string;
   name: string;
   classLabel: string;
   school: string;
@@ -103,6 +105,7 @@ async function runAction(
 }
 
 const COLUMNS = [
+  "ID",
   "Name",
   "Class",
   "School",
@@ -210,6 +213,7 @@ function RegistrationRow({
   onToggle: () => void;
 }) {
   const fields = [
+    { label: "Registration ID", value: row.registrationCode },
     { label: "Full Name", value: row.name },
     { label: "Class", value: row.classLabel },
     { label: "School / College", value: row.school },
@@ -248,6 +252,9 @@ function RegistrationRow({
             aria-hidden="true"
           />
         </td>
+        <td className="px-4 py-4 font-mono text-sm font-medium text-ink">
+          {row.registrationCode}
+        </td>
         <td className="px-4 py-4 font-body font-medium text-ink">{row.name}</td>
         <td className="px-4 py-4 font-body text-sm text-ink/60">
           {row.classLabel}
@@ -275,7 +282,7 @@ function RegistrationRow({
       {expanded && (
         <tr className="bg-cream/60">
           <td />
-          <td colSpan={8} className="px-4 pt-1 pb-6">
+          <td colSpan={9} className="px-4 pt-1 pb-6">
             <section className="mt-4">
               <h3 className="mb-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
                 Registration Details

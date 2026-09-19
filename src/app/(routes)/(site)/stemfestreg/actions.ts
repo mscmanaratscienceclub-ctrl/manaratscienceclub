@@ -17,10 +17,19 @@ import {
 
 /**
  * Extends the shared `SubmitResult` with the fee actually recorded, so the
- * receipt shows the server's number rather than the browser's.
+ * receipt shows the server's number rather than the browser's — and with the
+ * registration ID the database minted, which is the number the participant is
+ * told and the club looks them up by.
  */
 export type StemfestSubmitResult =
-  | { success: true; id: string; submittedAt: string; totalFee: number }
+  | {
+      success: true;
+      id: string;
+      /** `<GENDER><CLASS><NNN>`, assigned by a trigger on insert. */
+      registrationCode: string;
+      submittedAt: string;
+      totalFee: number;
+    }
   | { success: false; error: string };
 
 /**
@@ -60,6 +69,9 @@ export async function submitStemfestRegistration(
         // The dropdown's value resolved to the school's name — the catalogue's
         // for a listed school, the participant's own words for "not listed".
         school: resolveSchoolName(data),
+        // The ID's first character is derived from this, by the trigger that
+        // mints `registration_code` on insert.
+        gender: data.gender,
         segments: segments || "General",
         transaction_id: data.bkashTrxId.toUpperCase(),
         payment_number: data.bkashNumber,
@@ -69,7 +81,10 @@ export async function submitStemfestRegistration(
         email: data.email.toLowerCase(),
       },
     ])
-    .select("id, created_at")
+    // `registration_code` is never sent: the `stemfest_assign_registration_code`
+    // trigger fills it, and the value is read back so the receipt shows the ID
+    // that was actually stored rather than one the browser guessed at.
+    .select("id, registration_code, created_at")
     .single();
 
   if (error) {
@@ -94,6 +109,7 @@ export async function submitStemfestRegistration(
   return {
     success: true,
     id: inserted.id,
+    registrationCode: inserted.registration_code,
     submittedAt: inserted.created_at,
     totalFee,
   };

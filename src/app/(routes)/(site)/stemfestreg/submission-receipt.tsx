@@ -15,6 +15,13 @@ import { formatDate } from "./form-primitives";
 /** What gets persisted to localStorage so a reload still shows the receipt. */
 export interface SavedStemfestSubmission {
   id: string;
+  /**
+   * The `<GENDER><CLASS><NNN>` ID the database minted — the number the
+   * participant is told and the club looks them up by. Optional so a receipt
+   * cached by a build from before the trigger existed still renders; such a
+   * receipt shows the row's uuid instead.
+   */
+  registrationCode?: string;
   submittedAt: string;
   totalFee: number;
   entries: StemfestEntry[];
@@ -90,6 +97,7 @@ export function SubmissionReceipt({
         </div>
 
         <dl className="divide-y divide-space-line-soft border-y border-space-line-soft">
+          <ReceiptRow label="Registration ID" value={submission.registrationCode ?? submission.id} />
           <ReceiptRow label="Name" value={participant.name} />
           <ReceiptRow label="School / college" value={participant.school || "—"} />
           <ReceiptRow label="Class" value={getStemfestClassLabel(participant.classId)} />
