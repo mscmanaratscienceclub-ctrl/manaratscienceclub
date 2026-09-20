@@ -51,12 +51,30 @@ import {
 import {
   formatBdt,
   getStemfestClassLabel,
+  getStemfestSegment,
+  stemfestEvents,
 } from "@/lib/data/stemfest-registration";
+import {
+  DASHBOARD_TREND_DAYS,
+  recentDayKeys,
+  type EventPopularityRow,
+  type RegistrationTrendPoint,
+  type SchoolCountRow,
+} from "@/lib/admin/dashboard";
 import { sendPaymentVerifiedEmail } from "@/lib/email/resend";
 import { z } from "zod";
 
 function assertAdmin(role: string) {
   if (role !== "admin") throw new Error("Unauthorized: Admin only");
+}
+
+/**
+ * postgres.js hands back a `RowList` — array-like, but not `T[]`. Normalising it
+ * here keeps the raw-SQL reads below typed at the call site instead of leaking
+ * the driver's row shape into the dashboard.
+ */
+function asRows<T>(result: unknown): T[] {
+  return Array.isArray(result) ? (result as T[]) : [];
 }
 
 /**
@@ -558,6 +576,14 @@ export interface StemfestStats {
   verifiedCount: number;
   pendingCount: number;
   rejectedCount: number;
+  /**
+   * What the verified rows' matched bKash messages added up to, as text.
+   *
+   * Text because `numeric` arrives from postgres.js as a string and this is only
+   * ever formatted (`formatBdt`); `null` when no verified row has a matched
+   * amount, which is not the same as a real zero.
+   */
+  amountCollected: string | null;
 }
 
 export async function getStemfestStats(): Promise<StemfestStats> {
@@ -577,6 +603,10 @@ export async function getStemfestStats(): Promise<StemfestStats> {
         verifiedCount: sql<number>`count(*) filter (where ${stemfestEffectivePaymentStatus()} = 'verified')::int`,
         pendingCount: sql<number>`count(*) filter (where ${stemfestEffectivePaymentStatus()} = 'pending')::int`,
         rejectedCount: sql<number>`count(*) filter (where ${stemfestEffectivePaymentStatus()} = 'rejected')::int`,
+        // Summed only over verified rows, through the same amount fragment the
+        // receipt quotes — so the collection figure can never include a payment
+        // the club has not accepted.
+        amountCollected: sql<string | null>`sum(((${stemfestPaymentAmount()})::numeric)) filter (where ${stemfestEffectivePaymentStatus()} = 'verified')::text`,
       })
       .from(t);
 
@@ -587,6 +617,250 @@ export async function getStemfestStats(): Promise<StemfestStats> {
       verifiedCount: row?.verifiedCount ?? 0,
       pendingCount: row?.pendingCount ?? 0,
       rejectedCount: row?.rejectedCount ?? 0,
+      amountCollected: row?.amountCollected ?? null,
+    };
+  });
+}
+
+// ── Dashboard series ─────────────────────────────────────────────────────────
+//
+// The figures the dashboard's charts plot. Each action groups in SQL and returns a
+// fixed-size result, and each issues its statements **sequentially** inside its own
+// transaction — the dashboard fires four independent actions at once, which is the
+// widest read fan-out the panel has and the reason the pool is sized at five.
+
+/** Rows in each chart's list before it stops. */
+const TOP_SCHOOL_LIMIT = 6;
+const RECENT_REGISTRATION_LIMIT = 6;
+
+/**
+ * Daily `count(*)` for one table, keyed by the admin's calendar day.
+ *
+ * The filter is on the *local* date rather than `now() - interval`: the chart
+ * fills the gaps with `recentDayKeys`, so the two have to agree about which days
+ * the window contains, and `at time zone` is what makes a "day" here mean a Dhaka
+ * day rather than a UTC one.
+ *
+ * The day is projected by a subquery and the outer query groups on the subquery's
+ * own `day` column, rather than on the expression itself. Postgres matches a
+ * `group by` expression to the one in the select list by parse-tree equality, and
+ * the two are NOT equal when the expression is interpolated twice — every
+ * interpolation is its own bind parameter, so the trees differ and the query fails
+ * with "column \"…created_at\" must appear in the GROUP BY clause". Verified
+ * against the live database; grouping on the alias is the version that works.
+ */
+async function dailyCounts(
+  tx: DbTransaction,
+  table: PgTable,
+  column: AnyColumn,
+  since: SQL,
+): Promise<Map<string, number>> {
+  const rows = asRows<{ day: string; count: number }>(
+    await tx.execute(sql`
+      select to_char(day, 'YYYY-MM-DD') as day, count(*)::int as count
+      from (
+        select (${column} at time zone ${ADMIN_TIME_ZONE})::date as day
+        from ${table}
+        where (${column} at time zone ${ADMIN_TIME_ZONE})::date >= ${since}
+      ) as buckets
+      group by day
+    `),
+  );
+
+  return new Map(rows.map((row) => [row.day, row.count]));
+}
+
+/**
+ * Registrations per day over the last `span` days, across all three forms.
+ *
+ * Every returned point carries one count per `registrationTrendSeries` entry, in
+ * that order, and a day with no registrations returns a real zero rather than
+ * being missing — a stacked chart that silently dropped empty days would shift
+ * every bar after it.
+ */
+export async function getRegistrationTrend(
+  span: number = DASHBOARD_TREND_DAYS,
+): Promise<RegistrationTrendPoint[]> {
+  await requireAdmin();
+  const days = Math.min(Math.max(Math.floor(span), 7), 90);
+  const dayKeys = recentDayKeys(days);
+
+  return withDbTimeout("getRegistrationTrend", async (tx) => {
+    // `::int` is load-bearing: `date - $1` leaves Postgres guessing the
+    // parameter's type, and it resolves `date - unknown` to the date-difference
+    // operator and returns an *integer* day number (verified: 20716 rather than a
+    // date) — which would then be compared against a date in every filter below.
+    const since = sql`(now() at time zone ${ADMIN_TIME_ZONE})::date - ${days - 1}::int`;
+
+    // Sequential, never `Promise.all`: pipelining statements onto one pooled
+    // connection is what wedges Supavisor.
+    const ambassador = await dailyCounts(
+      tx,
+      campusAmbassadorRegistrations,
+      campusAmbassadorRegistrations.createdAt,
+      since,
+    );
+    const stemfest = await dailyCounts(
+      tx,
+      stemfestRegistrations,
+      stemfestRegistrations.createdAt,
+      since,
+    );
+    const volunteer = await dailyCounts(
+      tx,
+      volunteerRegistrations,
+      volunteerRegistrations.createdAt,
+      since,
+    );
+
+    return dayKeys.map((day) => ({
+      day,
+      counts: [
+        ambassador.get(day) ?? 0,
+        stemfest.get(day) ?? 0,
+        volunteer.get(day) ?? 0,
+      ],
+    }));
+  });
+}
+
+/**
+ * How many registrations name each event, counted from the stored `segments` text.
+ *
+ * The column holds the human-readable entry list (`describeEntry` output), not
+ * event ids, so the catalogue's own names are matched against it — one statement
+ * per event would be a round trip each. A values list joined to the table keeps it
+ * to one, and the catalogue is what supplies both the ids and the names, so a new
+ * event appears here the moment it is added to registration.
+ */
+async function stemfestEventCounts(
+  tx: DbTransaction,
+): Promise<EventPopularityRow[]> {
+  const t = stemfestRegistrations;
+
+  const catalogue = sql.join(
+    stemfestEvents.map(
+      (event) => sql`(${event.id}::text, ${event.name}::text)`,
+    ),
+    sql`, `,
+  );
+
+  const rows = asRows<{ event_id: string; total: number }>(
+    await tx.execute(sql`
+      select e.event_id, count(*)::int as total
+      from (values ${catalogue}) as e(event_id, event_name)
+      join ${t} on ${t.segments} ilike '%' || e.event_name || '%'
+      group by e.event_id
+    `),
+  );
+
+  const byId = new Map(rows.map((row) => [row.event_id, row.total]));
+
+  return stemfestEvents.map((event) => ({
+    eventId: event.id,
+    name: event.name,
+    segmentName: getStemfestSegment(event.segmentId)?.name ?? event.segmentId,
+    count: byId.get(event.id) ?? 0,
+  }));
+}
+
+export interface DashboardBreakdown {
+  volunteerCount: number;
+  /** Volunteers who applied in the last seven days — the weekly KPI's third term. */
+  volunteerThisWeek: number;
+  recent: RecentAmbassadorRegistration[];
+  events: EventPopularityRow[];
+  topSchools: SchoolCountRow[];
+  /**
+   * Distinct schools across both dated forms, counted once.
+   *
+   * Adding the two forms' own `uniqueSchools` would double-count every school that
+   * registered for both, so the number comes from the same union the school list
+   * is ranked on — the list is the top six of that union, and this is its size.
+   */
+  uniqueSchools: number;
+}
+
+/**
+ * The dashboard's secondary figures: volunteers, the recent feed, event
+ * popularity and the school league table.
+ *
+ * One action rather than four, because the dashboard's concurrency budget is the
+ * pool size: `src/db/index.ts` documents that more than four simultaneous sources
+ * makes Supavisor lose responses. Its statements run sequentially here instead.
+ */
+export async function getDashboardBreakdown(): Promise<DashboardBreakdown> {
+  await requireAdmin();
+  const v = volunteerRegistrations;
+  const a = campusAmbassadorRegistrations;
+  const s = stemfestRegistrations;
+
+  return withDbTimeout("getDashboardBreakdown", async (tx) => {
+    const [volunteers] = await tx
+      .select({
+        total: sql<number>`count(*)::int`,
+        thisWeek: sql<number>`count(*) filter (where ${v.createdAt} >= now() - interval '7 days')::int`,
+      })
+      .from(v);
+
+    const recent = await tx
+      .select({
+        id: a.id,
+        name: a.name,
+        class: a.class,
+        school: a.school,
+        createdAt: a.createdAt,
+      })
+      .from(a)
+      .orderBy(desc(a.createdAt))
+      .limit(RECENT_REGISTRATION_LIMIT);
+
+    const events = await stemfestEventCounts(tx);
+
+    // `count(*) over ()` is evaluated after `group by`, so it is the number of
+    // distinct schools in the whole union — the ranking's ceiling — rather than
+    // the six rows returned here. `min(label)` keeps a real school's casing
+    // instead of the lower-cased key the grouping needs.
+    const schoolRows = asRows<{
+      label: string | null;
+      count: number;
+      total: number;
+    }>(
+      await tx.execute(sql`
+        select label, cnt as count, total_groups as total
+        from (
+          select
+            min(label) as label,
+            count(*)::int as cnt,
+            (count(*) over ())::int as total_groups
+          from (
+            select
+              lower(btrim(${a.school})) as key,
+              btrim(${a.school}) as label
+            from ${a}
+            union all
+            select
+              lower(btrim(${s.school})),
+              btrim(${s.school})
+            from ${s}
+          ) as schools
+          group by key
+        ) as ranked
+        order by count desc, label asc
+        limit ${TOP_SCHOOL_LIMIT}
+      `),
+    );
+
+    return {
+      volunteerCount: volunteers?.total ?? 0,
+      volunteerThisWeek: volunteers?.thisWeek ?? 0,
+      recent,
+      events,
+      topSchools: schoolRows.map((row) => ({
+        school: row.label ?? "School not given",
+        count: row.count,
+      })),
+      uniqueSchools: schoolRows[0]?.total ?? 0,
     };
   });
 }
@@ -626,13 +900,14 @@ export async function getAmbassadorStats(): Promise<AmbassadorStats> {
   });
 }
 
-export async function getVolunteerCount(): Promise<number> {
-  await requireAdmin();
-  return withDbTimeout("getVolunteerCount", (tx) =>
-    countRows(tx, volunteerRegistrations, undefined),
-  );
-}
-
+/**
+ * The columns the dashboard's recent feed renders — and nothing else.
+ *
+ * The rows themselves are read by `getDashboardBreakdown`, which issues this
+ * select inside its own transaction rather than calling out to a second action: a
+ * nested `withDbTimeout` would open a *second* pooled connection, and the pool is
+ * deliberately sized to the dashboard's fan-out (see `src/db/index.ts`).
+ */
 export interface RecentAmbassadorRegistration {
   id: string;
   name: string;
@@ -641,7 +916,6 @@ export interface RecentAmbassadorRegistration {
   createdAt: Date;
 }
 
-/** Selects only the columns the dashboard's recent table renders. */
 // ── SMS Logs ─────────────────────────────────────────────────────────────────
 
 export interface SmsLogRow {
@@ -713,27 +987,6 @@ export async function getSmsLogs(state: AdminQueryState): Promise<SmsLogsResult>
       ignoredCount: statusCounts?.ignored ?? 0,
     };
   });
-}
-
-export async function getRecentAmbassadorRegistrations(
-  limit = 5
-): Promise<RecentAmbassadorRegistration[]> {
-  await requireAdmin();
-  const t = campusAmbassadorRegistrations;
-
-  return withDbTimeout("getRecentAmbassadorRegistrations", (tx) =>
-    tx
-      .select({
-        id: t.id,
-        name: t.name,
-        class: t.class,
-        school: t.school,
-        createdAt: t.createdAt,
-      })
-      .from(t)
-      .orderBy(desc(t.createdAt))
-      .limit(limit),
-  );
 }
 
 // ── Printed reports ──────────────────────────────────────────────────────────

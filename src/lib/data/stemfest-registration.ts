@@ -126,8 +126,16 @@ export const stemfestSchools: StemfestSchoolOption[] = [
   { id: "manarat-disc", name: "Manarat Dhaka International School & College" },
 ];
 
-/** Classes admitted to every event — E-sports runs open brackets. */
-const everyClass: StemfestClassId[] = stemfestClasses.map((c) => c.id);
+/**
+ * Classes admitted to the open brackets — E-sports runs one per title.
+ *
+ * University is deliberately absent: the university class competes in Robotics
+ * alone, so E-sports is not open to it. Robotics keeps `university` in its own
+ * list below (`roboticsClasses`), which is the only place it appears.
+ */
+const openBracketClasses: StemfestClassId[] = stemfestClasses
+  .map((c) => c.id)
+  .filter((id) => id !== "university");
 
 /** Classes admitted to Robotics, which runs from Class 7 all the way up. */
 const roboticsClasses: StemfestClassId[] = [
@@ -300,21 +308,21 @@ export const stemfestEvents: StemfestEventOption[] = [
     name: "EA FC 26",
     segmentId: "esports",
     teamBased: false,
-    categories: openTo(everyClass),
+    categories: openTo(openBracketClasses),
   },
   {
     id: "clash-royale",
     name: "Clash Royale",
     segmentId: "esports",
     teamBased: false,
-    categories: openTo(everyClass),
+    categories: openTo(openBracketClasses),
   },
   {
     id: "minecraft-bedwars",
     name: "Minecraft — Bedwars (Solos)",
     segmentId: "esports",
     teamBased: false,
-    categories: openTo(everyClass),
+    categories: openTo(openBracketClasses),
   },
 ];
 

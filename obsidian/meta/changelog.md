@@ -16,6 +16,41 @@ For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
 
+## 2026-09-20 — Admin dashboard carries charts and real statistics; panel given a design pass
+
+The admin landing page (`/admin`) showed four number cards and one table, all of them counting the ambassador form alone — a club running three forms had no view of the whole. It now plots the data it already had and reports figures that were previously invisible.
+
+**New figures.** `getStemfestStats` gained `amountCollected` — the sum of the amounts on the *matched* bKash messages, summed only over rows that read `verified`, through the same fragments the status pill and the filter use. It is text, and `null` when nothing is verified or when verified rows have no matched amount; the card renders those two cases differently (a real `৳0` versus an em dash with an explanation), because "no money" and "amount not recorded" are not the same answer.
+
+**New actions** in `src/lib/actions/registrations.ts`:
+
+- `getRegistrationTrend(days)` — daily counts across all three forms, grouped by the **Dhaka** calendar day (`at time zone 'Asia/Dhaka'`), with the gaps filled from `recentDayKeys` so an empty day is a real zero rather than a missing bar.
+- `getDashboardBreakdown()` — the volunteers tally, the recent feed, event popularity and the school league table, in **one** action with four sequential reads.
+
+**Why bundled.** `src/db/index.ts` documents that more than four simultaneous sources makes Supavisor lose responses, and the dashboard was already the widest caller at four. Rather than add three more actions and cross that line, the secondary figures share one action and run sequentially inside it; the dashboard still fires exactly four `allSettled` sources. `getVolunteerCount` and `getRecentAmbassadorRegistrations` were folded in and removed rather than left as a second copy of the same reads. `scripts/verify-admin-db.ts` — the pooler concurrency harness — was updated to mirror the new four-source shape and the two new query forms (a values-list join for event popularity, a union plus a `count(*) over ()` window for schools).
+
+**Charts are dependency-free.** `src/components/admin/charts.tsx` adds a sparkline, a stacked bar chart, a donut and a ranked bar list, hand-built from SVG and CSS grid. No charting library was added: the three shapes needed are small, and every one of them reads the design tokens directly instead of carrying a second palette. Chart colours come from `chartToneVar` in the new `src/lib/admin/dashboard.ts`, which also owns the trend series and the day-key helpers — the presentation contract both the actions and the components share, in a plain module because a `"use server"` module may only export async functions (`DASHBOARD_TREND_DAYS` lives there for that reason, like `REPORT_ROW_LIMIT` in `admin/filters.ts`).
+
+**Design pass** on the panel page: KPI cards with a tone hairline, a tinted icon and a sparkline; one `Panel` shell so every section shares a heading treatment; numbered figures in `tabular-nums`; hover lift and `focus-visible` rings on the entry-point cards; a real empty state per panel; and a "Skip to content" link in the admin layout (`sr-only` until focused) — the sidebar is a dozen links deep and precedes the content on every page. The loading skeleton was rebuilt to mirror the new layout so the page no longer reflows when data lands.
+
+**Two bugs the probes caught, both worth remembering** (they were invisible to `tsc`, `lint` and `build` — only the database caught them):
+
+- **`date - $1` returns an integer, not a date.** With a bare bind parameter, Postgres resolves the operator to `date - date` and returns a day *number* (verified against the live database: `20716`, not `2026-08-22`). Every `since` figure would then have been compared against a date. Fixed with `::int` on the parameter.
+- **`group by` does not match a re-interpolated expression.** Drizzle emits a fresh bind parameter for each interpolation, so `to_char((created_at at time zone $2)::date, …)` in the select list and `… at time zone $3 …` in the `group by` are *different parse trees*, and Postgres rejects the query with `column "…created_at" must appear in the GROUP BY clause`. Fixed by projecting the local day in a subquery and grouping on its plain `day` alias.
+
+**Verified.** `tsc --noEmit` and `pnpm lint` clean; `pnpm build` green; `verify.sh` 0 FAIL (4 pre-existing WARNs); all new SQL statements run against the live database through throwaway probes (since deleted) — both with literals and with the real bind-parameter shapes, covering the trend buckets, the values-list event join, the union/window school ranking, the amount aggregate and the `LIMIT` parameter; the chart components were checked visually through a throwaway public route, also deleted.
+
+One thing the probe exposed and this entry records: the school ranking groups by `lower(btrim(school))`, which the ambassador form's **free-text** school field makes noisy — "MDIC", "manarat dhaka" and "Manarat Dhaka International School & College" count as three schools. The figure matches the existing `uniqueSchools` definition rather than inventing a second one, and the panel now says "as typed"; normalising the ambassador school field against the catalogue would fix the number properly.
+
+## 2026-09-20 — University is Robotics-only; Robotics returns to the homepage hero
+
+Two catalogue changes, both reversing or narrowing earlier decisions.
+
+- **University competes in Robotics alone.** The E-sports bracket was built from `everyClass` — every class in `stemfestClasses`, university included — so a university registrant could enter EA FC 26, Clash Royale and Bedwars. That list is now `openBracketClasses` (the same set **minus university**), so E-sports is closed to it while Robotics keeps `university` in `roboticsClasses`, the only place it appears. `eligibleSegmentsForClass("university")` now returns Robotics alone; Class 12 and below are unaffected.
+- **Robotics is back in the homepage hero.** `src/lib/data/stemfest.ts` — the tesseract dive sequence on the main index page — had dropped Robotics when the segment was removed from STEM Fest on 09-14 (per [[decisions-log]]), leaving Olympiads, Project Display, E-sports and Fun Segment. Robotics is restored at index 02 with **Robosoccer** and **Line Following Robot** as its items, exactly as Olympiads lists its five arenas, and the later segments renumbered (Project Display 03, E-sports 04, Fun Segment 05). The hero array is deliberately separate from the registration catalogue and remains free to describe segments that aren't open for registration.
+
+Verified: `tsc --noEmit` and `pnpm lint` clean; `pnpm build` green; `verify.sh` 0 FAIL (4 pre-existing WARNs); `eligibleSegmentsForClass` checked behaviourally for university, A2 and Class 7.
+
 ## 2026-09-20 — Team forms collect every teammate's email and school; real bKash number wired in
 
 Two follow-ups to the STEM Fest registration flow (`/stemfestreg`).

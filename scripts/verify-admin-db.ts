@@ -12,7 +12,7 @@
  *     --packages=external --outfile=scripts/.verify-admin-db.mjs
  *   node --env-file=.env scripts/.verify-admin-db.mjs
  */
-import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or, sql, type AnyColumn } from "drizzle-orm";
 import { DbTimeoutError, isRetryableDbError, withDbTimeout } from "../src/db/query";
 import { campusAmbassadorRegistrations } from "../src/db/schema/registrations";
 import { volunteerRegistrations } from "../src/db/schema/volunteer-registrations";
@@ -234,6 +234,111 @@ for (let round = 1; round <= 4; round += 1) {
   }
 }
 
+/**
+ * Mirrors `getRegistrationTrend` — three grouped day counts, sequential.
+ *
+ * The statement *count* and the tables it touches are what this harness is
+ * checking (the pool is sized to the fan-out), not the aggregates themselves.
+ */
+async function registrationTrend(days: number) {
+  return withDbTimeout("getRegistrationTrend", async (tx) => {
+    const dayOf = (column: AnyColumn) =>
+      sql<string>`to_char((${column} at time zone 'Asia/Dhaka')::date, 'YYYY-MM-DD')`;
+
+    const ambassador = await tx
+      .select({
+        day: dayOf(campusAmbassadorRegistrations.createdAt),
+        count: sql<number>`count(*)::int`,
+      })
+      .from(campusAmbassadorRegistrations)
+      .groupBy(dayOf(campusAmbassadorRegistrations.createdAt));
+
+    const stemfest = await tx
+      .select({
+        day: dayOf(stemfestRegistrations.createdAt),
+        count: sql<number>`count(*)::int`,
+      })
+      .from(stemfestRegistrations)
+      .groupBy(dayOf(stemfestRegistrations.createdAt));
+
+    const volunteer = await tx
+      .select({
+        day: dayOf(volunteerRegistrations.createdAt),
+        count: sql<number>`count(*)::int`,
+      })
+      .from(volunteerRegistrations)
+      .groupBy(dayOf(volunteerRegistrations.createdAt));
+
+    return {
+      days,
+      buckets: ambassador.length + stemfest.length + volunteer.length,
+    };
+  });
+}
+
+/**
+ * Mirrors `getDashboardBreakdown` — four sequential reads: a volunteer tally, the
+ * recent feed, the event popularity join over a values list, and the school
+ * ranking over a union of two tables.
+ */
+async function dashboardBreakdown() {
+  const v = volunteerRegistrations;
+  const a = campusAmbassadorRegistrations;
+  const s = stemfestRegistrations;
+
+  return withDbTimeout("getDashboardBreakdown", async (tx) => {
+    const [volunteers] = await tx
+      .select({
+        total: sql<number>`count(*)::int`,
+        thisWeek: sql<number>`count(*) filter (where ${v.createdAt} >= now() - interval '7 days')::int`,
+      })
+      .from(v);
+
+    const recent = await tx
+      .select({ id: a.id, name: a.name })
+      .from(a)
+      .orderBy(desc(a.createdAt))
+      .limit(6);
+
+    const events = await tx.execute(sql`
+      select e.event_id, count(*)::int as total
+      from (values
+        ('lfr'::text, 'LFR (Line Following Robot)'::text),
+        ('robosoccer'::text, 'Robosoccer'::text)
+      ) as e(event_id, event_name)
+      join ${s} on ${s.segments} ilike '%' || e.event_name || '%'
+      group by e.event_id
+    `);
+
+    const schools = await tx.execute(sql`
+      select label, cnt as count, total_groups as total
+      from (
+        select
+          min(label) as label,
+          count(*)::int as cnt,
+          (count(*) over ())::int as total_groups
+        from (
+          select lower(btrim(${a.school})) as key, btrim(${a.school}) as label
+          from ${a}
+          union all
+          select lower(btrim(${s.school})), btrim(${s.school})
+          from ${s}
+        ) as schools
+        group by key
+      ) as ranked
+      order by count desc, label asc
+      limit 6
+    `);
+
+    return {
+      volunteerCount: volunteers?.total ?? 0,
+      recent: recent.length,
+      eventRows: Array.isArray(events) ? events.length : 0,
+      schoolRows: Array.isArray(schools) ? schools.length : 0,
+    };
+  });
+}
+
 // ── 3. The dashboard's four independent sources ──────────────────────────────
 console.log("\n3. Dashboard: four sources via allSettled");
 const settled = await Promise.allSettled([
@@ -249,19 +354,8 @@ const settled = await Promise.allSettled([
       .from(t);
     return row;
   }),
-  withDbTimeout("getVolunteerCount", async (tx) => {
-    const [row] = await tx
-      .select({ total: sql<number>`count(*)::int` })
-      .from(volunteerRegistrations);
-    return row?.total ?? 0;
-  }),
-  withDbTimeout("getRecentAmbassadorRegistrations", (tx) =>
-    tx
-      .select({ id: campusAmbassadorRegistrations.id, name: campusAmbassadorRegistrations.name })
-      .from(campusAmbassadorRegistrations)
-      .orderBy(desc(campusAmbassadorRegistrations.createdAt))
-      .limit(5),
-  ),
+  registrationTrend(30),
+  dashboardBreakdown(),
   stemfestStats(),
 ]);
 const rejectedCount = settled.filter((r) => r.status === "rejected").length;
@@ -271,6 +365,19 @@ check(
   "ambassador stats usable",
   (ambassadorStats?.total ?? -1) >= 0,
   `total=${ambassadorStats?.total} week=${ambassadorStats?.thisWeek} month=${ambassadorStats?.thisMonth} schools=${ambassadorStats?.uniqueSchools}`,
+);
+const trend = settled[1].status === "fulfilled" ? settled[1].value : null;
+check(
+  "registration trend grouped without failing",
+  typeof trend?.buckets === "number",
+  `${trend?.days} days, ${trend?.buckets} day buckets`,
+);
+const breakdown = settled[2].status === "fulfilled" ? settled[2].value : null;
+check(
+  "dashboard breakdown returned all four reads",
+  typeof breakdown?.volunteerCount === "number" &&
+    typeof breakdown?.schoolRows === "number",
+  `volunteers=${breakdown?.volunteerCount} recent=${breakdown?.recent} events=${breakdown?.eventRows} schools=${breakdown?.schoolRows}`,
 );
 const stemStats = settled[3].status === "fulfilled" ? settled[3].value : null;
 check(
