@@ -203,7 +203,7 @@ export const currentMembers: Member[] = [
   },
     {
     id: "current-takia",
-    name: "Takia Nujhat Afaik",
+    name: "Takia Nujhat ",
     image: "/memberimage/takia.webp",
     batch: "2026–2027",
     role: "Assistant Secretary",
