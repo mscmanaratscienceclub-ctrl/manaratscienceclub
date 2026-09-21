@@ -342,8 +342,9 @@ export const stemfestEvents: StemfestEventOption[] = [
     segmentId: "olympiads",
     teamBased: false,
     categories: [
-      { categoryId: "junior", label: "Junior", classes: ["class-7", "class-8", "class-9"] },
-      { categoryId: "senior", label: "Senior", classes: ["class-10", "as", "a2"] },
+      category("A", ["class-7", "class-8"]),
+      category("B", ["class-9", "class-10"]),
+      category("C", ["as", "a2"]),
     ],
   },
 

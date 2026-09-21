@@ -16,6 +16,18 @@ For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
 
+## 2026-09-21 — Computer Science olympiad re-categorised A/B/C
+
+`computer-science` previously split **Junior (7–9) / Senior (10–A2)** — the
+only event with a named split. It now uses the same lettered convention as the
+other olympiads: **Category A (7–8) / B (9–10) / C (AS–A2)**, matching Physics
+and Bio-Chem exactly. Class 9 moved from Junior to **B**, class 10 from Senior
+to **B** (was Senior). Categories stay derived server-side from `classId`;
+legacy rows with `categoryId: "junior"/"senior"` still render — `describeEntry`
+falls back to the stored id when no current rule matches.
+
+---
+
 ## 2026-09-21 — `/rules` replaced by the official guidelines letter; bKash numbers swapped
 
 **The rule-card page is gone.** The club issued an official *"STEM Fest 2026 –
