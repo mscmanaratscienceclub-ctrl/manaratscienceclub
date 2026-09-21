@@ -663,7 +663,7 @@ export default function StemfestRegistrationForm() {
                 className="inline-flex items-center gap-2 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-ion transition-colors hover:text-ion-bright"
               >
                 <ScrollText className="size-3.5" aria-hidden="true" />
-                Event rules — dress code and venue
+                Event rules — dress code and identification
               </Link>
             </p>
           </div>

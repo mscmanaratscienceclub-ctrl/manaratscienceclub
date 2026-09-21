@@ -16,6 +16,28 @@ For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
 
+## 2026-09-21 — `/rules` replaced by the official guidelines letter; bKash numbers swapped
+
+**The rule-card page is gone.** The club issued an official *"STEM Fest 2026 –
+Dress Code & Identification Guidelines"* letter, and `/rules` now renders it
+verbatim as a plain document: intro line, four audience sections (**MDIC
+Students & Participants / Non-MDIC Student Participants / Private Candidates /
+Parents & Visitors**), closing thanks and the Organising Committee sign-off.
+No cards, no icons, no alert tones. `event-rules.ts` changed shape from rule
+groups to `dressCodeGroups` + `eventRulesCopy`; the page is its only consumer.
+
+**Consequently the operational rules are no longer on the site**: check-mail
+for participant ID, no illegal contraband, phones allowed, exit policy,
+lunch/prayer breaks, Gate 1, participant ID after verification. The pointer
+copy on `/register`, `/resources` and the registration form now says "dress
+code and identification" instead of "dress code and venue".
+
+**bKash display order swapped**: `stemfestPaymentCopy.merchantNumber` is now
+`01718446955 or 01911499865` — the 017 number is shown first. Both are sent to
+in either order.
+
+---
+
 ## 2026-09-21 — Rules rewritten; participating-school list published
 
 **The `/rules` text was replaced with the club's current wording.** Dress code

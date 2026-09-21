@@ -66,7 +66,7 @@ export const generalResources: GeneralResource[] = [
     id: "rules",
     label: "Event rules",
     description:
-      "Dress code, what may be brought through the gate, entry timing and conduct at the venue.",
+      "Dress code and identification guidelines for participants, private candidates, parents and visitors.",
     href: "/rules",
   },
   {

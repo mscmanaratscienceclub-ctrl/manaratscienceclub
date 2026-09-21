@@ -1,121 +1,54 @@
 /**
- * Copy for the `/rules` page — what participants and visitors need to know on
- * the day: dress code and venue instructions.
+ * Copy for the `/rules` page — the club's official *Dress Code & Identification
+ * Guidelines* for STEM Fest 2026, reproduced verbatim.
  *
- * The page renders this verbatim, so wording changes (including a new rule, or
- * reordering one) happen here and never in the component. Nothing in here is
- * derived or computed: these are the club's stated rules.
+ * The page renders this as a plain document (no rule cards), so wording changes
+ * happen here and never in the component. Nothing in here is derived or
+ * computed: these are the Organising Committee's stated guidelines.
  */
 
-export type EventRuleIconId =
-  | "uniform"
-  | "id-card"
-  | "dress"
-  | "mail"
-  | "contraband"
-  | "phone"
-  | "exit"
-  | "breaks"
-  | "gate"
-  | "participant-id";
-
-export interface EventRule {
+export interface DressCodeGroup {
   /** Stable key, also the React key. */
   id: string;
-  /** Icon looked up in the page's `RULE_ICONS` map. */
-  icon: EventRuleIconId;
-  text: string;
-  /**
-   * `"alert"` gives the rule the accent treatment. Used only for the contraband
-   * line, which is the one rule with consequences attached.
-   */
-  tone?: "default" | "alert";
-}
-
-export interface EventRuleGroup {
-  /** Stable key, also the React key. */
-  id: "dress-code" | "instructions";
-  /** Zero-padded index printed beside the heading. */
-  index: string;
+  /** Audience heading, exactly as the committee wrote it. */
   heading: string;
-  lead: string;
-  rules: EventRule[];
+  /** The guideline for that audience. */
+  text: string;
 }
 
 export const eventRulesCopy = {
   eyebrow: "STEM Fest · Manarat Science Club",
-  heading: "Event rules",
-  subheading:
-    "Read these before you arrive. They cover what to wear, what you may bring through the gate, how your participant ID reaches you, and how the day runs for participants and visitors alike.",
-  note: "Rules apply for the full duration of the fest. Club volunteers and campus security may ask you to leave the venue if a rule is broken.",
+  heading: "STEM Fest 2026 – Dress Code & Identification Guidelines",
+  intro:
+    "To ensure a disciplined and professional environment throughout the STEM Fest, all participants and visitors are requested to follow the guidelines below:",
+  closing:
+    "Your cooperation in maintaining a disciplined, respectful, and welcoming environment is highly appreciated.",
+  thanks: "Thank you for your cooperation.",
+  signOff: {
+    committee: "STEM Fest Organising Committee",
+    institution: "Manarat Dhaka International School and College (MDIC)",
+  },
 } as const;
 
-export const eventRuleGroups: EventRuleGroup[] = [
+export const dressCodeGroups: DressCodeGroup[] = [
   {
-    id: "dress-code",
-    index: "01",
-    heading: "Dress code",
-    lead: "Uniforms and ID cards are how we tell participants from visitors on the floor.",
-    rules: [
-      {
-        id: "uniforms",
-        icon: "uniform",
-        text: "Participants from all schools must wear uniforms and carry their respective ID cards.",
-      },
-      {
-        id: "mdic-visitors",
-        icon: "id-card",
-        text: "All visiting students from MDIC must wear their uniforms and ID cards while visiting.",
-      },
-      {
-        id: "other-visitors",
-        icon: "dress",
-        text: "Private students and other visitors are required to maintain decent clothing.",
-      },
-    ],
+    id: "mdic-students-participants",
+    heading: "MDIC Students & Participants:",
+    text: "All MDIC students and participants must wear the complete school uniform and carry their valid school ID card.",
   },
   {
-    id: "instructions",
-    index: "02",
-    heading: "Further instructions",
-    lead: "Your participant ID, entry, timing and conduct through the day.",
-    rules: [
-      {
-        id: "participant-id-mail",
-        icon: "mail",
-        text: "Check your mail for your participant ID — check spam if it is not in your inbox.",
-      },
-      {
-        id: "contraband",
-        icon: "contraband",
-        text: "No illegal contraband is allowed (eg. vape, cigarette, lighter, pocket knife, etc.).",
-        tone: "alert",
-      },
-      {
-        id: "phones",
-        icon: "phone",
-        text: "Phones are allowed.",
-      },
-      {
-        id: "exit",
-        icon: "exit",
-        text: "Participants may exit the venue at any time they wish.",
-      },
-      {
-        id: "breaks",
-        icon: "breaks",
-        text: "Lunch and prayer breaks will be provided as per schedule.",
-      },
-      {
-        id: "gate",
-        icon: "gate",
-        text: "Gate 1 is allocated for entry.",
-      },
-      {
-        id: "participant-id",
-        icon: "participant-id",
-        text: "Participant ID will be provided after verification and must be worn at all times.",
-      },
-    ],
+    id: "non-mdic-student-participants",
+    heading: "Non-MDIC Student Participants:",
+    text: "All participants from other schools must wear their respective school uniform and carry their valid school ID card.",
+  },
+  {
+    id: "private-candidates",
+    heading: "Private Candidates:",
+    text: "Private candidates are requested to wear decent and appropriate attire and carry valid identification, where applicable.",
+  },
+  {
+    id: "parents-visitors",
+    heading: "Parents & Visitors:",
+    text: "All MDIC and non-MDIC parents and visitors are requested to wear decent, modest, and appropriate attire suitable for a school event.",
   },
 ];

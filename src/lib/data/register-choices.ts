@@ -47,7 +47,7 @@ export const registrationChoiceCopy = {
 export const registrationRulesLink = {
   label: "Event rules",
   description:
-    "Dress code, what may be brought through the gate, entry timing and where to enter.",
+    "Dress code and identification guidelines for participants, private candidates, parents and visitors.",
   ctaLabel: "Read the rules",
   href: "/rules",
 } as const;
