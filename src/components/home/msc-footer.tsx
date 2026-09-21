@@ -15,6 +15,8 @@ const involvedLinks = [
   { label: "Register", href: "/register" },
   { label: "STEM Fest Registration", href: "/stemfestreg" },
   { label: "Volunteer", href: "/volunteer" },
+  { label: "Event Rules", href: "/rules" },
+  { label: "Resources", href: "/resources" },
   { label: "Report a Bug", href: siteConfig.bugReportUrl },
 ];
 

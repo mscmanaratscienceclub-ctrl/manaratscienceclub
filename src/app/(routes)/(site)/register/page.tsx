@@ -1,9 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, HandHeart, Lock, Trophy, type LucideIcon } from "lucide-react";
+import {
+  ArrowRight,
+  HandHeart,
+  Info,
+  Lock,
+  ScrollText,
+  Trophy,
+  type LucideIcon,
+} from "lucide-react";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   registrationChoiceCopy,
   registrationChoices,
+  registrationRulesLink,
   type RegistrationChoice,
 } from "@/lib/data/register-choices";
 
@@ -78,6 +88,15 @@ export default function RegisterPage() {
                     <h2 className="font-voyage text-xl font-bold uppercase leading-snug tracking-tight text-space-ivory">
                       {choice.title}
                     </h2>
+                    <Tooltip content={choice.tooltip}>
+                      <button
+                        type="button"
+                        aria-label={`More about ${choice.title}`}
+                        className="ml-auto flex size-7 shrink-0 items-center justify-center border border-space-line-soft text-space-muted transition-colors hover:border-ion-line hover:text-ion focus-visible:border-ion focus-visible:text-ion focus-visible:outline-none"
+                      >
+                        <Info className="size-3.5" aria-hidden="true" />
+                      </button>
+                    </Tooltip>
                   </div>
 
                   <p className="mt-5 font-space-body text-sm leading-relaxed text-pretty text-space-muted">
@@ -115,6 +134,30 @@ export default function RegisterPage() {
               </article>
             );
           })}
+        </div>
+
+        {/* Shared rules pointer — one statement of the fest's rules for both
+            paths, rather than repeating it inside each card. */}
+        <div className="mt-8 flex flex-col gap-4 border border-space-line-soft bg-space-black/20 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center border border-ion-line text-ion">
+              <ScrollText className="size-3.5" aria-hidden="true" />
+            </span>
+            <p className="font-space-body text-sm leading-relaxed text-space-muted">
+              <span className="font-semibold text-space-ivory">
+                {registrationRulesLink.label}
+              </span>{" "}
+              — {registrationRulesLink.description}
+            </p>
+          </div>
+
+          <Link
+            href={registrationRulesLink.href}
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 border border-ion-line px-5 font-mono text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-ion transition-colors hover:border-ion hover:text-ion-bright focus-visible:border-ion focus-visible:text-ion-bright focus-visible:outline-none"
+          >
+            {registrationRulesLink.ctaLabel}
+            <ArrowRight className="size-3.5" aria-hidden="true" />
+          </Link>
         </div>
       </section>
     </main>

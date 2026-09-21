@@ -10,6 +10,8 @@ export const publicRoutes: string[] = [
   "/register",
   "/stemfestreg",
   "/volunteer",
+  "/rules",
+  "/resources",
   "/verify-email",
   "/forgot-password",
   "/reset-password",

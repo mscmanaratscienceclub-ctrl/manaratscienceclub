@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion } from "motion/react";
@@ -11,6 +12,7 @@ import {
   Phone,
   ReceiptText,
   Save,
+  ScrollText,
   Ticket,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -654,6 +656,15 @@ export default function StemfestRegistrationForm() {
               <ReceiptText className="mt-0.5 size-3.5 shrink-0 text-ion" aria-hidden="true" />
               One registration covers one participant. Teams register through a
               single member.
+            </p>
+            <p className="mt-4 border-t border-space-line-soft pt-4">
+              <Link
+                href="/rules"
+                className="inline-flex items-center gap-2 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-ion transition-colors hover:text-ion-bright"
+              >
+                <ScrollText className="size-3.5" aria-hidden="true" />
+                Event rules — dress code and venue
+              </Link>
             </p>
           </div>
         </aside>

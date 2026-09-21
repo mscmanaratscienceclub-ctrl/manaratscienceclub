@@ -10,7 +10,7 @@ interface PaymentVerifiedEmailOptions {
    */
   registrationCode?: string;
   name: string;
-  /** Class label, already resolved (e.g. `Class 7`, `A2 Level`). */
+  /** Class label, already resolved (e.g. `Class 7`, `A2/12`). */
   classLabel: string;
   /** The school/college name as stored on the row. */
   school: string;

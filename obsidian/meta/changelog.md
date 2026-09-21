@@ -16,6 +16,110 @@ For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
 
+## 2026-09-21 — Rules rewritten; participating-school list published
+
+**The `/rules` text was replaced with the club's current wording.** Dress code
+keeps its three lines; *Further instructions* now leads with **check your mail
+for your participant ID (check spam)**, then contraband, phones, exit, breaks,
+Gate 1 and the participant-ID line — seven rules, ten in total.
+
+- **Two rules were dropped** in the new set and are gone from the page: the
+"no unauthorized items … smoking devices or narcotics" line (replaced by **no
+illegal contraband** — vape, cigarette, lighter, pocket knife) and **"visitors
+are welcome from 9:30 AM onwards"**, which the club no longer states. If either
+was removed by accident, they are one entry each in `event-rules.ts`.
+- **"Phones are allowed" is now its own rule**, not the chip that hung off the
+contraband line — the `note` field is removed from `EventRule` and from the page
+as a result, so there is no longer any chip rendering in the component.
+- The contraband line remains the only `tone: "alert"` card.
+
+**`stemfestSchools` now lists 29 schools** (`src/lib/data/stemfest-registration.ts`)
+— the host school first, then the 28 the club supplied. The dropdown went from 1
+option to 30 (the 29 plus *My school isn't listed*), so the select's scrollable
+viewport matters now; verified it scrolls rather than clipping.
+
+- **Ids are slugs, names are the stored value.** Nothing else changed: the school
+is still written as the resolved name, and any school missing from this list can
+still register through the escape hatch — the list is convenience, not a gate.
+- The launch TODO that asked for this list is resolved and removed.
+- **Spelling was normalised on the way in** (casing only, so `Dhaka City college`
+→ `Dhaka City College`, `CANTONMENT PUBLIC SCHOOL AND COLLEGE SAIDPUR` →
+`Cantonment Public School and College Saidpur`), with one substantive guess:
+`Rajarbag Policaae Line School and College` → **`Rajarbag Police Lines School
+and College`**, which looks like a typo for the real institution. Worth a glance
+in case the club meant something else.
+
+---
+
+## 2026-09-21 — New `/resources` page; tooltip primitive; `/rules` CTA trimmed
+
+**`/resources`** (`src/app/(routes)/(site)/resources/page.tsx`) is the home for
+rulebooks and the practical detail that surrounds them. Two parts: a *General
+information* row (Event rules, Registration & fees, Schedule, Venue & directions
+— the first two link to real pages, the other two render as "Details coming
+soon"), and a *Segments* index listing every fest segment with its event names.
+
+- **The segment names and their item lists are not retyped.**
+`src/lib/data/resources.ts` maps over `stemfestSegments` from `stemfest.ts` (the
+array the homepage hero reads), so all five segments — Olympiads, Robotics,
+Project Display, E-sports, Fun Segment — appear with exactly the event names the
+rest of the site uses. Renaming a segment in the catalogue renames it here.
+- **The detail slots ship empty.** Each entry carries `details: null` and
+`files: []`, which the page renders as a dashed "reserved space" panel with a
+placeholder line. Publishing a rulebook means filling one field — the TODO on
+`resourceEntries` says exactly what to push. Nothing is invented in the meantime:
+a slot with no file is labelled, not rendered as a dead link.
+
+**A rules pointer sits under both chooser cards** on `/register` — one bordered
+strip reading *Event rules — dress code, what may be brought through the gate,
+entry timing and where to enter*, with a **Read the rules** link to `/rules`.
+Deliberately shared instead of repeated inside each card (`registrationRulesLink`
+in `register-choices.ts`): the rules apply to participants and volunteers alike,
+so putting them under one path would imply the other has none.
+
+**New shared `Tooltip`** (`src/components/ui/tooltip.tsx`) built on Radix via the
+existing `radix-ui` umbrella package — no new dependency. Dark-surface styling, a
+150ms delay, and it is a *convenience* only: Radix wires `aria-describedby` from
+the content to the trigger, so the same text is announced on focus, and every
+trigger must be a real focusable element. First use is the **info button beside
+each card title on `/register`**, whose copy (eligibility and what happens next)
+lives in `register-choices.ts` alongside the rest of that page's wording.
+
+**`/rules`** lost its secondary "Event schedule" button — the page ends on a
+single *Register for STEM Fest* CTA.
+
+`/resources` is in `publicRoutes`, `sitemap.ts` and the footer's *Get Involved*
+column, next to Event Rules.
+
+---
+
+## 2026-09-21 — New `/rules` page: dress code and venue instructions
+
+The fest's on-the-day rules had no permanent home — they lived in announcements and
+in volunteer briefing notes. `/rules` (`src/app/(routes)/(site)/rules/page.tsx`)
+now publishes them: **Dress code** (uniforms plus ID cards for participants,
+MDIC visitors, and decent clothing for private students and other guests) and
+**Further instructions** (no unauthorized items or narcotics with phones
+explicitly allowed, visitors from 9:30 AM, participants free to leave at any
+time, lunch and prayer breaks per schedule, Gate 1 for entry, and participant ID
+issued after verification and worn at all times).
+
+- **Copy lives in `src/lib/data/event-rules.ts`**, not in the component — two
+groups of typed `EventRule` entries with an icon id, an optional chip note and an
+optional `tone: "alert"`. Wording, order and grouping change there alone; the page
+only maps over it, so a rule edit can never drift from what the page renders.
+- **The prohibited-items rule is the only `tone: "alert"`**, which gives it the
+solid-ion icon and tinted panel — it is the one rule with consequences attached.
+`note: "Phones are allowed."` renders as a bordered chip inside that card rather
+than as a separate rule, so the clarification cannot be read as one.
+- **Reachable from the footer** (`Event Rules` under *Get Involved*), from the
+registration form's summary panel, and in `sitemap.ts`. Added to `publicRoutes`
+in `src/routes.ts` so signed-out visitors can read the rules before registering.
+- Standards: the reveal animation is the shared `ScrollReveal` (GSAP, honours
+`prefers-reduced-motion`); no new dependency, and no chart or animation library.
+
+---
+
 ## 2026-09-21 — `/register` is a chooser again; the volunteer form returns
 
 The 2026-09-19 retirement replaced `/register` with a 308 to `/stemfestreg`, so

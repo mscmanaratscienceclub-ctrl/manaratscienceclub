@@ -47,8 +47,8 @@ export const stemfestClasses: { id: StemfestClassId; label: string }[] = [
   { id: "class-8", label: "Class 8" },
   { id: "class-9", label: "Class 9" },
   { id: "class-10", label: "Class 10" },
-  { id: "as", label: "AS Level" },
-  { id: "a2", label: "A2 Level" },
+  { id: "as", label: "AS/11" },
+  { id: "a2", label: "A2/12" },
   { id: "university", label: "University" },
 ];
 
@@ -70,7 +70,7 @@ export const stemfestClassGroups: {
       "class-10",
     ],
   },
-  { label: "A Levels", classIds: ["as", "a2"] },
+  { label: "College levels", classIds: ["as", "a2"] },
   { label: "Higher education", classIds: ["university"] },
 ];
 
@@ -115,15 +115,92 @@ export interface StemfestSchoolOption {
 }
 
 /**
- * The schools offered in the registration form's dropdown.
+ * The schools offered in the registration form's dropdown, with the host school
+ * first.
  *
- * TODO(before launch): the club is supplying the participating-schools list —
- * add one `{ id, name }` per school, keeping the host school first. Only the
- * resolved *name* is stored, so a school missing from here can still register
- * through the "not listed" option.
+ * Only the resolved *name* is stored, so a school missing from here can still
+ * register through the "not listed" option — this list is for convenience, not
+ * an eligibility gate. `id` is a slug unique within the list; the form's select
+ * matches on it and the stored value is the name.
  */
 export const stemfestSchools: StemfestSchoolOption[] = [
   { id: "manarat-disc", name: "Manarat Dhaka International School & College" },
+  { id: "adamjee-cantonment-college", name: "Adamjee Cantonment College" },
+  {
+    id: "rajarbag-police-lines",
+    name: "Rajarbag Police Lines School and College",
+  },
+  { id: "dhaka-college", name: "Dhaka College" },
+  {
+    id: "viqarunnisa-noon",
+    name: "Viqarunnisa Noon School and College",
+  },
+  {
+    id: "govt-shahid-suhrawardy-college",
+    name: "Government Shahid Suhrawardy College",
+  },
+  {
+    id: "st-gregorys",
+    name: "St Gregory's High School and College",
+  },
+  {
+    id: "rajendrapur-cantonment-public",
+    name: "Rajendrapur Cantonment Public School and College",
+  },
+  { id: "notre-dame-college", name: "Notre Dame College" },
+  { id: "dhaka-city-college", name: "Dhaka City College" },
+  {
+    id: "st-joseph-higher-secondary",
+    name: "St. Joseph Higher Secondary School",
+  },
+  {
+    id: "dhaka-residential-model-college",
+    name: "Dhaka Residential Model College",
+  },
+  { id: "milestone-college", name: "Milestone College" },
+  { id: "ideal-school-and-college", name: "Ideal School and College" },
+  { id: "government-science-college", name: "Government Science College" },
+  {
+    id: "adamjee-cantonment-public-school",
+    name: "Adamjee Cantonment Public School",
+  },
+  {
+    id: "bangladesh-international-school",
+    name: "Bangladesh International School & College",
+  },
+  {
+    id: "motijheel-model-school",
+    name: "Motijheel Model School and College",
+  },
+  { id: "kazem-ali-school", name: "Kazem Ali School and College" },
+  { id: "vashantek-government-college", name: "Vashantek Government College" },
+  {
+    id: "mohammadpur-preparatory",
+    name: "Mohammadpur Preparatory School and College",
+  },
+  {
+    id: "birshreshtha-munshi-abdur-rouf",
+    name: "Birshreshtha Munshi Abdur Rouf Public College",
+  },
+  {
+    id: "bpatc-school-savar",
+    name: "Bangladesh Public Administration Training Centre (BPATC) School and College, Savar",
+  },
+  {
+    id: "jalalabad-cantonment-public",
+    name: "Jalalabad Cantonment Public School and College",
+  },
+  { id: "dhaka-commerce-college", name: "Dhaka Commerce College" },
+  { id: "noubahini-college-dhaka", name: "Noubahini College, Dhaka" },
+  {
+    id: "cantonment-public-saidpur",
+    name: "Cantonment Public School and College Saidpur",
+  },
+  {
+    id: "dhaka-cantonment-girls-public",
+    name: "Dhaka Cantonment Girls Public School and College",
+  },
+  { id: "shaheed-ramiz-uddin-school", name: "Shaheed Ramiz Uddin School" },
 ];
 
 /**
