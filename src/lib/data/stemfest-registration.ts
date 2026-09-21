@@ -443,6 +443,17 @@ export interface StemfestEntry {
 export const stemfestFees = {
   olympiadFirst: 400,
   olympiadAdditional: 350,
+  /**
+   * What the *first* Olympiad event costs a student of the host school.
+   *
+   * A deliberate concession, and deliberately unadvertised: no copy on the form,
+   * the fee summary, the receipt or the confirmation email names it or explains
+   * why a total came out lower. Every later event still costs
+   * `olympiadAdditional`, so a host-school participant pays 350 per event, and
+   * `pricingNote` — the one place the Olympiad tier is stated publicly — keeps
+   * quoting the standard rate to everyone.
+   */
+  olympiadFirstManarat: 350,
   esportsPerTitle: 200,
   teamOfFour: 1500,
   teamOfFive: 2000,
@@ -452,6 +463,21 @@ export const stemfestTeamSizes: StemfestTeamSize[] = [4, 5];
 
 export function teamFee(teamSize: StemfestTeamSize): number {
   return teamSize === 5 ? stemfestFees.teamOfFive : stemfestFees.teamOfFour;
+}
+
+/**
+ * Whether a *resolved* school name is the host school — the only thing the
+ * discounted Olympiad rate above turns on.
+ *
+ * Substring rather than equality on purpose. The form stores the catalogue's name
+ * for a listed school and the participant's own words for "my school isn't
+ * listed", so an equality test would miss every host-school student who typed the
+ * name out by hand. No other school in `stemfestSchools` contains the word, so
+ * the loose match cannot hand the rate to the wrong school — and it stays in step
+ * with the way the admin's school league table already groups these names.
+ */
+export function isManaratSchool(school: string | null | undefined): boolean {
+  return /manarat/i.test(school ?? "");
 }
 
 /**
@@ -576,13 +602,30 @@ export interface FeeSummary {
 }
 
 /**
+ * What the fee depends on beyond the entries themselves.
+ */
+export interface FeeOptions {
+  /**
+   * The registrant's school, already resolved to the name that gets stored on the
+   * row (`resolveSchoolName`). Only the Olympiad tier reads it — everything else
+   * costs the same whoever you are.
+   */
+  school?: string | null;
+}
+
+/**
  * Itemised fee for a set of entries, grouped by segment.
  *
  * Olympiads are tiered across the whole segment — the first costs 400 and each
  * further one 350 — so they collapse into a single line rather than one per
- * event. Everything else is priced per entry.
+ * event. Everything else is priced per entry. A host-school registrant's first
+ * event is charged the discounted rate instead (see `stemfestFees`), with no line
+ * in the summary pointing at it.
  */
-export function computeFeeSummary(entries: StemfestEntry[]): FeeSummary {
+export function computeFeeSummary(
+  entries: StemfestEntry[],
+  options: FeeOptions = {},
+): FeeSummary {
   const lines: FeeLine[] = [];
   let total = 0;
 
@@ -591,17 +634,23 @@ export function computeFeeSummary(entries: StemfestEntry[]): FeeSummary {
   );
 
   if (olympiadEntries.length > 0) {
+    const first = isManaratSchool(options.school)
+      ? stemfestFees.olympiadFirstManarat
+      : stemfestFees.olympiadFirst;
     const amount =
-      stemfestFees.olympiadFirst +
-      (olympiadEntries.length - 1) * stemfestFees.olympiadAdditional;
+      first + (olympiadEntries.length - 1) * stemfestFees.olympiadAdditional;
     total += amount;
     lines.push({
       segmentId: "olympiads",
       title: "Olympiads",
+      // The count and nothing else. The tier is already stated once, under the
+      // segment heading (`pricingNote`); spelling out "first 400, then 350 each"
+      // again here would print a price that is wrong for a discounted
+      // registrant and would hand them the difference to notice.
       detail:
         olympiadEntries.length === 1
           ? "1 event"
-          : `${olympiadEntries.length} events — first ${stemfestFees.olympiadFirst}, then ${stemfestFees.olympiadAdditional} each`,
+          : `${olympiadEntries.length} events`,
       amount,
     });
   }
@@ -638,8 +687,11 @@ export function computeFeeSummary(entries: StemfestEntry[]): FeeSummary {
   return { lines, total };
 }
 
-export function computeTotalFee(entries: StemfestEntry[]): number {
-  return computeFeeSummary(entries).total;
+export function computeTotalFee(
+  entries: StemfestEntry[],
+  options: FeeOptions = {},
+): number {
+  return computeFeeSummary(entries, options).total;
 }
 
 /**

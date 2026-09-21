@@ -36,6 +36,17 @@ export const stemfestRegistrations = pgTable(
     school: text("school").notNull(),
     segments: text("segments").notNull(),
     /**
+     * What the participant was told to send, in BDT.
+     *
+     * Recomputed from the catalogue by the Server Action on insert — never taken
+     * from the browser — so it is the *asked-for* amount, which is what an admin
+     * reconciling a bKash payment needs to compare a forwarded SMS against.
+     * Nullable: rows filed before the column existed have none, and the amount
+     * cannot be recovered from `segments`, which is admin-facing prose rather than
+     * a data structure. Added by `drizzle/add_stemfest_total_fee.sql`.
+     */
+    totalFee: integer("total_fee"),
+    /**
      * Nullable because rows collected before the form asked for a gender have
      * none. The ID trigger renders that absence as `X` rather than as `O`.
      */

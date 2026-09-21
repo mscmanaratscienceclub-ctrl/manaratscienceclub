@@ -487,6 +487,12 @@ export interface StemfestAdminRow {
   class: string;
   school: string;
   segments: string;
+  /**
+   * What the participant was told to send, in BDT, or `null` for a row filed
+   * before the column existed. What the club *asked for*, as opposed to `amount`
+   * below, which is what a forwarded SMS says actually arrived.
+   */
+  totalFee: number | null;
   transactionId: string;
   paymentNumber: string;
   /** Nullable: rows collected before the form asked for an address have none. */
@@ -543,6 +549,7 @@ export async function searchStemfestRegistrations(
         class: t.class,
         school: t.school,
         segments: t.segments,
+        totalFee: t.totalFee,
         transactionId: t.transactionId,
         paymentNumber: t.paymentNumber,
         email: t.email,
@@ -584,6 +591,16 @@ export interface StemfestStats {
    * amount, which is not the same as a real zero.
    */
   amountCollected: string | null;
+  /**
+   * The sum of what the club asked every row to send, as text.
+   *
+   * The counterpart to `amountCollected`: that is what arrived and was accepted,
+   * this is what was requested, so the two side by side say how far the club is
+   * from being paid. Summed in SQL rather than by pulling every row, and `null`
+   * when no row carries a figure — all of them filed before `total_fee` existed —
+   * which is not the same as a real zero.
+   */
+  amountToCollect: string | null;
 }
 
 export async function getStemfestStats(): Promise<StemfestStats> {
@@ -607,6 +624,9 @@ export async function getStemfestStats(): Promise<StemfestStats> {
         // receipt quotes — so the collection figure can never include a payment
         // the club has not accepted.
         amountCollected: sql<string | null>`sum(((${stemfestPaymentAmount()})::numeric)) filter (where ${stemfestEffectivePaymentStatus()} = 'verified')::text`,
+        // Every row, verified or not: the club asked for this money, so it is what
+        // the panel compares `amountCollected` against.
+        amountToCollect: sql<string | null>`sum(${t.totalFee})::text`,
       })
       .from(t);
 
@@ -618,6 +638,7 @@ export async function getStemfestStats(): Promise<StemfestStats> {
       pendingCount: row?.pendingCount ?? 0,
       rejectedCount: row?.rejectedCount ?? 0,
       amountCollected: row?.amountCollected ?? null,
+      amountToCollect: row?.amountToCollect ?? null,
     };
   });
 }
@@ -1115,6 +1136,7 @@ export async function getAdminReportRows(
             class: t.class,
             school: t.school,
             segments: t.segments,
+            totalFee: t.totalFee,
             transactionId: t.transactionId,
             paymentNumber: t.paymentNumber,
             createdAt: t.createdAt,
@@ -1136,6 +1158,10 @@ export async function getAdminReportRows(
             class: reportText(row.class),
             school: reportText(row.school),
             segments: reportText(row.segments),
+            // What was asked for, formatted the same way the panel shows it. An
+            // em dash for a row filed before `total_fee` existed, never a zero.
+            amountToSend:
+              row.totalFee === null ? reportText(null) : formatBdt(row.totalFee),
             transactionId: reportText(row.transactionId),
             paymentNumber: reportText(row.paymentNumber),
             // The label for the *effective* status, from the same option table the
@@ -1350,14 +1376,15 @@ async function recordConfirmationSent(rowId: string): Promise<void> {
 }
 
 /**
- * Records an admin's decision about a bKash payment — and, for `verified`, emails
- * the participant their confirmation.
+ * Records an admin's decision about a bKash payment. Sends nothing.
  *
- * The decision is written **first**, in its own transaction, and the email goes out
- * after that transaction has committed. Two reasons: a mail provider having a bad
- * afternoon must not roll back a decision the admin has already made, and an HTTP
- * call to Resend must never be made while holding a pooled Supabase connection —
- * the pool is small and a slow third party would starve the panel.
+ * Verifying used to fire the confirmation off as part of the same action, which
+ * meant an admin clearing a queue of payments emailed every one of them before
+ * having a chance to look at the list. The decision and the message are two
+ * separate acts now: this records who decided what and when, and the receipt goes
+ * out only when an admin presses Send confirmation on the row
+ * (`resendStemfestPaymentEmail`). It is the same delivery behind both, so nothing
+ * about the message itself changed.
  *
  * A decision is stored even when the status it produces is the one already showing:
  * a row the forwarded SMS has verified reads `verified` with `payment_decision` as
@@ -1417,30 +1444,13 @@ export async function setStemfestPaymentStatus(
       return { ok: true, message: `Payment for ${target.name} marked ${label}.` };
     }
 
-    const email = target.email?.trim() ?? "";
-
-    // Verifying is not blocked on an address: a participant who paid at the desk
-    // has no email on file, and refusing would leave their row un-verifiable. The
-    // admin is told plainly that nothing was sent.
-    if (!email) {
-      return {
-        ok: true,
-        message: `Payment verified. No contact email on file for ${target.name}, so nothing was sent — add one and press Send confirmation.`,
-      };
-    }
-
-    const delivery = await deliverConfirmation(target, email, decidedAt);
-
-    if (!delivery.sent) {
-      return {
-        ok: false,
-        message: `Payment verified, but no email went out — ${delivery.detail}`,
-      };
-    }
-
-    await recordConfirmationSent(id);
-
-    return { ok: true, message: `Payment verified. ${delivery.detail}` };
+    // Nothing is emailed here on purpose. An address being missing is no longer a
+    // reason to hold a decision back either: the admin records what they verified
+    // and sends the receipt when they choose, from the row's own button.
+    return {
+      ok: true,
+      message: `${target.name}'s payment is verified. Press Send confirmation on the row to email the receipt.`,
+    };
   });
 }
 

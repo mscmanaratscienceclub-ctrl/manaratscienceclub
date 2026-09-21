@@ -362,6 +362,7 @@ export const stemfestSource: AdminSourceConfig = {
     { id: "class", label: "Class" },
     { id: "school", label: "School / college" },
     { id: "segments", label: "Events" },
+    { id: "amountToSend", label: "Amount" },
     { id: "transactionId", label: "TrxID" },
     { id: "paymentNumber", label: "Payment number" },
     { id: "payment", label: "Payment" },

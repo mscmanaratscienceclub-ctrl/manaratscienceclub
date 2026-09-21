@@ -57,18 +57,28 @@ export async function submitStemfestRegistration(
     };
   }
 
-  const totalFee = computeTotalFee(entries);
+  // Resolved once, because both the stored row and the fee turn on it — the
+  // Olympiad tier is charged at a different rate to a host-school participant.
+  const school = resolveSchoolName(data);
+  const totalFee = computeTotalFee(entries, { school });
   const segments = entries.map((entry) => describeEntry(entry)).join(", ");
 
   const { data: inserted, error } = await supabase
     .from("stem_fest_registrations")
+    // `total_fee` is a column added by `drizzle/add_stemfest_total_fee.sql` — an
+    // un-migrated database refuses this insert outright, so that file has to be
+    // run before this build is deployed.
     .insert([
       {
         name: data.name,
         class: data.classId,
         // The dropdown's value resolved to the school's name — the catalogue's
         // for a listed school, the participant's own words for "not listed".
-        school: resolveSchoolName(data),
+        school,
+        // The amount the participant was told to send, recomputed here from the
+        // catalogue rather than trusted from the browser. Written so the admin
+        // panel can say what a row owes without re-deriving it from `segments`.
+        total_fee: totalFee,
         // The ID's first character is derived from this, by the trigger that
         // mints `registration_code` on insert.
         gender: data.gender,

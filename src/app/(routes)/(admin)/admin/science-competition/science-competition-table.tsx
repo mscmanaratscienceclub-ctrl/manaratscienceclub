@@ -29,6 +29,10 @@ import {
   type AdminStatusActionResult,
   type StemfestPaymentStatus,
 } from "@/lib/admin/statuses";
+import {
+  CURRENCY_SYMBOL,
+  formatBdt,
+} from "@/lib/data/stemfest-registration";
 import { useAdminFilters } from "@/lib/hooks/use-admin-filters";
 import { cn } from "@/lib/utils";
 import AdminEmptyState from "@/components/admin/admin-empty-state";
@@ -43,6 +47,12 @@ export interface StemfestRow {
   classLabel: string;
   school: string;
   segments: string;
+  /**
+   * What the participant was told to send, in BDT. `null` for a row filed before
+   * the column existed — the amount cannot be recovered from `segments`, so those
+   * read as an em dash rather than a guess.
+   */
+  totalFee: number | null;
   transactionId: string;
   paymentNumber: string;
   /** Nullable: rows collected before the form asked for an address have none. */
@@ -112,6 +122,10 @@ const COLUMNS = [
   "Segments",
   "Payment No.",
   "TrxID",
+  // What the club asked for, beside the status it got. The amount a forwarded SMS
+  // reported lives in the expanded row, next to this one, so the two can be read
+  // against each other without leaving the page.
+  "Amount",
   "Status",
   "Submitted",
 ];
@@ -218,12 +232,13 @@ function RegistrationRow({
     { label: "Class", value: row.classLabel },
     { label: "School / College", value: row.school },
     { label: "Segments / Events", value: row.segments },
+    {
+      label: "Amount to send",
+      value: row.totalFee === null ? null : formatBdt(row.totalFee),
+    },
     { label: "Payment Number", value: row.paymentNumber },
     { label: "Transaction ID", value: row.transactionId },
-    {
-      label: "Amount forwarded",
-      value: row.amount ? `৳${row.amount}` : null,
-    },
+    { label: "Amount forwarded", value: forwardedAmount(row.amount) },
     { label: "How this status was reached", value: decisionNote(row) },
     { label: "Decided", value: formatMoment(row.decidedAt) },
     { label: "Decided by", value: row.decidedBy },
@@ -271,6 +286,9 @@ function RegistrationRow({
         <td className="px-4 py-4 font-mono text-sm font-medium text-ink">
           {row.transactionId}
         </td>
+        <td className="px-4 py-4 font-body text-sm font-medium text-ink tabular-nums">
+          {row.totalFee === null ? <Absent /> : formatBdt(row.totalFee)}
+        </td>
         <td className="px-4 py-4">
           <PaymentStatusCell row={row} />
         </td>
@@ -282,7 +300,7 @@ function RegistrationRow({
       {expanded && (
         <tr className="bg-cream/60">
           <td />
-          <td colSpan={9} className="px-4 pt-1 pb-6">
+          <td colSpan={10} className="px-4 pt-1 pb-6">
             <section className="mt-4">
               <h3 className="mb-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
                 Registration Details
@@ -315,6 +333,24 @@ function RegistrationRow({
 /** A moment as the admin reads it, or `null` for \"never happened\". */
 function formatMoment(value: string | null): string | null {
   return value ? dateTimeFormatter.format(new Date(value)) : null;
+}
+
+/**
+ * The amount a forwarded SMS reported, printed the same way as the amount the
+ * club asked for — the two sit beside each other in the expanded row, so `৳1,500`
+ * next to `৳1500.00` would read as two different quantities.
+ *
+ * Falls back to the raw text for a value that isn't a number, rather than putting
+ * `৳NaN` in front of an admin.
+ */
+function forwardedAmount(amount: string | null): string | null {
+  if (!amount) return null;
+  const value = Number(amount);
+  // `numeric` arrives as text, so the unparseable branch is the driver's shape
+  // changing rather than anything an admin did — show what was stored.
+  return Number.isFinite(value)
+    ? formatBdt(value)
+    : `${CURRENCY_SYMBOL}${amount}`;
 }
 
 /**
@@ -414,7 +450,7 @@ function describeConfirmation(row: StemfestRow): string {
   }
   return row.emailSentAt
     ? `Last sent ${dateTimeFormatter.format(new Date(row.emailSentAt))}.`
-    : "Not sent yet. Verifying a payment sends it automatically; the button sends it now.";
+    : "Not sent yet. Nothing is emailed automatically — the button above is what sends the receipt.";
 }
 
 /**

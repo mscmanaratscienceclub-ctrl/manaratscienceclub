@@ -1,6 +1,6 @@
 ---
 tags: [meta, changelog]
-updated: 2026-09-21
+updated: 2026-09-22
 ---
 
 # Changelog
@@ -13,6 +13,41 @@ dependency, a new route or section, a convention bent, a bug whose cause is wort
 remembering. Routine commits do not need an entry.
 
 For *why* the conventions are what they are, see [[decisions-log]].
+
+---
+
+## 2026-09-22 — Host-school Olympiad rate, `total_fee` on the row, manual confirmations
+
+**The Olympiad tier charges a host-school student ৳350 for the first event
+instead of ৳400** (`stemfestFees.olympiadFirstManarat`). Later events stay at
+৳350, so they pay ৳350 per event. It is **never named in copy** — the fee summary
+simply adds up lower. The predicate is `isManaratSchool()`, a case-insensitive
+substring test on the *resolved* school name, because the form stores the
+participant's own words for a school chosen through "not listed" and an equality
+test would miss them.
+
+The itemised Olympiad line in the fee summary no longer spells out
+"first 400, then 350 each": it prints the count alone. Repeating the tier there
+would have printed a number that is wrong for a discounted registrant and handed
+them the difference to notice. `pricingNote` (the hint under the segment
+heading) still quotes the standard rate to everyone.
+
+**`stem_fest_registrations` gained a `total_fee` column**
+(`drizzle/add_stemfest_total_fee.sql`) — the amount the club *asked* for, as
+opposed to the amount a forwarded bKash SMS reports, which is what the panel
+could already show. The Server Action recomputes it from the catalogue on insert
+and never reads it from the browser, so it matches the form's sticky summary by
+construction. The admin table shows it as an **Amount** column and in the
+expanded row as *Amount to send*; `/admin/science-competition` gained an **Amount
+to Collect** stat card (Σ `total_fee`), and the printed report an `amountToSend`
+column. Rows filed before the column existed have `NULL` and render as `—`.
+
+**Verifying a payment no longer emails the participant.** A decision and a
+message are two separate acts now: recording `verified` writes the decision and
+stops, and the receipt goes out only when an admin presses *Send confirmation* on
+the row. Clearing a queue of payments used to email every one of them before the
+list could be checked. Same delivery behind both, so the message is unchanged;
+`resendStemfestPaymentEmail` is the only caller of `deliverConfirmation`.
 
 ---
 

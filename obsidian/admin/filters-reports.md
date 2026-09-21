@@ -134,7 +134,7 @@ list, so a mismatch shows up as a blank column on paper, not as a compile error.
 |--------|---------------------|
 | `ambassador` | `type`, `name`, `class`, `school`, `phone`, `email`, `gender`, `firstTime`, `facebook`, `instagram`, `submitted` |
 | `volunteer` | `name`, `classSection`, `roll`, `shift`, `studentCode`, `personalPhone`, `parentsPhone`, `submitted` |
-| `stemfest` | `name`, `class`, `school`, `segments`, `transactionId`, `paymentNumber`, `payment`, `submitted` |
+| `stemfest` | `name`, `class`, `school`, `segments`, `amountToSend`, `transactionId`, `paymentNumber`, `payment`, `submitted` |
 | `sms` | `receivedAt`, `sender`, `transactionId`, `amount`, `senderNumber`, `status`, `message` |
 
 Formatting is done server-side and in a fixed timezone, because a printout is the
@@ -145,6 +145,8 @@ one artefact nobody can scroll to double-check:
   an empty answer
 - booleans → `Yes` / `No` via `yesNo`
 - the STEM Fest `payment` column → `Verified` / `Pending`
+- the STEM Fest `amountToSend` column → `formatBdt(row.totalFee)`, or `—` for a
+  row filed before that column existed
 
 A report reads **every matching row**, not one page, so it needs a ceiling the
 paged table does not have: `REPORT_ROW_LIMIT` (2 000). Without one, an unfiltered

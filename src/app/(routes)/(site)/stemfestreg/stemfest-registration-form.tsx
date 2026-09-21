@@ -162,7 +162,12 @@ export default function StemfestRegistrationForm() {
   );
 
   const entries = useMemo(() => buildEntries(values), [values]);
-  const fee = useMemo(() => computeFeeSummary(entries), [entries]);
+  // The school is resolved exactly as the server action resolves it, so the total
+  // previewed here and the total recorded on the row can never differ.
+  const fee = useMemo(
+    () => computeFeeSummary(entries, { school: resolveSchoolName(values) }),
+    [entries, values],
+  );
 
   const selectedTeamEvents = useMemo(
     () =>
