@@ -675,7 +675,7 @@ export const stemfestFormCopy = {
 // ── Payment copy ─────────────────────────────────────────────────────────────
 
 export const stemfestPaymentCopy = {
-  merchantNumber: "01911499865",
+  merchantNumber: "01911499865 or 01718446955",
   merchantLabel: "Manarat Science Club — bKash (Personal)",
   instructions: [
     "Send the exact total shown in your summary to the bKash number above.",
