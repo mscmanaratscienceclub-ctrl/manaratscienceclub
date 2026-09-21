@@ -1,5 +1,6 @@
 import {
   BadgeCheck,
+  Banknote,
   CalendarDays,
   Clock,
   School,
@@ -9,8 +10,12 @@ import {
 import {
   getStemfestStats,
   searchStemfestRegistrations,
+  type StemfestStats,
 } from "@/lib/actions/registrations";
-import { getStemfestClassLabel } from "@/lib/data/stemfest-registration";
+import {
+  formatBdt,
+  getStemfestClassLabel,
+} from "@/lib/data/stemfest-registration";
 import {
   describeList,
   parseAdminQuery,
@@ -22,6 +27,24 @@ import ScienceCompetitionTable from "./science-competition-table";
 /** Timestamps cross to the client as ISO strings, as `createdAt` already does. */
 function toIso(value: Date | null): string | null {
   return value ? new Date(value).toISOString() : null;
+}
+
+/** A figure the panel could not obtain, drawn as an em dash rather than as zero. */
+const UNAVAILABLE = "—";
+
+/**
+ * What the club asked every registration to send, added up.
+ *
+ * `null` is not zero and must not be shown as one: it means no row carries a
+ * figure, because all of them were filed before `total_fee` existed. `৳0` there
+ * would read as a fest that asked for no money at all.
+ */
+function toCollectLabel(stats: StemfestStats): string {
+  if (stats.amountToCollect === null) {
+    return stats.total === 0 ? formatBdt(0) : UNAVAILABLE;
+  }
+  const amount = Number(stats.amountToCollect);
+  return Number.isFinite(amount) ? formatBdt(amount) : UNAVAILABLE;
 }
 
 export default async function ScienceCompetitionAdminPage({
@@ -44,6 +67,7 @@ export default async function ScienceCompetitionAdminPage({
     classLabel: getStemfestClassLabel(row.class) || row.class,
     school: row.school,
     segments: row.segments,
+    totalFee: row.totalFee,
     transactionId: row.transactionId,
     paymentNumber: row.paymentNumber,
     email: row.email,
@@ -76,6 +100,15 @@ export default async function ScienceCompetitionAdminPage({
     // Pending and Rejected are printed beside Verified because they are what an
     // admin works through: all three count the same effective status the pill and
     // the `payment` filter use, so a card can never contradict the table below it.
+    // What the club asked for, summed over every row — the number `Collected` on the
+    // dashboard answers, and the one a payment can be reconciled against.
+    {
+      label: "Amount to Collect",
+      value: toCollectLabel(stats),
+      icon: Banknote,
+      color: "text-manara-teal",
+      bg: "bg-manara-teal/10",
+    },
     {
       label: "Pending Payments",
       value: String(stats.pendingCount),
