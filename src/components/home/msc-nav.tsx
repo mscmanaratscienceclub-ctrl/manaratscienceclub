@@ -81,7 +81,7 @@ export default function MscNav() {
         </nav>
 
         <Link
-          href="/stemfestreg"
+          href="/register"
           className="hidden h-10 items-center gap-2 bg-ion px-5 font-mono text-[0.64rem] font-bold uppercase tracking-[0.24em] text-space-deep transition-colors hover:bg-ion-bright lg:inline-flex"
         >
           Register
@@ -134,7 +134,7 @@ export default function MscNav() {
                 );
               })}
               <Link
-                href="/stemfestreg"
+                href="/register"
                 onClick={closeMenu}
                 className="mt-5 inline-flex h-11 items-center justify-center gap-2 bg-ion px-5 font-mono text-xs font-bold uppercase tracking-[0.24em] text-space-deep transition-colors hover:bg-ion-bright"
               >

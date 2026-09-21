@@ -12,7 +12,9 @@ const exploreLinks = [
 
 const involvedLinks = [
   { label: "Join MSC", href: "/join" },
+  { label: "Register", href: "/register" },
   { label: "STEM Fest Registration", href: "/stemfestreg" },
+  { label: "Volunteer", href: "/volunteer" },
   { label: "Report a Bug", href: siteConfig.bugReportUrl },
 ];
 

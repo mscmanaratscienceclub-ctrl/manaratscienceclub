@@ -9,22 +9,12 @@ import {
 } from "./routes";
 
 /**
- * Permanent moves. `/register` used to host the Campus/Batch Ambassador and
- * Volunteer application forms; those were retired, and the path now points at
- * the STEM Fest registration so existing links and printed material keep
- * resolving somewhere useful.
+ * `/register` is a real page again: it hosts the chooser between STEM Fest
+ * event registration and the volunteer application. The old 308 to
+ * `/stemfestreg` is gone — the path must render, not redirect.
  */
-const permanentRedirects: Record<string, string> = {
-  "/register": "/stemfestreg",
-};
-
 export async function proxy(request: NextRequest) {
   const session = getSessionCookie(request);
-
-  const redirectTarget = permanentRedirects[request.nextUrl.pathname];
-  if (redirectTarget) {
-    return NextResponse.redirect(new URL(redirectTarget, request.url), 308);
-  }
 
   const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
   const isMonitoringRoute = request.nextUrl.pathname.startsWith("/monitoring");

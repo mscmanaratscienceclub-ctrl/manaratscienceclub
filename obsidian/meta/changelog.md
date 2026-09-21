@@ -1,6 +1,6 @@
 ---
 tags: [meta, changelog]
-updated: 2026-09-20
+updated: 2026-09-21
 ---
 
 # Changelog
@@ -15,6 +15,49 @@ remembering. Routine commits do not need an entry.
 For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
+
+## 2026-09-21 — `/register` is a chooser again; the volunteer form returns
+
+The 2026-09-19 retirement replaced `/register` with a 308 to `/stemfestreg`, so
+anyone arriving with the old link — or clicking the navbar's **Register** — was
+sent straight into the STEM Fest event form with no way to reach the volunteer
+application. `/register` now renders a real page again: two cards, one for the
+event registration and one for volunteering.
+
+- **The redirect is gone.** The `permanentRedirects` map (and its only entry)
+is removed from `src/proxy.ts`; `/register` and the new `/volunteer` are added to
+`publicRoutes`, so both render for signed-out visitors ahead of the auth gate.
+Both are back in `sitemap.ts`.
+- **The chooser** (`src/app/(routes)/(site)/register/page.tsx`) reads its copy
+from the new `src/lib/data/register-choices.ts`. The volunteer card carries a
+**bold solid-ion badge reading `MANARAT ONLY`** plus a plain-language
+eligibility line — the restriction is a hard rule, so it is stated on the card
+rather than buried in the form. The STEM Fest card is marked "Open to all".
+CTAs are pinned to the card floor (`mt-auto`) so both buttons sit on the same
+line whatever the copy length.
+- **The volunteer form is restored verbatim** from the retired commit, at
+`src/app/(routes)/(site)/volunteer/` — `volunteer-form.tsx` (draft autosave,
+progress rail, submitted receipt), `volunteer-actions.ts` and
+`volunteer-validate.ts`, with `src/lib/data/volunteer-form.ts` recovered from
+git history. It writes to `volunteer_registrations` exactly as before, through
+the shared `getSupabaseAdmin()` server action. The only edit to the original is
+an unused `label` parameter dropped from `answerField` (the message already
+reads `min`), plus import paths.
+- **Shared form primitives.** `form-primitives.tsx` / `form-storage.ts` moved
+under `stemfestreg/` when the old `register/` folder was deleted; the volunteer
+form now imports them across the folder (`../stemfestreg/…`) rather than
+carrying a second copy. The docstring was updated to name both consumers.
+- **Entry points.** The navbar **Register** buttons (desktop and mobile) now
+point at `/register` — the chooser — while the hero CTA, which names STEM Fest
+explicitly, still goes to `/stemfestreg`. The footer's "Get Involved" column
+gains **Register** and **Volunteer** links.
+
+**Verified.** `tsc --noEmit` and `pnpm lint` clean; `pnpm build` green with
+`/register` and `/volunteer` in the route list; `verify.sh` 0 FAIL (4
+pre-existing WARNs); live preview — `/register` and `/volunteer` both render,
+the `MANARAT ONLY` badge computes to `bg #ff7053 / text #0a0605 / weight 700`,
+both card CTAs point at `/stemfestreg` and `/volunteer`, and the volunteer form
+mounts all four sections with no console errors.
 
 ## 2026-09-20 — Admin dashboard carries charts and real statistics; panel given a design pass
 
