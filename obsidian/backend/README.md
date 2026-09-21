@@ -14,6 +14,7 @@ documented here so every project built from this starter does it the same way.
 
 - **API endpoints** — `app/api/**/route.ts` Route Handlers. Convention and
   rules: [[api-architecture]].
+- **SMS forwarder** — `/api/webhooks/sms` ingests bKash/Nagad payment SMS forwarded from the club phone, reconciles the TrxID and feeds `/admin/sms-logs`. Contract, phone-app setup and the "connection timed out" checklist: [[sms-forwarder]].
 - **Env validation** — `src/env.ts` (zod), public vs server-only split.
 - **Shared API helpers** — `src/lib/api/` (`handle`, `ApiError`) and the
   client-side `src/lib/api-client.ts`.
@@ -26,6 +27,12 @@ documented here so every project built from this starter does it the same way.
 | Database | **Supabase** Postgres | [[database-supabase]] | `/db` |
 | File storage | **Supabase Storage** (S3-compatible) | [[cms-payload]] | `/cms` |
 | Auth | **Supabase Auth** — only if real user accounts are needed | [[database-supabase]] | `supabase-auth` skill |
+
+> [!warning] This project does **not** use the Supabase auth options above
+> Manarat Science Club runs **better-auth**, not Supabase Auth — see ADR-0023 and
+> ADR-0024. The `supabase-auth` and `supabase-db` skills' *install* instructions
+> do not apply here; their general principles (secret hygiene, migrations
+> discipline) do. Real, measured state: [[supabase-audit-2026-09-13]].
 
 They stay out of the starter deliberately: most projects built from it are
 marketing sites that never need a database, and an unused Payload install is a
@@ -47,4 +54,4 @@ Also: add deps to [[tech-stack]], record an ADR in [[decisions-log]], update
 
 ## Related
 
-[[api-architecture]] · [[cms-payload]] · [[database-supabase]] · [[system-overview]] · [[tech-stack]] · [[environment-variables]] · [[ship]]
+[[api-architecture]] · [[cms-payload]] · [[database-supabase]] · [[supabase-audit-2026-09-13]] · [[sms-forwarder]] · [[system-overview]] · [[tech-stack]] · [[environment-variables]] · [[ship]]

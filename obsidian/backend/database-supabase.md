@@ -37,6 +37,12 @@ The publishable key is browser-safe **only because RLS is enforced** — it is n
 protection in itself. The secret key **bypasses RLS entirely** and is server-only
 via `getServerEnv()`, never `NEXT_PUBLIC_`, never logged ([[api-architecture]]).
 
+> [!warning] A service-role key was committed to this repository
+> `drizzle/setup-ambassador-table.mjs` hard-coded the live service-role JWT until
+> 2026-09-13. The literal was removed and the script reads `process.env` now, but
+> a leaked secret is only revoked by **rotating it** in Supabase — editing the
+> file does not un-leak it. See [[supabase-audit-2026-09-13]], finding F1.
+
 ## RLS
 
 Every table holding user or tenant data gets RLS enabled plus at least one named
@@ -65,4 +71,4 @@ not `getSession()` on the server, no code between `createServerClient` and
 
 ## Related
 
-[[cms-payload]] · [[api-architecture]] · [[environment-variables]] · [[backend/README]]
+[[cms-payload]] · [[api-architecture]] · [[environment-variables]] · [[backend/README]] · [[supabase-audit-2026-09-13]]

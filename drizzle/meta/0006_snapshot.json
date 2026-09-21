@@ -1,5 +1,5 @@
 {
-  "id": "fe9879d6-6ae8-468e-afdd-a323c7750436",
+  "id": "3d1b6a00-13af-41f2-9a1c-41a770775937",
   "prevId": "65c510ec-61cd-469f-8e44-2aaada4b0c05",
   "version": "7",
   "dialect": "postgresql",
@@ -516,6 +516,13 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'campus'"
+        },
         "name": {
           "name": "name",
           "type": "text",
@@ -533,6 +540,36 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gender": {
+          "name": "gender",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "facebook": {
+          "name": "facebook",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "instagram": {
+          "name": "instagram",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "experience": {
           "name": "experience",
@@ -555,7 +592,159 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "campus_ambassador_registrations_created_at_idx": {
+          "name": "campus_ambassador_registrations_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "campus_ambassador_registrations_type_check": {
+          "name": "campus_ambassador_registrations_type_check",
+          "value": "\"campus_ambassador_registrations\".\"type\" in ('campus', 'batch')"
+        },
+        "campus_ambassador_registrations_gender_check": {
+          "name": "campus_ambassador_registrations_gender_check",
+          "value": "\"campus_ambassador_registrations\".\"gender\" is null or \"campus_ambassador_registrations\".\"gender\" in ('male', 'female', 'other')"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.volunteer_registrations": {
+      "name": "volunteer_registrations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "full_name": {
+          "name": "full_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "class_section": {
+          "name": "class_section",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "roll": {
+          "name": "roll",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "shift": {
+          "name": "shift",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_code": {
+          "name": "student_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "personal_phone": {
+          "name": "personal_phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parents_phone": {
+          "name": "parents_phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attendance_week": {
+          "name": "attendance_week",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parents_comfort": {
+          "name": "parents_comfort",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "campus_hesitation": {
+          "name": "campus_hesitation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scenario_task_conflict": {
+          "name": "scenario_task_conflict",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scenario_peer_conduct": {
+          "name": "scenario_peer_conduct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "selection_reason": {
+          "name": "selection_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "volunteer_registrations_created_at_idx": {
+          "name": "volunteer_registrations_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -618,7 +807,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "stem_fest_registrations_created_at_idx": {
+          "name": "stem_fest_registrations_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -626,8 +831,8 @@
       "checkConstraints": {},
       "isRLSEnabled": true
     },
-    "public.form_fields": {
-      "name": "form_fields",
+    "public.stem_fest_payment_sms": {
+      "name": "stem_fest_payment_sms",
       "schema": "",
       "columns": {
         "id": {
@@ -637,118 +842,61 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "form_key": {
-          "name": "form_key",
+        "client_message_id": {
+          "name": "client_message_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sender": {
+          "name": "sender",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "name": {
-          "name": "name",
+        "raw_message": {
+          "name": "raw_message",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "label": {
-          "name": "label",
+        "transaction_id": {
+          "name": "transaction_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
-        "type": {
-          "name": "type",
+        "amount": {
+          "name": "amount",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sender_number": {
+          "name": "sender_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'text'"
+          "default": "'unmatched'"
         },
-        "placeholder": {
-          "name": "placeholder",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "help_text": {
-          "name": "help_text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "required": {
-          "name": "required",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "options": {
-          "name": "options",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'[]'::jsonb"
-        },
-        "enabled": {
-          "name": "enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "sort_order": {
-          "name": "sort_order",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": true
-    },
-    "public.form_submissions": {
-      "name": "form_submissions",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
+        "matched_registration_id": {
+          "name": "matched_registration_id",
           "type": "uuid",
-          "primaryKey": true,
+          "primaryKey": false,
+          "notNull": false
+        },
+        "received_at": {
+          "name": "received_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
           "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "form_key": {
-          "name": "form_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "data": {
-          "name": "data",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
+          "default": "now()"
         },
         "created_at": {
           "name": "created_at",
@@ -758,10 +906,78 @@
           "default": "now()"
         }
       },
-      "indexes": {},
-      "foreignKeys": {},
+      "indexes": {
+        "stem_fest_payment_sms_trx_idx": {
+          "name": "stem_fest_payment_sms_trx_idx",
+          "columns": [
+            {
+              "expression": "transaction_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "stem_fest_payment_sms_status_idx": {
+          "name": "stem_fest_payment_sms_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "stem_fest_payment_sms_created_at_idx": {
+          "name": "stem_fest_payment_sms_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "stem_fest_payment_sms_matched_registration_id_stem_fest_registrations_id_fk": {
+          "name": "stem_fest_payment_sms_matched_registration_id_stem_fest_registrations_id_fk",
+          "tableFrom": "stem_fest_payment_sms",
+          "tableTo": "stem_fest_registrations",
+          "columnsFrom": [
+            "matched_registration_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "stem_fest_payment_sms_client_message_id_unique": {
+          "name": "stem_fest_payment_sms_client_message_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "client_message_id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": true

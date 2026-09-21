@@ -19,20 +19,15 @@ export const stemfestSegments: StemfestSegment[] = [
       "Bio-Chem",
       "General Science",
       "Computer Science",
-      "",
     ],
   },
   {
     id: "robotics",
     index: "02",
     title: "Robotics",
-    description: "Innovate and showcase the next generation of robots",
-    items: [
-      "Robotics",
-      "Robosoccer",
-      "LFR ",
-      "Roborace",
-    ],
+    description:
+      "Metal meets motion. Squads of four or five take the arena with self-driving machines and robot football.",
+    items: ["Robosoccer", "Line Following Robot"],
   },
   {
     id: "project-display",
@@ -56,7 +51,6 @@ export const stemfestSegments: StemfestSegment[] = [
     description: "Two days, all classes. The whole campus becomes the game board.",
     items: [
       "Treasure Hunt",
-      "Quiz",
       "Pinata",
       "Tic Tac Toe",
       "Battleship",

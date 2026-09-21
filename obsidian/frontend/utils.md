@@ -1,11 +1,30 @@
 ---
 tags: [frontend, stable]
-updated: 2026-05-21
+updated: 2026-08-30
 ---
 
 # Catalog — Utilities
 
-Pure helper functions in `src/utils/` (no side effects, unless noted).
+Pure helper functions in `src/utils/` (no side effects, unless noted). A few
+live in `src/lib/` where they sit beside the layer they serve — those are marked.
+
+## `src/lib/media.ts`
+
+Storage URL building. No Supabase client and no secrets, so it is safe to import
+from Server Components, client components and the data modules in
+`src/lib/data` alike — `src/lib/supabase.ts` (which holds the service-role
+client) re-exports all of it.
+
+| Export | Purpose |
+|--------|---------|
+| `AVATARS_BUCKET` | the `avatars` bucket name |
+| `storagePublicUrl(bucket, path)` | public CDN URL for any object |
+| `bucketImage(path)` | URL for a **pre-optimised** WebP under `optimized/` — see [[decisions-log\|ADR-0025]] |
+| `renderedImageUrl(url, { width, height?, quality? })` | rewrite a public object URL to Supabase's `/render/image/` endpoint so Supabase resizes it, not Vercel; returns non-storage URLs untouched |
+
+The origin comes from `NEXT_PUBLIC_SUPABASE_URL`, so no component or data module
+hardcodes the project host. Anything rendered through `bucketImage()` is already
+the final bytes and is served with `unoptimized` on purpose.
 
 ## `is-bot.ts`
 

@@ -5,6 +5,7 @@ import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import TocSidebar from "../_components/toc-sidebar";
 import sanitizeHtml from "sanitize-html";
 import Image from "next/image";
+import { renderedImageUrl } from "@/lib/media";
 
 // Force dynamic rendering — prevents Next.js from prerenderering all slugs
 // in parallel at build time (would exhaust the Supabase free-tier pool)
@@ -116,7 +117,13 @@ export default async function BlogPostPage({ params }: PageProps) {
   const toc = extractToc(post.content ?? "");
   const relatedPosts = await getRelatedPosts(slug);
   const displayName = post.customAuthorName ?? post.authorName;
-  const displayAvatar = post.customAuthorAvatar ?? null;
+  // Avatars pasted into the CMS point at raw bucket originals, which can be
+  // many megabytes. Ask Supabase's CDN for a 2x 40px WebP instead of shipping
+  // the original or paying Vercel for an on-demand transformation.
+  const displayAvatar = post.customAuthorAvatar
+    ? renderedImageUrl(post.customAuthorAvatar, { width: 80 })
+    : null;
+
 
   return (
     <div className="min-h-screen bg-space-deep">
@@ -178,7 +185,7 @@ export default async function BlogPostPage({ params }: PageProps) {
                   <div className="flex items-center gap-3">
                     <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden border border-ion-line bg-ion-deep font-mono text-sm font-bold text-ion-bright">
                       {displayAvatar ? (
-                        <Image src={displayAvatar} alt={displayName ?? ""} width={40} height={40} className="h-full w-full object-cover" />
+                        <Image src={displayAvatar} alt={displayName ?? ""} width={40} height={40} className="h-full w-full object-cover" unoptimized />
                       ) : (
                         displayName?.charAt(0)?.toUpperCase() ?? "A"
                       )}

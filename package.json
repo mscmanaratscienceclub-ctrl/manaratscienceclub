@@ -7,9 +7,13 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint .",
+    "images:optimize": "node scripts/optimize-bucket-images.mjs",
+    "images:optimize:dry": "node scripts/optimize-bucket-images.mjs --dry-run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:verify": "node scripts/verify-admin-db.run.mjs",
+    "db:audit": "node --env-file=.env scripts/db-arch-audit.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -69,6 +73,7 @@
     "lightningcss-win32-x64-msvc": "1.32.0",
     "postcss": "^8",
     "prettier-plugin-tailwindcss": "^0.7.3",
+    "sharp": "^0.35.4",
     "tailwindcss": "^4.2.4",
     "typescript": "^6"
   }

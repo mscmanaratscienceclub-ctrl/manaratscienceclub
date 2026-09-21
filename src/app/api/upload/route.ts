@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers } from "next/headers";
-import { supabase, AVATARS_BUCKET, getPublicImageUrl } from "@/lib/supabase";
+import { supabase, AVATARS_BUCKET, storagePublicUrl } from "@/lib/supabase";
 import { captureException } from "@/lib/sentry-helpers";
 import { trackEvent } from "@/lib/analytics";
 
@@ -49,6 +49,9 @@ export async function POST(request: NextRequest) {
     .from(AVATARS_BUCKET)
     .upload(fileName, buffer, {
       contentType: file.type,
+      // Uploads are content-addressed by UUID, so they never change in place —
+      // let the edge hold them for a year instead of revalidating hourly.
+      cacheControl: "31536000",
       upsert: false,
     });
 
@@ -59,7 +62,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 
-  const publicUrl = getPublicImageUrl(AVATARS_BUCKET, fileName);
+  const publicUrl = storagePublicUrl(AVATARS_BUCKET, fileName);
+
 
   return NextResponse.json({ url: publicUrl });
 }

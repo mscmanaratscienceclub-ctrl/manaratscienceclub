@@ -120,7 +120,7 @@ export default function TesseractCanvas({ className, progressRef }: TesseractCan
 
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const mobileQuery = window.matchMedia("(max-width: 767px)");
-    const reducedMotion = reducedMotionQuery.matches;
+    let reducedMotion = reducedMotionQuery.matches;
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
@@ -177,6 +177,7 @@ export default function TesseractCanvas({ className, progressRef }: TesseractCan
     };
 
     const render = (elapsed: number) => {
+      animationFrame = 0;
       if (!isMounted || !renderer) return;
 
       const progress = progressRef ? progressRef.current : 0;
@@ -229,6 +230,17 @@ export default function TesseractCanvas({ className, progressRef }: TesseractCan
     const onVisibilityChange = () => {
       isDocumentVisible = document.visibilityState === "visible";
       wake();
+    };
+
+    const onReducedMotionChange = (event: MediaQueryListEvent) => {
+      reducedMotion = event.matches;
+      stopLoop();
+
+      if (reducedMotion) {
+        render(performance.now());
+      } else {
+        wake();
+      }
     };
 
     const disposeStarGroup = () => {
@@ -312,10 +324,7 @@ export default function TesseractCanvas({ className, progressRef }: TesseractCan
 
       document.addEventListener("visibilitychange", onVisibilityChange);
       mobileQuery.addEventListener("change", resize);
-
-      if (!reducedMotion) {
-        animationFrame = window.requestAnimationFrame(render);
-      }
+      reducedMotionQuery.addEventListener("change", onReducedMotionChange);
 
       return () => {
         isMounted = false;
@@ -324,6 +333,7 @@ export default function TesseractCanvas({ className, progressRef }: TesseractCan
         intersectionObserver.disconnect();
         document.removeEventListener("visibilitychange", onVisibilityChange);
         mobileQuery.removeEventListener("change", resize);
+        reducedMotionQuery.removeEventListener("change", onReducedMotionChange);
         lineGeometry?.dispose();
         lineMaterial?.dispose();
         nodeGeometry?.dispose();

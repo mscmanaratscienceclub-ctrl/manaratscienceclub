@@ -26,9 +26,13 @@ if (process.env.NODE_ENV !== "production") {
   globalForSupabase.supabaseClient = supabase;
 }
 
-export const AVATARS_BUCKET = "avatars";
+// Bucket names and URL building are pure/no-secret — they live in `@/lib/media`
+// so client components and data modules can use them without pulling this
+// service-key client into the browser bundle.
+export {
+  AVATARS_BUCKET,
+  bucketImage,
+  renderedImageUrl,
+  storagePublicUrl,
+} from "@/lib/media";
 
-export function getPublicImageUrl(bucket: string, path: string) {
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
-}

@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient } from "@/lib/auth/client";
+import { renderedImageUrl } from "@/lib/media";
 import { toast } from "sonner";
 import {
   Form,
@@ -51,8 +52,11 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
   });
 
   async function compressImage(file: File): Promise<File> {
-    const MAX_DIM = 800;
-    const QUALITY = 0.8;
+    // The avatar renders at 96px; 512px keeps it crisp on retina while landing
+    // around 20-40 KB, so it can be served straight from the bucket without
+    // ever hitting the image optimizer.
+    const MAX_DIM = 512;
+    const QUALITY = 0.82;
 
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const img = new window.Image();
@@ -76,16 +80,22 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
 
     URL.revokeObjectURL(img.src);
 
+    // Safari only gained canvas WebP encoding recently; fall back to JPEG.
+    const supportsWebp = canvas.toDataURL("image/webp").startsWith("data:image/webp");
+    const type = supportsWebp ? "image/webp" : "image/jpeg";
+    const ext = supportsWebp ? "webp" : "jpg";
+
     return new Promise((resolve) => {
       canvas.toBlob(
         (blob) => {
-          resolve(new File([blob!], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
+          resolve(new File([blob!], file.name.replace(/\.[^.]+$/, `.${ext}`), { type }));
         },
-        "image/jpeg",
+        type,
         QUALITY,
       );
     });
   }
+
 
   async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -179,18 +189,27 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
         <div className="flex flex-col items-center gap-4 sm:flex-row">
           <div className="relative">
             <div className="relative flex size-24 items-center justify-center overflow-hidden border border-dashed border-space-line-soft bg-space-deep">
-              {imagePreview ? (
-                <Image
-                  src={imagePreview}
-                  alt="Profile"
-                  fill
-                  sizes="96px"
-                  className="object-cover"
-                  unoptimized
-                />
-              ) : (
-                <ImagePlus className="size-8 text-space-muted/60" />
-              )}
+              {/* A `blob:` preview can't be fetched by any optimizer, so it must
+                stay unoptimized. A stored avatar is routed through Supabase's
+                render endpoint first, keeping even a legacy multi-megabyte
+                upload down to a ~10 KB 2x WebP — served verbatim, never via
+                Vercel's optimizer. */}
+            {imagePreview ? (
+              <Image
+                src={
+                  imagePreview.startsWith("blob:")
+                    ? imagePreview
+                    : renderedImageUrl(imagePreview, { width: 192 })
+                }
+                alt="Profile"
+                fill
+                sizes="96px"
+                className="object-cover"
+                unoptimized
+              />
+            ) : (
+              <ImagePlus className="size-8 text-space-muted/60" />
+            )}
             </div>
             {imagePreview && (
               <button

@@ -82,6 +82,16 @@
   --sh-subtle: 0 10px 30px rgba(20, 35, 38, 0.08);
   --sh-yellow: 0 16px 36px rgba(255, 183, 3, 0.25);
   --sh-red: 0 16px 36px rgba(220, 38, 38, 0.2);
+
+  /* ── Print tokens ──────────────────────────────────────────────
+     Absolute units on purpose: paper has no viewport to be relative to, so
+     points and millimetres are the only honest measure here. Used by the
+     `@media print` block at the end of this file. */
+  --print-page-margin: 12mm;
+  --print-title-size: 16pt;
+  --print-body-size: 9.5pt;
+  --print-cell-padding: 3pt 4pt;
+  --print-rule: color-mix(in srgb, var(--ink) 30%, transparent);
 }
 
 @theme inline {
@@ -263,6 +273,38 @@ html {
   .msc-vignette {
     background: radial-gradient(130% 100% at 50% 42%, transparent 52%, color-mix(in srgb, var(--space-deep) 85%, transparent) 100%);
   }
+  /* ── Hero pre-hydration gate ───────────────────────────────────────
+     The msc-hero intro/dive is GSAP-driven, and GSAP cannot run until
+     React hydrates — until then the raw server HTML paints. The
+     `motion-ok` class (set by the inline gate script, first child of
+     <body> in src/app/layout.tsx) exists only when JS can run AND the
+     user allows motion, so under it the animated hero elements start
+     hidden IN CSS instead of flashing their final state. GSAP overrides
+     these with inline styles (inline > stylesheet) once it initializes;
+     no JS / prefers-reduced-motion => no class => visible static page. */
+  html.motion-ok .msc-slide-stage {
+    position: absolute;
+    inset: 0;
+    z-index: -10;
+    padding: 0;
+    pointer-events: none;
+  }
+  html.motion-ok [data-slide] {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 1.25rem; /* px-5 */
+    text-align: center;
+    opacity: 0;
+    visibility: hidden;
+  }
+  html.motion-ok [data-hero-rise],
+  html.motion-ok [data-hero-fade] {
+    opacity: 0;
+  }
   .space-fallback {
     background:
       radial-gradient(circle at 75% 48%, var(--space-amber-bright) 0 1%, var(--space-amber) 5%, transparent 18%),
@@ -285,6 +327,21 @@ html {
 }
 @utility msc-btn-ghost {
   @apply inline-flex items-center justify-center gap-2 border border-ion-line px-6 py-3 font-mono text-[0.68rem] font-semibold tracking-[0.24em] text-ion uppercase transition-colors hover:border-ion hover:text-ion-bright active:translate-y-px;
+}
+
+/* ── MSC "dossier" form variant — presentation only, same fields & logic ────── */
+@utility msc-field {
+  @apply w-full border-0 bg-transparent px-0 py-2.5 font-space-body text-base text-space-ivory outline-none placeholder:text-space-muted/50;
+}
+@utility msc-field-area {
+  @apply w-full border-0 bg-transparent px-4 py-3.5 font-space-body text-base leading-relaxed text-space-ivory outline-none placeholder:text-space-muted/50;
+}
+@utility msc-btn-pill {
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-8 py-3.5 font-space-body text-sm font-semibold text-space-black transition-all hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ion active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60;
+  background: linear-gradient(120deg, var(--ion) 15%, color-mix(in srgb, var(--ion) 45%, var(--space-amber)) 90%);
+}
+@utility msc-btn-pill-ghost {
+  @apply inline-flex items-center justify-center gap-2 rounded-full border border-space-line-soft px-6 py-3 font-space-body text-sm font-medium text-space-muted transition-colors hover:border-ion hover:text-space-ivory focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ion active:translate-y-px;
 }
 
 /* ── TipTap editor ──────────────────────────────────────────────── */
@@ -474,5 +531,99 @@ html {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* ── Print ────────────────────────────────────────────────────────────────────
+   The printed report is a real route (`/admin/reports/[kind]`), but it renders
+   inside the admin shell — a fixed-height, sidebar-led viewport built for
+   scrolling. On paper there is no scrolling, so without unwinding that shell a
+   long report is clipped at the first screenful and every page after it comes
+   out blank. These rules do three things and nothing else:
+
+     1. unwind the shell — no sidebar, no fixed height, no overflow clip;
+     2. let a long table paginate — a header row that repeats on every page,
+        rows that never split across a break;
+     3. drop screen affordances (shadows, rounded surfaces) and darken the
+        hairlines that only read at all on a backlit screen.
+
+   The hooks are `data-print` attributes set by the admin layout, the sidebar
+   and the report page, so no component has to know how it is printed. They are
+   attribute selectors rather than utilities because each one has to outweigh a
+   flex/height/overflow rule already sitting on that element.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@media print {
+  @page {
+    size: A4;
+    margin: var(--print-page-margin);
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  body {
+    background-color: var(--color-surface);
+  }
+
+  [data-print="shell"] {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  [data-print="chrome"] {
+    display: none !important;
+  }
+
+  [data-print="content"] {
+    display: block;
+    flex: none;
+    overflow: visible;
+  }
+
+  [data-print="report"] {
+    max-width: none;
+    padding: 0;
+    font-size: var(--print-body-size);
+    /* Keep the status pills and the amber ceiling warning from being washed
+       out by the browser's default ink-saving adjustment. */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  [data-print="report"] h1 {
+    font-size: var(--print-title-size);
+  }
+
+  [data-print="report"] *,
+  [data-print="report"] *::before,
+  [data-print="report"] *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* The caption and the filter list belong with the first rows, not alone at
+     the foot of a page. */
+  [data-print="report"] header {
+    break-after: avoid;
+    break-inside: avoid;
+  }
+
+  [data-print="report"] thead {
+    display: table-header-group;
+  }
+
+  [data-print="report"] tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* A 5%-opacity hairline is invisible on paper; the report gets a real rule. */
+  [data-print="report"] th,
+  [data-print="report"] td {
+    padding: var(--print-cell-padding);
+    border-bottom: 1px solid var(--print-rule);
   }
 }

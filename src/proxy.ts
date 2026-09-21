@@ -8,6 +8,11 @@ import {
   publicRoutePatterns,
 } from "./routes";
 
+/**
+ * `/register` is a real page again: it hosts the chooser between STEM Fest
+ * event registration and the volunteer application. The old 308 to
+ * `/stemfestreg` is gone — the path must render, not redirect.
+ */
 export async function proxy(request: NextRequest) {
   const session = getSessionCookie(request);
 

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, FileText, Users, ExternalLink, LogOut, Atom, PenSquare, Tag, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, FileText, Users, ExternalLink, LogOut, PenSquare, Tag, ShieldCheck } from "lucide-react";
+import Image from "next/image";
 import { signOut } from "@/lib/auth/client";
 import { trackEvent, resetAnalytics } from "@/lib/analytics";
 import { clearSentryUser } from "@/lib/sentry-helpers";
@@ -43,7 +44,7 @@ export default function CmsSidebar({ user }: SidebarProps) {
   return (
     <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-white/8 bg-ink">
       <div className="flex items-center gap-3 border-b border-white/8 px-4 py-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-manara-teal"><Atom className="size-4 text-white" /></div>
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-manara-teal"><Image src="/stemmsc.png" alt="STEM Fest 2027" width={24} height={24} className="object-cover" /></div>
         <div>
           <p className="font-display text-sm font-bold leading-none text-white">MSC Studio</p>
           <p className="mt-0.5 text-xs text-white/30">Content Management</p>

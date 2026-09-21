@@ -1,0 +1,79 @@
+74	`kind` fully describes the comparison, and the action layer implements exactly
+75	these four — there is no fifth behaviour hiding in a component.
+76	
+77	| `kind` | SQL | Notes |
+78	|--------|-----|-------|
+79	| `text` | `ILIKE '%value%'` on one column | Case-insensitive substring |
+80	| `select` | case-insensitive equality | `Morning` = `morning` |
+81	| `date` | inclusive day range | A `to` date covers that whole day |
+82	| `number` | numeric bound | `min` is `>=`, `max` is `<=` |
+83	
+84	Date bounds convert through `ADMIN_TIME_ZONE` (`Asia/Dhaka`) because the tables
+85	store `timestamptz`. A bare date bound would be read as UTC and would split a
+86	Dhaka calendar day at 6am local, so "registrations from 14 September" would
+87	quietly mean 13 Sep 18:00 → 14 Sep 18:00. See `dayRange` in
+88	`src/lib/actions/registrations.ts`.
+89	
+90	Fields marked `primary: true` render in the always-visible row; the rest sit
+91	behind **More filters**, which opens itself whenever a hidden filter is active so
+92	a chip is never the only evidence of a filter that is narrowing the list.
+93	
+94	## Filter catalogue
+95	
+96	| Source | Field id | Kind | Notes |
+97	|--------|----------|------|-------|
+98	| `ambassador` | `type` | select | `campus` · `batch` — primary |
+99	| | `gender` | select | `male` · `female` · `other` — primary |
+100	| | `firstTime` | select | `first-time` · `returning` — primary |
+101	| | `from`, `to` | date | Submission range — primary |
+102	| | `class`, `school` | text | Behind More filters |
+103	| `volunteer` | `shift` | select | `morning` · `day` — primary |
+104	| | `from`, `to` | date | Submission range — primary |
+105	| | `classSection`, `roll`, `studentCode` | text | Behind More filters |
+106	| | `attendanceWeek`, `parentsComfort`, `campusHesitation` | text | Free-text answers — behind More filters |
+107	| `stemfest` | `payment` | select | `verified` · `pending` — primary |
+108	| | `class` | select | From `stemfestClasses` — primary |
+109	| | `school` | text | Primary |
+110	| | `from`, `to` | date | Submission range — primary |
+111	| | `segment`, `transactionId` | text | Behind More filters |
+112	| `sms` | `status` | select | `matched` · `unmatched` · `ignored` — primary |
+113	| | `sender` | text | Primary |
+114	| | `from`, `to` | date | `receivedAt` range — primary |
+115	| | `senderNumber`, `minAmount`, `maxAmount` | text / number | Behind More filters |
+116	
+117	The STEM Fest `payment` filter is one `EXISTS` against a matched, forwarded
+118	payment SMS — and the Verified/Pending pill in the table is resolved by **that
+119	same expression in SQL**, so the pill and the filter can never disagree. It used
+120	to be computed in JS from a second query for the TrxIDs on the current page,
+121	which could only ever answer for rows already fetched and left the filter itself
+122	inexpressible.
+123	
+124	## Report columns
+125	
+126	**This is the section `filters.ts` refers to.** `AdminReportColumn.id` is a plain
+127	string on purpose: the query layer builds report rows as
+128	`Record<string, string>`, keyed by these ids. **The ids below and the object
+129	literals in `getAdminReportRows` (`src/lib/actions/registrations.ts`) must stay
+130	in step** — TypeScript cannot check a `Record<string, string>` against a config
+131	list, so a mismatch shows up as a blank column on paper, not as a compile error.
+132	
+133	| Source | Column ids, in order |
+134	|--------|---------------------|
+135	| `ambassador` | `type`, `name`, `class`, `school`, `phone`, `email`, `gender`, `firstTime`, `facebook`, `instagram`, `submitted` |
+136	| `volunteer` | `name`, `classSection`, `roll`, `shift`, `studentCode`, `personalPhone`, `parentsPhone`, `submitted` |
+137	| `stemfest` | `name`, `class`, `school`, `segments`, `transactionId`, `paymentNumber`, `payment`, `submitted` |
+138	| `sms` | `receivedAt`, `sender`, `transactionId`, `amount`, `senderNumber`, `status`, `message` |
+139	
+140	Formatting is done server-side and in a fixed timezone, because a printout is the
+141	one artefact nobody can scroll to double-check:
+142	
+143	- dates → `reportDate` (`en-GB`, `Asia/Dhaka`)
+144	- empty strings / nulls → `—` via `reportText`, so a blank cell is never read as
+145	  an empty answer
+146	- booleans → `Yes` / `No` via `yesNo`
+147	- the STEM Fest `payment` column → `Verified` / `Pending`
+148	
+149	A report reads **every matching row**, not one page, so it needs a ceiling the
+150	paged table does not have: `REPORT_ROW_LIMIT` (2 000). Without one, an unfiltered
+151	export of a table that grew unexpectedly would pin a pooled connection until the
+152	statement timeout. Past the ceiling the report renders an amber notice saying the

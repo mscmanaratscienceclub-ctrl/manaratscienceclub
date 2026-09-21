@@ -1,6 +1,6 @@
 ---
 tags: [architecture, config, stable]
-updated: 2026-07-17
+updated: 2026-09-14
 ---
 
 # Environment Variables
@@ -21,6 +21,7 @@ Rules for handling configuration and secrets.
 |------|-------|---------|
 | `NEXT_PUBLIC_SITE_URL` | public | Site origin (no trailing slash). Drives canonical URLs, OG/Twitter tags, `robots.txt`, `sitemap.xml`, JSON-LD. Falls back to `http://localhost:3000` when unset — **set it in production**. See [[seo-metadata]]. |
 | `CONTACT_ENDPOINT` | server-only | Optional upstream the `/api/contact` route forwards leads to (CRM / webhook). When unset, submissions are logged server-side. See [[api-architecture]]. |
+| `SMS_FORWARDER_SECRET` | server-only | Shared secret the Android SMS-forwarder app sends as the `x-forwarder-secret` header to `/api/webhooks/sms`. **When unset the webhook accepts every POST** (fails open) — set it in every environment. See [[sms-forwarder]]. |
 
 Documented in `.env.example` (committed). Validated by `src/env.ts` (zod):
 `publicEnv` for `NEXT_PUBLIC_*` (safe anywhere), `getServerEnv()` for

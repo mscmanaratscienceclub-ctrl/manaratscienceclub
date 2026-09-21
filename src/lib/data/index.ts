@@ -159,6 +159,22 @@ export const currentMembers: Member[] = [
     role: "President",
     socials: {},
   },
+    {
+    id: "current-ehsas",
+    name: "Ehsas Mostafa",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/ehsas.webp",
+    batch: "2026–2027",
+    role: "Vice President",
+    socials: {},
+  },
+    {
+    id: "current-nafisa",
+    name: "Nafisa Nawar",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/nafisa.webp",
+    batch: "2026–2027",
+    role: "Vice President",
+    socials: {},
+  },
   {
     id: "current-yasa",
     name: "Yasa Rahman",
@@ -167,6 +183,8 @@ export const currentMembers: Member[] = [
     role: "General Secretary",
     socials: {},
   },
+  
+  
   {
     id: "current-zarifah",
     name: "Zarifah Tasnim",
@@ -175,6 +193,55 @@ export const currentMembers: Member[] = [
     role: "General Secretary",
     socials: {},
   },
+    {
+    id: "current-sakib",
+    name: "Sakib Raihan",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/sakib.webp",
+    batch: "2026–2027",
+    role: "Assistant Secretary",
+    socials: {},
+  },
+    {
+    id: "current-takia",
+    name: "Takia Nujhat ",
+    image: "/memberimage/takia.webp",
+    batch: "2026–2027",
+    role: "Assistant Secretary",
+    socials: {},
+  },
+      {
+    id: "current-shayan",
+    name: "M. Shayan Ibn Taufique",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/shayan.webp",
+    batch: "2026–2027",
+    role: "Coordinator",
+    socials: {},
+  },
+      {
+    id: "current-wadud",
+    name: "Akil Ibn Wadud",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/wadud.webp",
+    batch: "2026–2027",
+    role: "Coordinator",
+    socials: {},
+  },
+      {
+    id: "current-junayna",
+    name: "Junayna Ekrum",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/junayna.webp",
+    batch: "2026–2027",
+    role: "Coordinator",
+    socials: {},
+  },
+      {
+    id: "current-rose",
+    name: "Tarannum Rose",
+    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/rose.heif",
+    batch: "2026–2027",
+    role: "Coordinator",
+    socials: {},
+  },
+
     {
     id: "current-nureen",
     name: "Nureen Rayan",

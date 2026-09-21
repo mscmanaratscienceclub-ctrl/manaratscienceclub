@@ -1,0 +1,8 @@
+npm notice run nextjs-15@0.1.0 npx
+npm notice run next start -p 3123
+▲ Next.js 16.2.9
+- Local:         http://localhost:3123
+- Network:       http://192.168.10.132:3123
+✓ Ready in 179ms
+
+E:\Web Dev\test\manaratscienceclub>More? 

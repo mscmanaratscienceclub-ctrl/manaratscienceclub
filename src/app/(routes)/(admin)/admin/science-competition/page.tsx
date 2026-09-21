@@ -1,30 +1,149 @@
-import { FlaskConical } from "lucide-react";
+import {
+  BadgeCheck,
+  CalendarDays,
+  Clock,
+  School,
+  Trophy,
+  XCircle,
+} from "lucide-react";
+import {
+  getStemfestStats,
+  searchStemfestRegistrations,
+} from "@/lib/actions/registrations";
+import { getStemfestClassLabel } from "@/lib/data/stemfest-registration";
+import {
+  describeList,
+  parseAdminQuery,
+  stemfestSource,
+  type RawSearchParams,
+} from "@/lib/admin/filters";
+import ScienceCompetitionTable from "./science-competition-table";
 
-export default function ScienceCompetitionAdminPage() {
+/** Timestamps cross to the client as ISO strings, as `createdAt` already does. */
+function toIso(value: Date | null): string | null {
+  return value ? new Date(value).toISOString() : null;
+}
+
+export default async function ScienceCompetitionAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>;
+}) {
+  const source = stemfestSource;
+  const state = parseAdminQuery(source, await searchParams);
+
+  const [{ rows, total, totalPages, page }, stats] = await Promise.all([
+    searchStemfestRegistrations(state),
+    getStemfestStats(),
+  ]);
+
+  const registrations = rows.map((row) => ({
+    id: row.id,
+    registrationCode: row.registrationCode,
+    name: row.name,
+    classLabel: getStemfestClassLabel(row.class) || row.class,
+    school: row.school,
+    segments: row.segments,
+    transactionId: row.transactionId,
+    paymentNumber: row.paymentNumber,
+    email: row.email,
+    // Resolved in SQL by `stemfestEffectivePaymentStatus`, so the pill, the filter,
+    // the stat cards and the printed report cannot disagree about this row.
+    status: row.status,
+    decision: row.decision,
+    decidedAt: toIso(row.decidedAt),
+    decidedBy: row.decidedBy,
+    emailSentAt: toIso(row.emailSentAt),
+    amount: row.amount,
+    createdAt: new Date(row.createdAt).toISOString(),
+  }));
+
+  const statCards = [
+    {
+      label: "Registrations",
+      value: String(stats.total),
+      icon: Trophy,
+      color: "text-manara-teal",
+      bg: "bg-manara-teal/10",
+    },
+    {
+      label: "Verified Payments",
+      value: String(stats.verifiedCount),
+      icon: BadgeCheck,
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+    },
+    // Pending and Rejected are printed beside Verified because they are what an
+    // admin works through: all three count the same effective status the pill and
+    // the `payment` filter use, so a card can never contradict the table below it.
+    {
+      label: "Pending Payments",
+      value: String(stats.pendingCount),
+      icon: Clock,
+      color: "text-amber-600",
+      bg: "bg-amber-50",
+    },
+    {
+      label: "Rejected Payments",
+      value: String(stats.rejectedCount),
+      icon: XCircle,
+      color: "text-rose-600",
+      bg: "bg-rose-50",
+    },
+    {
+      label: "This Week",
+      value: String(stats.thisWeek),
+      icon: CalendarDays,
+      color: "text-manara-yellow",
+      bg: "bg-manara-yellow/15",
+    },
+    {
+      label: "Unique Schools",
+      value: String(stats.uniqueSchools),
+      icon: School,
+      color: "text-manara-purple",
+      bg: "bg-manara-purple/10",
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-8 p-6 md:p-10">
       <div>
-        <p className="mb-2 font-mono text-[0.6rem] font-medium uppercase tracking-[0.28em] text-ion">
-          Form Responses
-        </p>
-        <h1 className="font-voyage text-3xl font-bold uppercase tracking-tight text-space-ivory">
-          Science Competition
+        <h1 className="font-display text-3xl font-bold text-ink">
+          {source.reportTitle}
         </h1>
-        <p className="mt-2 font-space-body text-sm text-space-muted">
-          Submissions for the upcoming science competition form.
+        <p className="mt-1 font-body text-ink/60">
+          {describeList(source, state, registrations.length, total)}
         </p>
       </div>
 
-      <div className="flex flex-col items-center justify-center border border-dashed border-space-line px-6 py-24 text-center">
-        <span className="mb-4 flex size-16 items-center justify-center border border-ion-line bg-ion-deep/40">
-          <FlaskConical className="size-7 text-ion" />
-        </span>
-        <h2 className="font-voyage text-lg font-semibold uppercase tracking-wide text-space-ivory">Form not launched yet</h2>
-        <p className="mt-2 max-w-md font-space-body text-sm text-space-muted">
-          The science competition registration form has not been published. Once it is live,
-          every submission will appear here with stats and a full response viewer.
-        </p>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {statCards.map((stat) => (
+          <div
+            key={stat.label}
+            className="flex items-center gap-4 rounded-2xl bg-surface p-6 shadow-subtle"
+          >
+            <div className={`rounded-xl ${stat.bg} p-3`}>
+              <stat.icon className={`h-6 w-6 ${stat.color}`} aria-hidden="true" />
+            </div>
+            <div>
+              <p className="font-display text-3xl font-bold text-ink">
+                {stat.value}
+              </p>
+              <p className="font-body text-sm text-ink/60">{stat.label}</p>
+            </div>
+          </div>
+        ))}
       </div>
+
+      <ScienceCompetitionTable
+        source={source}
+        state={state}
+        registrations={registrations}
+        total={total}
+        page={page}
+        totalPages={totalPages}
+      />
     </div>
   );
 }

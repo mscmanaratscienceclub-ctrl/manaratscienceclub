@@ -107,4 +107,4 @@ async component must mirror its final layout with one of these
 
 ## Related
 
-[[component-conventions]] · [[components/animation-springs]]
+[[component-conventions]] · [[components/animation-springs]] · [[components/admin]]

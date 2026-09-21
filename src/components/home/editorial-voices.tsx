@@ -1,5 +1,6 @@
 import ScrollReveal from "@/components/animations/ScrollReveal";
 import { leadership } from "@/lib/data";
+import Image from "next/image";
 
 const advisors = leadership.filter((member) => member.role === "faculty-advisor");
 
@@ -11,6 +12,30 @@ function initialsOf(name: string) {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+}
+
+function AdvisorAvatar({ name, image }: { name: string; image?: string | null }) {
+  if (image) {
+    return (
+      <span className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-ion-line bg-ion-deep">
+        <Image
+          src={image}
+          alt={`Portrait of ${name}`}
+          width={64}
+          height={64}
+          className="size-full object-cover"
+        />
+      </span>
+    );
+  }
+  return (
+    <span
+      aria-hidden="true"
+      className="flex size-16 shrink-0 items-center justify-center border border-ion-line bg-ion-deep font-voyage text-lg font-bold text-ion"
+    >
+      {initialsOf(name)}
+    </span>
+  );
 }
 
 export default function EditorialVoices() {
@@ -34,12 +59,7 @@ export default function EditorialVoices() {
             <ScrollReveal key={advisor.id}>
               <article className="flex h-full flex-col border border-space-line-soft bg-space-deep/70 p-8 backdrop-blur-sm transition-colors duration-300 hover:border-ion-line sm:p-10">
                 <div className="flex items-center gap-5">
-                  <span
-                    aria-hidden="true"
-                    className="flex size-16 shrink-0 items-center justify-center border border-ion-line bg-ion-deep font-voyage text-lg font-bold text-ion"
-                  >
-                    {initialsOf(advisor.name)}
-                  </span>
+                  <AdvisorAvatar name={advisor.name} image={advisor.image} />
                   <div>
                     <h3 className="font-voyage text-lg font-bold tracking-tight text-space-ivory">
                       {advisor.name}
