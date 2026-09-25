@@ -48,6 +48,11 @@ export interface StemfestRow {
   school: string;
   segments: string;
   /**
+   * Who referred the participant. `null` for a row filed before the question
+   * existed, and for "not referred by anyone" — both render as an em dash.
+   */
+  reference: string | null;
+  /**
    * What the participant was told to send, in BDT. `null` for a row filed before
    * the column existed — the amount cannot be recovered from `segments`, so those
    * read as an em dash rather than a guess.
@@ -231,6 +236,9 @@ function RegistrationRow({
     { label: "Full Name", value: row.name },
     { label: "Class", value: row.classLabel },
     { label: "School / College", value: row.school },
+    // Who the club credits for this registration. Null covers both "nobody" and
+    // "filed before the question existed", so it renders as an em dash.
+    { label: "Reference", value: row.reference },
     { label: "Segments / Events", value: row.segments },
     {
       label: "Amount to send",

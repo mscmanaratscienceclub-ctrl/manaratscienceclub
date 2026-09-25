@@ -51,6 +51,16 @@ export const stemfestRegistrations = pgTable(
      * none. The ID trigger renders that absence as `X` rather than as `O`.
      */
     gender: text("gender", { enum: ["male", "female", "other"] }),
+    /**
+     * Who referred the participant, as chosen from the list their school maps to
+     * (`referencesForSchool`). Stored as the name rather than an id because the
+     * name is what the club reads and neither list is stable enough to key on.
+     *
+     * Nullable for two reasons: rows filed before the question existed have none,
+     * and "not referred by anyone" is stored as NULL rather than as a sentinel, so
+     * the two read alike. Added by `drizzle/add_stemfest_reference.sql`.
+     */
+    reference: text("reference"),
     /** `<GENDER><CLASS><NNN>`, minted on insert. Unique, never rewritten. */
     registrationCode: text("registration_code").notNull(),
     transactionId: text("transaction_id").notNull(),

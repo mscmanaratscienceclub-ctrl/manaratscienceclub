@@ -13,9 +13,40 @@ const SUPABASE_PROJECT_URL =
 
 export const AVATARS_BUCKET = "avatars";
 
+/**
+ * Public bucket holding the club's documents — syllabus PDFs today.
+ *
+ * Object keys are the human filenames the club uploads with (see
+ * `publishedSyllabi` in `src/lib/data/syllabus.ts`), so this bucket is not
+ * content-addressed the way `avatars` is: replacing a syllabus means replacing
+ * the object under the same key.
+ */
+export const PDFS_BUCKET = "pdfs";
+
 /** Public, CDN-served URL for an arbitrary object in a bucket. */
 export function storagePublicUrl(bucket: string, path: string): string {
   return `${SUPABASE_PROJECT_URL}/storage/v1/object/public/${bucket}/${path}`;
+}
+
+/**
+ * Public URL for a document in the `pdfs` bucket.
+ *
+ * Each path segment is percent-encoded because the club's object keys are the
+ * filenames they uploaded (`MATH OLYMPIAD SYLLABUS.pdf`), and a raw space in a
+ * URL is invalid even though browsers paper over it. Encoding segment-by-segment
+ * rather than with `encodeURIComponent(path)` keeps the slashes in a nested key
+ * intact.
+ *
+ * `download` makes Supabase answer with `Content-Disposition: attachment`, so a
+ * "Download" link saves the file instead of opening the browser's PDF viewer.
+ */
+export function pdfUrl(
+  path: string,
+  options: { download?: boolean } = {},
+): string {
+  const encoded = path.split("/").map(encodeURIComponent).join("/");
+  const url = storagePublicUrl(PDFS_BUCKET, encoded);
+  return options.download ? `${url}?download` : url;
 }
 
 /**

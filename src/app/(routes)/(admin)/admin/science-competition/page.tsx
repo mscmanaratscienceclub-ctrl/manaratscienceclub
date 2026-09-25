@@ -67,6 +67,7 @@ export default async function ScienceCompetitionAdminPage({
     classLabel: getStemfestClassLabel(row.class) || row.class,
     school: row.school,
     segments: row.segments,
+    reference: row.reference,
     totalFee: row.totalFee,
     transactionId: row.transactionId,
     paymentNumber: row.paymentNumber,

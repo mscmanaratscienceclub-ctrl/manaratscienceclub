@@ -488,6 +488,12 @@ export interface StemfestAdminRow {
   school: string;
   segments: string;
   /**
+   * Who referred the participant, from the list for their school. `null` for a
+   * row filed before the question existed, and for "not referred by anyone" —
+   * both read as an em dash in the panel.
+   */
+  reference: string | null;
+  /**
    * What the participant was told to send, in BDT, or `null` for a row filed
    * before the column existed. What the club *asked for*, as opposed to `amount`
    * below, which is what a forwarded SMS says actually arrived.
@@ -549,6 +555,7 @@ export async function searchStemfestRegistrations(
         class: t.class,
         school: t.school,
         segments: t.segments,
+        reference: t.reference,
         totalFee: t.totalFee,
         transactionId: t.transactionId,
         paymentNumber: t.paymentNumber,

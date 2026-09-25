@@ -438,6 +438,139 @@ export interface StemfestEntry {
   teamName: string | null;
 }
 
+// ── References ───────────────────────────────────────────────────────────────
+
+/**
+ * Who sent the participant.
+ *
+ * Two lists, because the people who referred a registrant differ by audience:
+ * host-school students come through the club's own members, everyone else through
+ * the visiting schools' contacts. Which list a participant is offered follows
+ * from their *resolved* school name via `referencesForSchool` — the same
+ * `isManaratSchool` test the Olympiad rate turns on, so a participant who typed
+ * their school through "not listed" is grouped the same way here.
+ *
+ * Both lists are the club's own wording, copied name for name. They are stored in
+ * the order the club gave them and exported alphabetically: a dropdown of 49
+ * names has to be scannable, and Radix Select jumps by the visible label, which
+ * only helps when the list is sorted.
+ */
+const otherSchoolReferenceNames: string[] = [
+  "Abdullah Al Reyan",
+  "Md. Tasrik Islam",
+  "Sanjeda Siddika",
+  "Shanjida Islam Mim",
+  "Tanjim Ahmed Surjo",
+  "Medha Sarkar",
+  "Md. Tayabur Rahman Riad",
+  "Fayyad Quayum",
+  "Remon Hossain",
+  "Sadman Sabab",
+  "Siam Mahmud",
+  "Saheel Wazir Mamun",
+  "Nadeem Mahmud",
+  "Hossain Al Muntasir",
+  "Zidan Hasan",
+  "Zareef Rahman",
+  "Tahmid Raiyan",
+  "Arham Rayeed",
+  "Ummy Tasnia Efa",
+  "Abu Md. Mohiuddin",
+  "Subaita Afrin Safa",
+  "Faiyaz Omar",
+  "Zulkarnain Toshi",
+  "Afsana Sharmin",
+  "Mohammad Zafar Khan Fahad",
+  "Sazin Rahaman",
+  "Foysal Mahmud",
+  "Nafi Ahmed",
+  "Md. Soaib Ali Anon",
+  "Ismam Alvi Tommoy",
+  "Ahmed Abrar Faisal",
+  "Abidur Rahim Manam",
+  "Nayanaviram Nishorgo",
+  "Ayra Mahmud Farha",
+  "IBH Eby",
+  "Shakir Hassan",
+  "Mahir Ashab",
+  "Ani Rudhya Dam (anik)",
+  "Taki Ibne Duha",
+  "Rezwana Binte Razzak",
+  "Abu Rao",
+  "Abrar Walid",
+  "Forhad Ahmed",
+  "Ashfaq Hossain Nome",
+  "Tamim Hasan",
+  "Ashikur Rahman Emon",
+  "Mihad Chowdhury",
+  "Rehnuma Rafi",
+  "Tanjim Ahmed Talukder",
+];
+
+const manaratReferenceNames: string[] = [
+  "Maria Reza",
+  "Adyan Rahman",
+  "Fahima Rahman",
+  "Farid Alam",
+  "Manifa Islam Pushpita",
+  "Ahmed Jibran Wasi",
+  "Aisha B Ekram",
+  "Redwan Hossain",
+  "Mahdia Binte Reaz",
+  "Syed Tayeb Tahsin",
+  "Kazi Ariya Sayekah",
+  "Shadman Sakeef Mahmud",
+  "Rumaisa Anjum Meher",
+  "Sheikh MD Ashiam",
+];
+
+/** Alphabetical, and case-insensitive so `Md.` sorts as a reader expects. */
+function byName(a: string, b: string): number {
+  return a.localeCompare(b, "en", { sensitivity: "base" });
+}
+
+export const stemfestReferencesForOtherSchools: string[] = [
+  ...otherSchoolReferenceNames,
+].sort(byName);
+
+export const stemfestReferencesForManarat: string[] = [
+  ...manaratReferenceNames,
+].sort(byName);
+
+/**
+ * Select value for "nobody referred me".
+ *
+ * An escape hatch, not a person: the field is required, and without this a
+ * participant no one referred could not submit at all. It is never stored — the
+ * column gets `NULL` — so the row reads the same as one filed before the column
+ * existed, and the club's lists stay free of a name that isn't a name.
+ */
+export const STEMFEST_NO_REFERENCE_ID = "no-reference";
+
+export const stemfestNoReferenceLabel = "Not referred by anyone";
+
+/** The names offered for a resolved school name, alphabetically. */
+export function referencesForSchool(
+  school: string | null | undefined,
+): string[] {
+  return isManaratSchool(school)
+    ? stemfestReferencesForManarat
+    : stemfestReferencesForOtherSchools;
+}
+
+/**
+ * What actually goes on the row: the chosen name, or `null` for the escape
+ * hatch. Blank input reads as `null` too, so "not answered" and "nobody" land the
+ * same way as rows filed before the field existed.
+ */
+export function resolveReferenceName(
+  value: string | null | undefined,
+): string | null {
+  const name = (value ?? "").trim();
+  if (!name || name === STEMFEST_NO_REFERENCE_ID) return null;
+  return name;
+}
+
 // ── Fees ─────────────────────────────────────────────────────────────────────
 
 export const stemfestFees = {
@@ -790,10 +923,22 @@ export const stemfestFormCopy = {
   teamNameHint:
     "Optional — what your team should be called on the results sheet.",
   teamNamePlaceholder: "e.g. Circuit Breakers",
+  referenceLabel: "Reference",
+  referenceHint:
+    "The person who referred you — the list changes with your school.",
+  referencePlaceholder: "Select your reference",
+  referenceGroupManarat: "Manarat Science Club",
+  referenceGroupOther: "Visiting schools",
   teammateDetailsHint:
     "Every teammate’s name, email and school — we use them for certificates and results.",
   confirmation:
     "We have your entry and your bKash reference. We will match the payment and confirm your slots.",
+  /**
+   * Shown on the form and again on the receipt. Kept free of any claim about who
+   * sends the mail or exactly when it lands, because nothing in the app sends it
+   * today — the club mails participants by hand.
+   */
+  emailNotice: "You will receive an email shortly after you register.",
   resubmitLabel: "Register another participant",
   resubmitNote:
     "Registering a sibling or a whole team? Start a fresh entry below — it creates a separate registration.",

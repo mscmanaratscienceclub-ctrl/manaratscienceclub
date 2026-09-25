@@ -25,6 +25,7 @@ export const metadata: Metadata = {
 };
 
 const GENERAL_ICONS: Record<string, LucideIcon> = {
+  syllabus: FileText,
   rules: ScrollText,
   registration: Ticket,
   schedule: CalendarClock,
@@ -69,7 +70,7 @@ export default function ResourcesPage() {
             </p>
           </header>
 
-          <ul className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {generalResources.map((resource) => {
               const Icon = GENERAL_ICONS[resource.id] ?? BookOpen;
 
@@ -165,6 +166,16 @@ export default function ResourcesPage() {
                       <p className="mt-3 max-w-[42rem] font-space-body text-sm leading-relaxed text-space-muted">
                         {entry.details ?? resourcesCopy.pendingNote}
                       </p>
+
+                      {/* The syllabi live on their own page — this points at the
+                          released PDFs rather than repeating the list here. */}
+                      <Link
+                        href="/syllabus"
+                        className="mt-4 inline-flex items-center gap-2 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-ion transition-colors hover:text-ion-bright"
+                      >
+                        {resourcesCopy.syllabusLinkLabel}
+                        <ArrowRight className="size-3.5" aria-hidden="true" />
+                      </Link>
                     </div>
                   </div>
                 </article>

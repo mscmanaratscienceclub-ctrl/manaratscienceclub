@@ -12,6 +12,7 @@ export const publicRoutes: string[] = [
   "/volunteer",
   "/rules",
   "/resources",
+  "/syllabus",
   "/verify-email",
   "/forgot-password",
   "/reset-password",

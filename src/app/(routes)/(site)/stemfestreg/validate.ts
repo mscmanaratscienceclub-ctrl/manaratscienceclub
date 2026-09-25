@@ -1,7 +1,9 @@
 import { z } from "zod";
 import {
+  STEMFEST_NO_REFERENCE_ID,
   STEMFEST_OTHER_SCHOOL_ID,
   buildEntry,
+  referencesForSchool,
   stemfestClasses,
   stemfestEvents,
   stemfestGenders,
@@ -113,6 +115,13 @@ export const stemfestRegistrationSchema = z
     school: z.string().trim().min(1, "Choose your school").max(120),
     /** Only read when `school` is the "not listed" sentinel. */
     schoolOther: z.string().trim().max(120, "School name looks too long"),
+    /**
+     * Who referred the participant, from the list their school maps to. Accepted
+     * here as a plain string and checked in the pass below, which is the only
+     * place that knows which school was chosen — a name from the other school's
+     * list is rejected rather than stored, so the club can trust the column.
+     */
+    reference: z.string().trim().max(120, "Reference looks too long"),
     classId: z.string().trim().min(1, "Choose your class").max(30),
     /**
      * Required, and not merely for the record: the first character of the
@@ -153,6 +162,27 @@ export const stemfestRegistrationSchema = z
         code: "custom",
         path: ["schoolOther"],
         message: "Enter your school's name",
+      });
+    }
+
+    // Checked against the list the *resolved* school maps to, which is the same
+    // resolution the row is written with — so "not listed" is judged on the name
+    // the participant typed rather than on the sentinel.
+    const reference = values.reference?.trim() ?? "";
+    if (!reference) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["reference"],
+        message: "Choose your reference",
+      });
+    } else if (
+      reference !== STEMFEST_NO_REFERENCE_ID &&
+      !referencesForSchool(resolveSchoolName(values)).includes(reference)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["reference"],
+        message: "Pick a reference from the list for your school",
       });
     }
 
@@ -430,6 +460,7 @@ export const EMPTY_STEMFEST_VALUES: StemfestFormValues = {
   name: "",
   school: "",
   schoolOther: "",
+  reference: "",
   classId: "",
   gender: "",
   phone: "",
