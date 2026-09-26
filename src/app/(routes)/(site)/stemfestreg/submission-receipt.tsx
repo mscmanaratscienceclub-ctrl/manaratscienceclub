@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { CheckCircle2, Clock, RefreshCw, Ticket } from "lucide-react";
+import { CheckCircle2, Clock, Mail, RefreshCw, Ticket } from "lucide-react";
 import { useReducedMotion } from "@/lib/hooks/use-reduced-motion";
 import {
   describeEntry,
@@ -31,6 +31,11 @@ export interface SavedStemfestSubmission {
     /** Absent on a receipt cached by a build from before the form asked for one. */
     school?: string;
     classId: string;
+    /**
+     * Who referred them, or `null` for "not referred by anyone". Absent on a
+     * receipt cached by a build from before the question existed.
+     */
+    reference?: string | null;
     phone: string;
     /** Absent on a receipt cached by a build from before the form asked for one. */
     email?: string;
@@ -88,6 +93,10 @@ export function SubmissionReceipt({
           <p className="mt-3 max-w-[46ch] font-space-body text-sm text-space-muted">
             {stemfestFormCopy.confirmation}
           </p>
+          <p className="mx-auto mt-3 flex max-w-[46ch] items-center justify-center gap-2 font-space-body text-sm text-space-muted">
+            <Mail className="size-3.5 shrink-0 text-ion" aria-hidden="true" />
+            {stemfestFormCopy.emailNotice}
+          </p>
         </div>
       </div>
 
@@ -102,6 +111,7 @@ export function SubmissionReceipt({
           <ReceiptRow label="Name" value={participant.name} />
           <ReceiptRow label="School / college" value={participant.school || "—"} />
           <ReceiptRow label="Class" value={getStemfestClassLabel(participant.classId)} />
+          <ReceiptRow label="Reference" value={participant.reference ?? "—"} />
           <ReceiptRow label="Phone" value={participant.phone} />
           <ReceiptRow label="Email" value={participant.email || "—"} />
           <ReceiptRow label="bKash number" value={participant.bkashNumber} />

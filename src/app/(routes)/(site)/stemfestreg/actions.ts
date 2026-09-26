@@ -7,6 +7,7 @@ import {
 import {
   computeTotalFee,
   describeEntry,
+  resolveReferenceName,
 } from "@/lib/data/stemfest-registration";
 import {
   buildEntries,
@@ -82,6 +83,10 @@ export async function submitStemfestRegistration(
         // The ID's first character is derived from this, by the trigger that
         // mints `registration_code` on insert.
         gender: data.gender,
+        // The chosen name, or NULL for the "not referred by anyone" escape hatch.
+        // A column added by `drizzle/add_stemfest_reference.sql` — like
+        // `total_fee` below, an un-migrated database refuses this insert.
+        reference: resolveReferenceName(data.reference),
         segments: segments || "General",
         transaction_id: data.bkashTrxId.toUpperCase(),
         payment_number: data.bkashNumber,

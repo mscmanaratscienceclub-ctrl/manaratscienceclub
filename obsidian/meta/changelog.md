@@ -1,6 +1,6 @@
 ---
 tags: [meta, changelog]
-updated: 2026-09-22
+updated: 2026-09-26
 ---
 
 # Changelog
@@ -13,6 +13,169 @@ dependency, a new route or section, a convention bent, a bug whose cause is wort
 remembering. Routine commits do not need an entry.
 
 For *why* the conventions are what they are, see [[decisions-log]].
+
+---
+
+## 2026-09-26 — Payment receipt drops the **Confirmed on** row
+
+The payment-confirmed email no longer prints the moment the payment was
+confirmed. It still carries the registration ID, the participant's details, the
+TrxID and wallet number, the amount received and the submission date — only the
+confirmation timestamp is gone.
+
+Removing it took `verifiedOn` out of the template, `resend.ts` and
+`deliverConfirmation`, which in turn retired `decidedAt` from
+`stemfestDecisionSelection()`: that column was read by nothing but the line that
+dated the receipt, and a column read by nobody is the drift the selection's own
+comment warns against.
+
+---
+
+## 2026-09-26 — New admin section: **bulk emails** (`/admin/emails`)
+
+Admins can now write to a filtered group of STEM Fest registrations in one go.
+The page has two sections over a single audience:
+
+- **Custom message** — a subject and body an admin writes, with `{{name}}`
+  replaced per recipient. One message per *address*, not per registration, so a
+  family that registered two siblings is not written to twice.
+- **Payment confirmations** — the existing receipt
+  (`getPaymentVerifiedEmailHtml`) sent to every **verified** payment the filters
+  match. This is the "blast all verified mails at once" the club asked for; it
+  sends the *same* document the per-row button sends, so a participant cannot get
+  a different receipt depending on which button an admin pressed.
+
+**The audience is the URL, not client state.** The filter fields come straight
+out of `stemfestSource.filters` and the recipient query runs through the same
+`stemfestWhere` builder the Science Competition table and the printed report use,
+so "participants from Class 9" means exactly the rows the table shows for that
+filter, and a reload reproduces it. `getBulkEmailAudience(state, kind)` resolves
+both counts server-side before render, so the admin sees who a blast reaches
+before pressing anything.
+
+**A blast is sent in slices, ten at a time.** `sendBulkEmailBatch` rebuilds the
+audience itself (a client can name a filter state, never an address) and returns
+`sent` / `failed` / `failures` / `nextOffset`; `useBulkEmailSend` loops over
+`nextOffset` until it is `null`. One long request would hold a serverless
+invocation open past its budget and lose everything already sent; per-recipient
+failures are named in the UI, which is the point when two addresses bounce.
+Sends are sequential with a 600 ms pause — Resend allows two a second, and
+parallel sends would be throttled and reported as failures.
+
+**Every send is bounded at 400 recipients** (`BULK_EMAIL_MAX_RECIPIENTS`). Past
+it the audience query stops and the panel refuses, asking the admin to narrow the
+filters rather than silently mailing a truncated list. Sending is also two-step:
+the button only fires once confirmed.
+
+Plumbing: `deliverStemfestConfirmation(id)` was extracted from
+`resendStemfestPaymentEmail` so the bulk sender can authenticate once per batch
+instead of re-reading the session per recipient — the public action still checks
+the admin first. A new `sendCustomEmail` in `resend.ts` goes out through the same
+private `sendEmail`, so a blast is dev-logged and rate-limited like any other
+mail. Sidebar gains an **Outreach → Bulk Emails** entry. Contract, limits and the
+`{{name}}` token live in `src/lib/admin/bulk-email.ts` (a `"use server"` module
+may only export async functions, so the client composer imports them from there).
+
+---
+
+## 2026-09-25 — Registration gains a **Reference** field, paired to the school
+
+The registration form now asks **who referred the participant**, from one of two
+lists that depend on their school: 49 visiting-school contacts, or 14 Manarat
+names. The field appears only once a school is chosen (for "not listed", once a
+name is typed — until then there is no school to pick a list by) and is cleared if
+the participant changes school to one the chosen name doesn't belong to.
+
+**The pairing is enforced server-side, not just in the dropdown.** The list is
+resolved from the participant's *resolved* school name through the same
+`isManaratSchool` substring test the host-school Olympiad rate uses, so a typed
+"not listed" school containing "manarat" groups with Manarat — and a name from the
+wrong list is rejected rather than stored.
+
+Both lists live in `stemfest-registration.ts` exactly as the club supplied them
+and are exported alphabetically: 49 names is more than anyone scans, and Radix's
+typeahead jumps by the visible label.
+
+**`stem_fest_registrations` gained a `reference` column**
+(`drizzle/add_stemfest_reference.sql`) — **run it in the Supabase SQL editor
+before deploying this**, because the insert writes it and an un-migrated database
+refuses the registration outright (the same ordering trap `total_fee` set). The
+*name* is stored rather than an id, since neither list is stable between editions
+and an old row must still read correctly. `NULL` covers both "filed before the
+question existed" and "not referred by anyone": the form offers that as an escape
+hatch — without it, a participant nobody referred could not submit at all — and
+it is written as NULL so the club's lists never carry a name that isn't a name.
+
+The admin table carries it in the expanded row, and the receipt echoes it back.
+
+One thing worth knowing for the other selects: Radix labels a trigger from the
+selected item, and items only mount when the list opens, so a value restored from
+a saved draft renders a **blank** trigger. The reference field renders the name
+directly to avoid that; `school`, `class` and `gender` still have the quirk.
+
+---
+
+## 2026-09-25 — Confirmation email links to `/syllabus`
+
+The payment-confirmed email gained a **Before the day** section: "The syllabus
+and rulebooks for every segment can be found on our syllabus page", with a
+`Syllabus & rulebooks` button pointing at `/syllabus` (opened in a new tab).
+
+**The link is absolute and refuses to point at localhost.** `.env` sets
+`NEXT_PUBLIC_BASE_URL=http://localhost:3000`, and a receipt in someone's inbox
+linking to localhost is a dead end they cannot fix — so a loopback value is
+discarded in favour of `https://manaratscience.club`, the same fallback
+`sitemap.ts` uses. A staging build therefore links at production, which still
+resolves.
+
+An email is read away from the site, so a relative `/syllabus` was never an
+option. The syllabus page links onward to the rulebooks (`/resources`), which is
+why one link covers both in the wording.
+
+---
+
+## 2026-09-25 — "You will receive an email shortly after you register"
+
+Copy only, **no plumbing**: nothing in the app emails a participant on submit, and
+the club sends this mail by hand. That is why the line names no sender and no
+timetable — if it is ever changed to promise a schedule, the sending has to be
+built first. `stemfestFormCopy.emailNotice` renders in two places: the form's
+summary sidebar (above the payment disclaimer, so it is visible before
+submitting) and the receipt the participant lands on straight after.
+
+---
+
+## 2026-09-25 — `/syllabus`: segment syllabi served from the Supabase `pdfs` bucket
+
+**New public route `/syllabus`** listing every segment's syllabus, with PDFs
+served straight from Supabase Storage. Discovery is a **Syllabus** card on
+`/resources` (+ a *Syllabus PDFs* link inside each segment's reserved panel), a
+footer link under *Get Involved*, `publicRoutes` and the sitemap.
+
+`src/lib/media.ts` gained **`PDFS_BUCKET = "pdfs"`** and **`pdfUrl(path, { download })`**
+— the existing public bucket the club already uses, not a new one. It
+percent-encodes each path segment, because the club's object keys are the
+filenames they uploaded (`MATH OLYMPIAD SYLLABUS.pdf`) and a raw space in a URL
+is invalid; `download` appends `?download`, which makes Supabase answer with
+`Content-Disposition: attachment` so a Download link saves instead of opening
+the viewer.
+
+**The rows are derived, not authored.** `src/lib/data/syllabus.ts` maps
+`stemfestSegments` for the section order and filters `stemfestEvents` for one row
+per event, so an event renamed on the registration form is renamed here and the
+two can never disagree. Each row's coverage line is computed from the event's
+own category rules and class lists ("Categories A–E · Class 3 – A2/12"), which is
+why moving a category boundary in the catalogue moves the line on this page.
+
+**Publishing is one line.** `publishedSyllabi` maps an event id to its object key
+in the bucket; four Olympiad syllabi (Mathematics, Physics, Bio-Chem, General
+Science) are already live and carry their real upload date, and the other eight
+rows render as dashed reserved space rather than dead links until the club
+releases them. The header counts what is actually published — currently `04 / 12`.
+
+Hard rules touched: none bent — Server Component, no new dependency, tokens only.
+`tsc`/`lint`/`build` clean, `verify.sh` 0 FAIL (4 pre-existing WARNs), `/syllabus`
+prerenders static.
 
 ---
 

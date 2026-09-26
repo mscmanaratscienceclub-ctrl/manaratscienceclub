@@ -9,6 +9,7 @@ import {
   AlertCircle,
   ArrowRight,
   Loader2,
+  Mail,
   Phone,
   ReceiptText,
   Save,
@@ -28,14 +29,19 @@ import {
 } from "@/components/ui/select";
 import { useReducedMotion } from "@/lib/hooks/use-reduced-motion";
 import {
+  STEMFEST_NO_REFERENCE_ID,
   STEMFEST_OTHER_SCHOOL_ID,
   computeFeeSummary,
   eligibleSegmentsForClass,
+  isManaratSchool,
+  referencesForSchool,
+  resolveReferenceName,
   stemfestClasses,
   stemfestClassGroups,
   stemfestEvents,
   stemfestFormCopy,
   stemfestGenders,
+  stemfestNoReferenceLabel,
   stemfestOtherSchoolLabel,
   stemfestPaymentCopy,
   stemfestRegistrationIdHint,
@@ -119,6 +125,19 @@ export default function StemfestRegistrationForm() {
   const selectedEventIds = values.eventIds ?? [];
   const isOtherSchool = values.school === STEMFEST_OTHER_SCHOOL_ID;
 
+  // Resolved once, exactly as the server resolves it, so the list of names a
+  // participant is offered is the list the server will accept from them.
+  const resolvedSchool = resolveSchoolName(values);
+  const isManaratAudience = isManaratSchool(resolvedSchool);
+  const referenceOptions = useMemo(
+    () => referencesForSchool(resolvedSchool),
+    [resolvedSchool],
+  );
+  // The field appears once a school is chosen — and for "not listed", once a
+  // name has been typed, because until then there is no school to pick a list by.
+  const showReferenceField =
+    Boolean(values.school) && (!isOtherSchool || values.schoolOther.trim().length > 1);
+
   // ── Hydration: restore the draft, or the receipt if they already submitted ──
   useEffect(() => setMounted(true), []);
 
@@ -143,6 +162,16 @@ export default function StemfestRegistrationForm() {
     const timeout = setTimeout(() => writeStored(DRAFT_KEY, values), 500);
     return () => clearTimeout(timeout);
   }, [values, mounted, previousSubmission]);
+
+  // ── Clear a reference that belongs to the school they just moved away from ──
+  useEffect(() => {
+    if (!mounted) return;
+    const current = values.reference?.trim() ?? "";
+    // The escape hatch is school-independent, so it survives a change of school.
+    if (!current || current === STEMFEST_NO_REFERENCE_ID) return;
+    if (referenceOptions.includes(current)) return;
+    setValue("reference", "", { shouldValidate: false });
+  }, [mounted, referenceOptions, values.reference, setValue]);
 
   // ── Drop picks the newly-chosen class isn't eligible for ───────────────────
   useEffect(() => {
@@ -199,6 +228,7 @@ export default function StemfestRegistrationForm() {
       participant: {
         name: submitted.name,
         school: resolveSchoolName(submitted),
+        reference: resolveReferenceName(submitted.reference),
         classId: submitted.classId,
         phone: submitted.phone,
         email: submitted.email,
@@ -349,6 +379,82 @@ export default function StemfestRegistrationForm() {
                         {...register("schoolOther")}
                       />
                     </FieldShell>
+                  </Field>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+
+            {/* Keyed off the school above: the names change with the audience,
+                so the field exists only once there is a school to pick from. */}
+            <AnimatePresence initial={false}>
+              {showReferenceField ? (
+                <motion.div
+                  key="stemfest-reference"
+                  initial={reducedMotion ? false : { opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <Field
+                    index={nextIndex()}
+                    id="stemfest-reference"
+                    label={stemfestFormCopy.referenceLabel}
+                    error={errors.reference?.message}
+                    hint={stemfestFormCopy.referenceHint}
+                  >
+                    <Controller
+                      control={control}
+                      name="reference"
+                      render={({ field }) => (
+                        <FieldShell invalid={Boolean(errors.reference)}>
+                          <Select
+                            value={field.value ?? ""}
+                            onValueChange={field.onChange}
+                          >
+                            <SelectTrigger
+                              id="stemfest-reference"
+                              aria-invalid={Boolean(errors.reference)}
+                            >
+                              {/* Radix labels the trigger from the selected
+                                  item, and items only mount when the list opens
+                                  — so a value restored from a draft would show a
+                                  blank trigger. The name *is* the value here, so
+                                  rendering it directly fixes that without a
+                                  second lookup. Radix skips its own item-text
+                                  portal when children are supplied. */}
+                              <SelectValue
+                                placeholder={stemfestFormCopy.referencePlaceholder}
+                              >
+                                {field.value === STEMFEST_NO_REFERENCE_ID
+                                  ? stemfestNoReferenceLabel
+                                  : field.value || undefined}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                <SelectLabel>
+                                  {isManaratAudience
+                                    ? stemfestFormCopy.referenceGroupManarat
+                                    : stemfestFormCopy.referenceGroupOther}
+                                </SelectLabel>
+                                {referenceOptions.map((name) => (
+                                  <SelectItem key={name} value={name}>
+                                    {name}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                              {/* The escape hatch sits below the list, like the
+                                  school picker's, so it never reads as a name. */}
+                              <SelectSeparator />
+                              <SelectItem value={STEMFEST_NO_REFERENCE_ID}>
+                                {stemfestNoReferenceLabel}
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FieldShell>
+                      )}
+                    />
                   </Field>
                 </motion.div>
               ) : null}
@@ -652,6 +758,10 @@ export default function StemfestRegistrationForm() {
             <p className="flex items-center gap-2 font-space-body text-xs leading-relaxed text-space-muted">
               <Save className="size-3.5 shrink-0 text-ion" aria-hidden="true" />
               Saved automatically on this device.
+            </p>
+            <p className="mt-4 flex items-start gap-2 border-t border-space-line-soft pt-4 font-space-body text-xs leading-relaxed text-space-muted">
+              <Mail className="mt-0.5 size-3.5 shrink-0 text-ion" aria-hidden="true" />
+              <span>{stemfestFormCopy.emailNotice}</span>
             </p>
             <p className="mt-4 flex items-start gap-2 border-t border-space-line-soft pt-4 font-space-body text-xs leading-relaxed text-space-muted">
               <Phone className="mt-0.5 size-3.5 shrink-0 text-ion" aria-hidden="true" />

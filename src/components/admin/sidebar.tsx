@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, GraduationCap, FlaskConical, ExternalLink, LogOut, ShieldCheck, PenSquare, HandHeart, MessageSquareText } from "lucide-react";
+import { LayoutDashboard, GraduationCap, FlaskConical, ExternalLink, LogOut, ShieldCheck, PenSquare, HandHeart, Mail, MessageSquareText } from "lucide-react";
 import { signOut } from "@/lib/auth/client";
 import { trackEvent, resetAnalytics } from "@/lib/analytics";
 import { clearSentryUser } from "@/lib/sentry-helpers";
@@ -18,6 +18,9 @@ const formItems = [
   { href: "/admin/volunteer", label: "Volunteer", icon: HandHeart, exact: false },
   { href: "/admin/science-competition", label: "Science Competition", icon: FlaskConical, exact: false },
   { href: "/admin/sms-logs", label: "SMS Logs", icon: MessageSquareText, exact: false },
+];
+const outreachItems = [
+  { href: "/admin/emails", label: "Bulk Emails", icon: Mail, exact: false },
 ];
 
 export default function AdminSidebar({ user }: SidebarProps) {
@@ -65,6 +68,9 @@ export default function AdminSidebar({ user }: SidebarProps) {
 
         <p className="mb-1 mt-6 px-3 text-xs font-bold uppercase tracking-widest text-white/25">Form Responses</p>
         <div className="space-y-0.5">{renderLinks(formItems)}</div>
+
+        <p className="mb-1 mt-6 px-3 text-xs font-bold uppercase tracking-widest text-white/25">Outreach</p>
+        <div className="space-y-0.5">{renderLinks(outreachItems)}</div>
 
         <div className="mt-6 space-y-0.5 border-t border-white/8 pt-4">
           <Link href="/cms" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-manara-yellow/80 transition-colors hover:bg-white/5 hover:text-manara-yellow">

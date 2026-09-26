@@ -33,6 +33,19 @@ import {
   type AdminSourceId,
 } from "@/lib/admin/filters";
 import {
+  BULK_EMAIL_BATCH_SIZE,
+  BULK_EMAIL_DELAY_MS,
+  BULK_EMAIL_MAX_RECIPIENTS,
+  bulkEmailSendSchema,
+  bulkEmailStateSchema,
+  type BulkEmailAudience,
+  type BulkEmailBatchResult,
+  type BulkEmailFailure,
+  type BulkEmailKind,
+  type BulkEmailRecipient,
+  type BulkEmailSendInput,
+} from "@/lib/admin/bulk-email";
+import {
   adminRowIdSchema,
   contactEmailSchema,
   isSmsLogStatus,
@@ -61,7 +74,7 @@ import {
   type RegistrationTrendPoint,
   type SchoolCountRow,
 } from "@/lib/admin/dashboard";
-import { sendPaymentVerifiedEmail } from "@/lib/email/resend";
+import { sendCustomEmail, sendPaymentVerifiedEmail } from "@/lib/email/resend";
 import { z } from "zod";
 
 function assertAdmin(role: string) {
@@ -488,6 +501,12 @@ export interface StemfestAdminRow {
   school: string;
   segments: string;
   /**
+   * Who referred the participant, from the list for their school. `null` for a
+   * row filed before the question existed, and for "not referred by anyone" —
+   * both read as an em dash in the panel.
+   */
+  reference: string | null;
+  /**
    * What the participant was told to send, in BDT, or `null` for a row filed
    * before the column existed. What the club *asked for*, as opposed to `amount`
    * below, which is what a forwarded SMS says actually arrived.
@@ -549,6 +568,7 @@ export async function searchStemfestRegistrations(
         class: t.class,
         school: t.school,
         segments: t.segments,
+        reference: t.reference,
         totalFee: t.totalFee,
         transactionId: t.transactionId,
         paymentNumber: t.paymentNumber,
@@ -1264,7 +1284,6 @@ function stemfestDecisionSelection() {
     createdAt: t.createdAt,
     status: stemfestEffectivePaymentStatus(),
     decision: t.paymentDecision,
-    decidedAt: t.paymentDecidedAt,
     amount: stemfestPaymentAmount(),
   };
 }
@@ -1284,7 +1303,6 @@ interface StemfestDecisionTarget {
   /** Effective status *before* the write: the decision, or the forwarded-SMS match. */
   status: StemfestPaymentStatus;
   decision: StemfestPaymentStatus | null;
-  decidedAt: Date | null;
   amount: string | null;
 }
 
@@ -1311,7 +1329,7 @@ function confirmationAmount(amount: string | null): string | undefined {
   return Number.isFinite(value) ? formatBdt(value) : undefined;
 }
 
-/** Submission time as the email prints it: the admin's clock, same as `verifiedOn`. */
+/** Submission time as the email prints it, on the admin's clock. */
 function confirmationDate(value: Date | null): string | undefined {
   return value ? paymentConfirmationFormatter.format(value) : undefined;
 }
@@ -1328,7 +1346,6 @@ function confirmationDate(value: Date | null): string | undefined {
 async function deliverConfirmation(
   target: StemfestDecisionTarget,
   to: string,
-  confirmedAt: Date,
 ): Promise<{ sent: boolean; detail: string }> {
   const result = await sendPaymentVerifiedEmail({
     registrationCode: target.registrationCode || undefined,
@@ -1342,7 +1359,6 @@ async function deliverConfirmation(
     transactionId: target.transactionId,
     paymentNumber: target.paymentNumber,
     segments: target.segments,
-    verifiedOn: paymentConfirmationFormatter.format(confirmedAt),
     submittedOn: confirmationDate(target.createdAt),
     amount: confirmationAmount(target.amount),
   });
@@ -1458,11 +1474,9 @@ export async function setStemfestPaymentStatus(
 /**
  * Sends the confirmation again, for the admin whose participant never received it.
  *
- * A resend is only offered for a payment that reads `verified`, and the email is
- * dated from the decision on record (`payment_decided_at`) rather than from now —
- * a receipt that changes its date every time it is re-sent is not a receipt. Rows
- * verified by a forwarded SMS have no decision time, so the moment of the resend is
- * the best available answer.
+ * A resend is only offered for a payment that reads `verified` — the receipt tells
+ * the participant the club checked their payment, so there is nothing to send until
+ * it has.
  */
 export async function resendStemfestPaymentEmail(
   rowId: string,
@@ -1470,58 +1484,68 @@ export async function resendStemfestPaymentEmail(
   return statusAction(async () => {
     await requireAdmin();
     const id = parseInput(adminRowIdSchema, rowId);
-    const t = stemfestRegistrations;
-
-    const target = await withDbTimeout(
-      "resendStemfestPaymentEmail",
-      async (tx): Promise<StemfestDecisionTarget> => {
-        const [row] = await tx
-          .select(stemfestDecisionSelection())
-          .from(t)
-          .where(eq(t.id, id));
-
-        if (!row) {
-          throw new StatusRefusal(
-            "That registration is no longer there. Refresh the table and try again.",
-          );
-        }
-
-        return row;
-      },
-    );
-
-    if (target.status !== "verified") {
-      const currentLabel =
-        statusOption(stemfestPaymentStatusOptions, target.status)?.label ??
-        target.status;
-
-      throw new StatusRefusal(
-        `Only a verified payment has a confirmation to send — this one is ${currentLabel.toLowerCase()}.`,
-      );
-    }
-
-    const email = target.email?.trim() ?? "";
-
-    if (!email) {
-      throw new StatusRefusal(
-        `No contact email on file for ${target.name} — add one first, then send.`,
-      );
-    }
-
-    const delivery = await deliverConfirmation(
-      target,
-      email,
-      target.decidedAt ?? new Date(),
-    );
-
-    if (!delivery.sent) {
-      return { ok: false, message: `No email went out — ${delivery.detail}` };
-    }
-
-    await recordConfirmationSent(id);
-
-    return { ok: true, message: delivery.detail };
+    return deliverStemfestConfirmation(id);
   });
+}
+
+/**
+ * The delivery behind a resend, with no auth check of its own.
+ *
+ * Split out because the bulk sender authenticates once for a whole batch and then
+ * calls this per recipient — re-reading the session on every row of a forty-row
+ * blast would be forty needless round trips. The public entry points still go
+ * through `resendStemfestPaymentEmail`, which checks the admin first.
+ */
+async function deliverStemfestConfirmation(
+  id: string,
+): Promise<AdminStatusActionResult> {
+  const t = stemfestRegistrations;
+
+  const target = await withDbTimeout(
+    "deliverStemfestConfirmation",
+    async (tx): Promise<StemfestDecisionTarget> => {
+      const [row] = await tx
+        .select(stemfestDecisionSelection())
+        .from(t)
+        .where(eq(t.id, id));
+
+      if (!row) {
+        throw new StatusRefusal(
+          "That registration is no longer there. Refresh the table and try again.",
+        );
+      }
+
+      return row;
+    },
+  );
+
+  if (target.status !== "verified") {
+    const currentLabel =
+      statusOption(stemfestPaymentStatusOptions, target.status)?.label ??
+      target.status;
+
+    throw new StatusRefusal(
+      `Only a verified payment has a confirmation to send — this one is ${currentLabel.toLowerCase()}.`,
+    );
+  }
+
+  const email = target.email?.trim() ?? "";
+
+  if (!email) {
+    throw new StatusRefusal(
+      `No contact email on file for ${target.name} — add one first, then send.`,
+    );
+  }
+
+  const delivery = await deliverConfirmation(target, email);
+
+  if (!delivery.sent) {
+    return { ok: false, message: `No email went out — ${delivery.detail}` };
+  }
+
+  await recordConfirmationSent(id);
+
+  return { ok: true, message: delivery.detail };
 }
 
 /**
@@ -1648,5 +1672,252 @@ export async function setSmsLogStatus(
       message: `Marked ${label} and unlinked — a registration this message was the only evidence for now reads Pending.`,
     };
   });
+}
+
+// ── Bulk email ───────────────────────────────────────────────────────────────
+//
+// The audience behind `/admin/emails`. Both kinds of mail read the *same* filter
+// set as the table and the printed report — `stemfestWhere`, the one builder — so
+// "participants from Class 9" selects the same people whichever section of the
+// page the admin uses, and can never drift from what the table shows.
+
+/**
+ * Who a send would reach: the filtered registrations that carry an address.
+ *
+ * A confirmation is one per registration, so nothing is deduplicated — two
+ * siblings who registered separately have two receipts. A custom message *is*
+ * deduplicated by address, because a family that receives the same notice twice
+ * has been told the club is not paying attention.
+ */
+async function bulkEmailRecipients(
+  state: AdminQueryState,
+  kind: BulkEmailKind,
+): Promise<BulkEmailAudience> {
+  const t = stemfestRegistrations;
+
+  const where = and(
+    stemfestWhere(state),
+    kind === "confirmation" ? stemfestPaymentFilter("verified") : undefined,
+    sql`${t.email} is not null and btrim(${t.email}) <> ''`,
+  );
+
+  return withDbTimeout("bulkEmailRecipients", async (tx) => {
+    const rows = await tx
+      .select({
+        id: t.id,
+        name: t.name,
+        email: t.email,
+        emailSentAt: t.paymentEmailSentAt,
+      })
+      .from(t)
+      .where(where)
+      .orderBy(asc(t.createdAt), asc(t.id))
+      // One past the ceiling: that extra row is what says "there are more" without
+      // a second count query.
+      .limit(BULK_EMAIL_MAX_RECIPIENTS + 1);
+
+    const truncated = rows.length > BULK_EMAIL_MAX_RECIPIENTS;
+    const seen = new Set<string>();
+    const recipients: BulkEmailRecipient[] = [];
+
+    for (const row of rows.slice(0, BULK_EMAIL_MAX_RECIPIENTS)) {
+      const email = row.email?.trim() ?? "";
+      if (!email) continue;
+
+      if (kind === "custom") {
+        const key = email.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+      }
+
+      recipients.push({
+        id: row.id,
+        name: row.name,
+        email,
+        alreadySent: row.emailSentAt !== null,
+      });
+    }
+
+    return { recipients, truncated };
+  });
+}
+
+/**
+ * The audience for one kind of mail, for the page to show before anything is
+ * sent — an admin should see who a blast would reach before pressing the button.
+ */
+export async function getBulkEmailAudience(
+  state: AdminQueryState,
+  kind: string,
+): Promise<BulkEmailAudience> {
+  await requireAdmin();
+  const parsedKind = parseInput(z.enum(["custom", "confirmation"]), kind);
+  return bulkEmailRecipients(state, parsedKind);
+}
+
+/** Resend's default plan accepts two requests a second; this spaces them out. */
+function bulkEmailPause(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** A custom message, reported the same shape a receipt's send is. */
+async function deliverCustomMessage(
+  recipient: BulkEmailRecipient,
+  subject: string,
+  body: string,
+): Promise<AdminStatusActionResult> {
+  const result = await sendCustomEmail({
+    to: recipient.email,
+    name: recipient.name,
+    subject,
+    body,
+  });
+
+  if (result.success && !result.simulated) {
+    return { ok: true, message: `Message sent to ${recipient.email}.` };
+  }
+
+  if (result.success) {
+    return {
+      ok: false,
+      message:
+        "this environment has no working Resend key, so the message was only written to the server log.",
+    };
+  }
+
+  return {
+    ok: false,
+    message: `Resend refused it: ${result.error ?? "no reason given"}.`,
+  };
+}
+
+/**
+ * One recipient of a batch, with a refusal contained to that recipient.
+ *
+ * A single row that has stopped being verified (or lost its address under the
+ * admin) is a failure to report, not a reason to abandon the forty rows behind
+ * it. A genuine fault — a lost connection, a failed write — still throws, because
+ * that is not the admin's to read and the batch should stop.
+ */
+async function deliverBulkRecipient(
+  kind: BulkEmailKind,
+  recipient: BulkEmailRecipient,
+  subject: string,
+  body: string,
+): Promise<AdminStatusActionResult> {
+  try {
+    return kind === "confirmation"
+      ? await deliverStemfestConfirmation(recipient.id)
+      : await deliverCustomMessage(recipient, subject, body);
+  } catch (error) {
+    if (error instanceof StatusRefusal) {
+      return { ok: false, message: error.message };
+    }
+    throw error;
+  }
+}
+
+/**
+ * Sends one slice of a bulk blast.
+ *
+ * The audience is rebuilt here rather than trusted from the browser: a client can
+ * name a filter state, never an address, so a forged call can only ever reach a
+ * registration an admin could already see. Slicing on the server also means the
+ * offsets are stable regardless of what the composer believes.
+ *
+ * The loop is deliberately sequential. Resend rate-limits by request, so parallel
+ * sends would be throttled and reported as failures; one at a time with a pause is
+ * slower and correct.
+ */
+export async function sendBulkEmailBatch(
+  input: BulkEmailSendInput,
+): Promise<BulkEmailBatchResult> {
+  try {
+    await requireAdmin();
+    const state = parseInput(bulkEmailStateSchema, input.state);
+    const send = parseInput(bulkEmailSendSchema, {
+      kind: input.kind,
+      offset: input.offset,
+      subject: input.subject,
+      body: input.body,
+    });
+
+    const audience = await bulkEmailRecipients(state, send.kind);
+
+    if (audience.truncated) {
+      throw new StatusRefusal(
+        `More than ${BULK_EMAIL_MAX_RECIPIENTS} registrations match these filters. Narrow them and send again — nothing has been mailed yet.`,
+      );
+    }
+
+    const slice = audience.recipients.slice(
+      send.offset,
+      send.offset + BULK_EMAIL_BATCH_SIZE,
+    );
+
+    // Past the end, or the audience shrank while the blast was running.
+    if (slice.length === 0) {
+      return {
+        ok: true,
+        total: audience.recipients.length,
+        sent: 0,
+        failed: 0,
+        failures: [],
+        nextOffset: null,
+      };
+    }
+
+    let sent = 0;
+    let failed = 0;
+    const failures: BulkEmailFailure[] = [];
+
+    for (const [index, recipient] of slice.entries()) {
+      const result = await deliverBulkRecipient(
+        send.kind,
+        recipient,
+        send.subject ?? "",
+        send.body ?? "",
+      );
+
+      if (result.ok) {
+        sent += 1;
+      } else {
+        failed += 1;
+        failures.push({
+          name: recipient.name,
+          email: recipient.email,
+          message: result.message,
+        });
+      }
+
+      // Not after the last one: a batch hands back to the composer the moment it
+      // is finished, so the progress bar moves as soon as there is news.
+      if (index < slice.length - 1) await bulkEmailPause(BULK_EMAIL_DELAY_MS);
+    }
+
+    const nextOffset = send.offset + slice.length;
+
+    return {
+      ok: true,
+      total: audience.recipients.length,
+      sent,
+      failed,
+      failures,
+      nextOffset: nextOffset >= audience.recipients.length ? null : nextOffset,
+    };
+  } catch (error) {
+    if (error instanceof StatusRefusal) {
+      return {
+        ok: false,
+        message: error.message,
+        total: 0,
+        sent: 0,
+        failed: 0,
+        failures: [],
+        nextOffset: null,
+      };
+    }
+    throw error;
+  }
 }
 

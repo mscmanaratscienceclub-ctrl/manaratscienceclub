@@ -25,13 +25,34 @@ interface PaymentVerifiedEmailOptions {
    * separated sentence and guessing at separators would mangle it.
    */
   segments: string;
-  /** When the payment was confirmed, already formatted in the admin timezone. */
-  verifiedOn: string;
   /** When the registration was submitted, already formatted. Optional for legacy rows. */
   submittedOn?: string;
   /** The amount a forwarded SMS reported, already formatted. Omitted when unknown. */
   amount?: string;
 }
+
+/**
+ * Absolute base for links inside the email.
+ *
+ * An email is read away from the site, so a relative `/syllabus` would be a dead
+ * end. Same env var and same fallback as `src/app/sitemap.ts`, so a link in a
+ * mail and a link in the sitemap can never point at different hosts.
+ *
+ * A loopback host is discarded rather than used: `.env` sets
+ * `NEXT_PUBLIC_BASE_URL=http://localhost:3000`, and a participant who received a
+ * receipt linking to localhost has been handed a dead end in a mail they cannot
+ * fix. Falling back to the live domain fails safe — worst case the link points at
+ * production from a staging build, which still resolves.
+ */
+const configuredBaseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+const BASE_URL = (
+  !configuredBaseUrl || /localhost|127\.0\.0\.1/.test(configuredBaseUrl)
+    ? "https://manaratscience.club"
+    : configuredBaseUrl
+).replace(/\/+$/, "");
+
+/** Where the club's segment material lives, linked from every confirmation. */
+const SYLLABUS_URL = `${BASE_URL}/syllabus`;
 
 /**
  * The interpolated names, TrxIDs and event descriptions are whatever the
@@ -82,7 +103,6 @@ export function getPaymentVerifiedEmailHtml({
   transactionId,
   paymentNumber,
   segments,
-  verifiedOn,
   submittedOn,
   amount,
 }: PaymentVerifiedEmailOptions): string {
@@ -154,13 +174,20 @@ ${detailRow("Transaction ID", escapeHtml(transactionId), true)}
 ${detailRow("bKash number", escapeHtml(paymentNumber || "—"), true)}
 ${amount ? detailRow("Amount received", escapeHtml(amount)) : ""}
 ${detailRow("Registered on", escapeHtml(submittedOn || "—"))}
-${detailRow("Confirmed on", verifiedOn)}
               </table>
 
 ${sectionHeading("Confirmed events")}
               <p style="font-size: 15px; line-height: 1.7; color: #111827; margin: 0;">
                 ${escapeHtml(segments || "General")}
               </p>
+
+${sectionHeading("Before the day")}
+              <p style="font-size: 15px; line-height: 1.6; color: #4b5563; margin: 0 0 16px 0;">
+                The syllabus and rulebooks for every segment can be found on our syllabus page — check your event's material before the fest.
+              </p>
+              <a href="${SYLLABUS_URL}" target="_blank" style="display: inline-block; padding: 12px 24px; background-color: #ff7053; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 14px; border-radius: 9999px;">
+                Syllabus &amp; rulebooks
+              </a>
 
               <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
 

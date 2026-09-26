@@ -58,10 +58,18 @@ export const resourcesCopy = {
   pendingNote:
     "The club has not published this material yet. It will appear on this page before the event.",
   rulebookLabel: "Rulebook",
+  syllabusLinkLabel: "Syllabus PDFs",
   emptyItemsNote: "Event list to be confirmed.",
 } as const;
 
 export const generalResources: GeneralResource[] = [
+  {
+    id: "syllabus",
+    label: "Syllabus",
+    description:
+      "What every segment is set from — one PDF per event, published as each segment finalises it.",
+    href: "/syllabus",
+  },
   {
     id: "rules",
     label: "Event rules",
