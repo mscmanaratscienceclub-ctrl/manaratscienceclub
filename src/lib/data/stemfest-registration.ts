@@ -187,8 +187,8 @@ export const stemfestSchools: StemfestSchoolOption[] = [
     name: "Bangladesh Public Administration Training Centre (BPATC) School and College, Savar",
   },
   {
-    id: "jalalabad-cantonment-public",
-    name: "Jalalabad Cantonment Public School and College",
+    id: "academia",
+    name: "Academia",
   },
   { id: "dhaka-commerce-college", name: "Dhaka Commerce College" },
   { id: "noubahini-college-dhaka", name: "Noubahini College, Dhaka" },
@@ -457,6 +457,7 @@ export interface StemfestEntry {
  */
 const otherSchoolReferenceNames: string[] = [
   "Abdullah Al Reyan",
+  "Faiyaz Khan",
   "Md. Tasrik Islam",
   "Sanjeda Siddika",
   "Shanjida Islam Mim",
