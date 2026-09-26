@@ -69,8 +69,12 @@ export interface BulkEmailRecipient {
   /** Trimmed and non-empty — a row without an address is never a recipient. */
   email: string;
   /**
-   * Whether a confirmation has already been accepted for this row. Only read by
-   * the confirmation section, which says so before re-sending.
+   * Whether a confirmation has already been accepted for this row.
+   *
+   * The confirmation blast **leaves these rows alone**. The stamp on the row is
+   * the record of who holds a receipt, so re-running a blast that stopped halfway
+   * cannot write to anyone twice. The per-row button on the Science Competition
+   * table is still there for the participant whose message bounced.
    */
   alreadySent: boolean;
 }
@@ -102,6 +106,12 @@ export interface BulkEmailBatchResult {
   total: number;
   sent: number;
   failed: number;
+  /**
+   * Confirmations deliberately not sent, because the row already carries an
+   * accepted receipt. Counted rather than silently dropped, so a blast that
+   * reaches fewer people than the audience says why.
+   */
+  skipped: number;
   failures: BulkEmailFailure[];
   /** Offset for the next call, or `null` once the audience is exhausted. */
   nextOffset: number | null;

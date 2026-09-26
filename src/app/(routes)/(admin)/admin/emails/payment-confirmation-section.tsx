@@ -41,13 +41,15 @@ export default function PaymentConfirmationSection({
   const alreadySent = audience.recipients.filter(
     (recipient) => recipient.alreadySent,
   ).length;
-  const ready = count > 0 && !audience.truncated && !progress.running;
+  /** Who is actually left to write to: a receipt already sent is left alone. */
+  const unsent = count - alreadySent;
+  const ready = unsent > 0 && !audience.truncated && !progress.running;
 
   async function handleSend() {
     setConfirming(false);
     await send({ state, kind: "confirmation", expected: count });
     // The rows' sent timestamps have moved; re-read the audience so the
-    // "already received one" count is current.
+    // "already had one" count is current.
     router.refresh();
   }
 
@@ -67,7 +69,8 @@ export default function PaymentConfirmationSection({
           <p className="mt-1 font-body text-sm text-ink/60">
             The receipt each verified participant is entitled to — their
             registration ID, payment details and confirmed events. Built per
-            registration, so there is nothing to write.
+            registration, so there is nothing to write. Anyone whose receipt has
+            already gone out is left alone, so running this again is safe.
           </p>
         </div>
       </header>
@@ -83,16 +86,22 @@ export default function PaymentConfirmationSection({
           Verify payments on the Science Competition table, or clear the filters
           above.
         </p>
+      ) : unsent === 0 ? (
+        <p className="mt-4 rounded-xl bg-emerald-50 px-3 py-2 font-body text-sm text-emerald-700">
+          All {count} {count === 1 ? "registration" : "registrations"} in this
+          audience already have their receipt — there is nothing left to send.
+        </p>
       ) : (
         <p className="mt-4 font-body text-sm text-ink/60">
-          <span className="font-semibold text-ink">{count}</span>{" "}
-          {count === 1 ? "receipt" : "receipts"} will go out
+          <span className="font-semibold text-ink">{unsent}</span>{" "}
+          {unsent === 1 ? "receipt" : "receipts"} will go out
           {alreadySent > 0 && (
             <>
               {" "}
-              — {alreadySent} of them{" "}
-              {alreadySent === 1 ? "has" : "have"} already received one and will
-              get it again
+              — {alreadySent}{" "}
+              {alreadySent === 1 ? "registration has" : "registrations have"}{" "}
+              already had one delivered and {alreadySent === 1 ? "is" : "are"}{" "}
+              left alone
             </>
           )}
           .
@@ -108,7 +117,7 @@ export default function PaymentConfirmationSection({
               className="inline-flex items-center gap-2 rounded-xl bg-manara-teal px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-manara-teal/90 focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none"
             >
               <Send className="h-4 w-4" aria-hidden="true" />
-              Yes, send {count} {count === 1 ? "receipt" : "receipts"}
+              Yes, send {unsent} {unsent === 1 ? "receipt" : "receipts"}
             </button>
             <button
               type="button"
@@ -125,8 +134,8 @@ export default function PaymentConfirmationSection({
             disabled={!ready}
             title={
               ready
-                ? undefined
-                : "Narrow the audience above, or verify some payments first."
+                ? "Only registrations that have not received a receipt yet are written to."
+                : "Nobody in this audience is waiting on a receipt — narrow the filters, or verify some payments first."
             }
             className={cn(
               "inline-flex items-center gap-2 rounded-xl bg-manara-teal px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-manara-teal/90 focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none",

@@ -45,6 +45,17 @@ The page has two sections over a single audience:
   sends the *same* document the per-row button sends, so a participant cannot get
   a different receipt depending on which button an admin pressed.
 
+**A confirmation never goes out twice.** A row that already carries an accepted
+receipt (`payment_email_sent_at`) is left alone and counted as *skipped*, so a
+blast re-run after it stopped halfway cannot write to anyone twice. The check sits
+in the send loop, **not** in the audience query, and that placement is the whole
+gotcha: the audience is rebuilt on every batch and sliced by offset, so filtering
+stamped rows out of the query would shrink the list under the cursor as the blast
+stamped its way through it — each batch would start one batch's worth further along
+and silently skip that many people. The stamp rules out a *recipient*, never a
+*list*. The per-row button on the Science Competition table is still a deliberate
+resend, for the participant whose message bounced.
+
 **The audience is the URL, not client state.** The filter fields come straight
 out of `stemfestSource.filters` and the recipient query runs through the same
 `stemfestWhere` builder the Science Competition table and the printed report use,

@@ -1862,6 +1862,7 @@ export async function sendBulkEmailBatch(
         total: audience.recipients.length,
         sent: 0,
         failed: 0,
+        skipped: 0,
         failures: [],
         nextOffset: null,
       };
@@ -1869,9 +1870,23 @@ export async function sendBulkEmailBatch(
 
     let sent = 0;
     let failed = 0;
+    let skipped = 0;
     const failures: BulkEmailFailure[] = [];
 
     for (const [index, recipient] of slice.entries()) {
+      // A receipt has already been accepted for this row, so nothing goes out.
+      //
+      // The check is here, in the loop, rather than in the audience query on
+      // purpose. The audience is rebuilt on every batch and sliced by offset, so
+      // filtering already-stamped rows out of the query would shrink the list
+      // under the cursor as the blast stamps its way through it — batch two would
+      // start ten rows further along and silently skip ten people. The stamp
+      // rules the *recipient* out, never the list.
+      if (send.kind === "confirmation" && recipient.alreadySent) {
+        skipped += 1;
+        continue;
+      }
+
       const result = await deliverBulkRecipient(
         send.kind,
         recipient,
@@ -1902,6 +1917,7 @@ export async function sendBulkEmailBatch(
       total: audience.recipients.length,
       sent,
       failed,
+      skipped,
       failures,
       nextOffset: nextOffset >= audience.recipients.length ? null : nextOffset,
     };
@@ -1913,6 +1929,7 @@ export async function sendBulkEmailBatch(
         total: 0,
         sent: 0,
         failed: 0,
+        skipped: 0,
         failures: [],
         nextOffset: null,
       };

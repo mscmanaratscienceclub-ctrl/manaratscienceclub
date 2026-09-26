@@ -15,6 +15,8 @@ export interface BulkSendProgress {
   total: number;
   sent: number;
   failed: number;
+  /** Left alone because the row already carries an accepted receipt. */
+  skipped: number;
   failures: BulkEmailFailure[];
   /** A refusal, or the closing sentence once a send has finished. */
   message: string | null;
@@ -26,6 +28,7 @@ const INITIAL: BulkSendProgress = {
   total: 0,
   sent: 0,
   failed: 0,
+  skipped: 0,
   failures: [],
   message: null,
   finished: false,
@@ -63,6 +66,7 @@ export function useBulkEmailSend() {
       let offset = 0;
       let sent = 0;
       let failed = 0;
+      let skipped = 0;
       let total = expected;
       const failures: BulkEmailFailure[] = [];
 
@@ -82,6 +86,7 @@ export function useBulkEmailSend() {
               total: result.total || expected,
               sent,
               failed,
+              skipped,
               failures,
               message: result.message ?? "The send was refused.",
               finished: true,
@@ -92,6 +97,7 @@ export function useBulkEmailSend() {
           total = result.total;
           sent += result.sent;
           failed += result.failed;
+          skipped += result.skipped;
           failures.push(...result.failures);
 
           const more = result.nextOffset !== null;
@@ -102,6 +108,7 @@ export function useBulkEmailSend() {
             total,
             sent,
             failed,
+            skipped,
             failures: [...failures],
             message: null,
             finished: !more,
@@ -110,17 +117,22 @@ export function useBulkEmailSend() {
           if (!more) break;
         }
 
+        const leftAlone = skipped
+          ? ` · ${skipped} left alone (already receipted)`
+          : "";
+
         setProgress({
           running: false,
           total,
           sent,
           failed,
+          skipped,
           failures: [...failures],
           finished: true,
           message:
             failed === 0
-              ? `All ${sent} message${sent === 1 ? "" : "s"} sent.`
-              : `${sent} sent · ${failed} could not be sent — see the list below.`,
+              ? `All ${sent} message${sent === 1 ? "" : "s"} sent${leftAlone}.`
+              : `${sent} sent · ${failed} could not be sent${leftAlone} — see the list below.`,
         });
       } catch {
         setProgress((current) => ({
