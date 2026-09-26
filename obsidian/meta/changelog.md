@@ -8,6 +8,16 @@ updated: 2026-09-26
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
 
+## 2026-09-26 — Email templates rebuilt on a shared shell; Fredoka self-hosted
+
+Two changes, one commit:
+
+- **All four transactional emails (`verification`, `reset-password`, `payment-verified`, `custom-message`) now render from one shared shell** (`src/lib/email/templates/shell.ts`): cream page + white 560px card, cream header band with ink wordmark and a 3px coral top accent, deep-teal footer, shared paragraph/heading/button/detailRow primitives. Before, each template pasted its own copy of the shell, which is how reset-password drifted to a dark head while the others stayed light. Mail tokens live as named constants in the shell (mirroring globals.css brand tokens) because email renders outside the site's CSS; `verify.sh` excludes `lib/email/templates/` from token checks for exactly this reason.
+- **Contrast and copy fixes folded in:** the old coral header slab put white text on `#ff7053` at 2.7:1 (below AA even for large text) — ink on cream is 13.7:1; the receipt's ID card is now a cream panel with a coral left edge instead of the one-off coral-tinted card; coral is now a surface colour only (never text, where it sat at 2.7:1 on white); the reset email's "expires in 15 minutes" line was wrong (better-auth's reset uses the 1-hour default) and now says 1 hour, as does verification's previously vague "expires shortly". Escaping, the merge-tag renderer, the payment receipt's data model and legacy-row optionality are unchanged. Throwaway preview scaffolding that had been committed (`.email-preview/`, `scripts/render-email-preview.ts`) is removed and the directory is gitignored.
+- **Fredoka is self-hosted.** The Vercel build failed on `next/font/google` with Turbopack's "next/font/google queries have exactly one entry" — Fredoka is the only font in the project with two variable axes (wdth + wght), which trips Turbopack's font import map. It is now `next/font/local` from `src/app/fonts/Fredoka[wght].woff2` (the latin-subset variable woff2 Google serves for the wght-only query, wght 300–700); `--font-fredoka` keeps its name, so no consumer changed. Single-axis Google fonts (Rubik, DM Sans, Unbounded, Cormorant Garamond) still use `next/font/google` and are unaffected.
+
+Verified: `tsc --noEmit`, `pnpm lint`, `pnpm build` clean; `verify.sh` 0 FAIL (4 pre-existing WARNs); the four emails were rendered to a throwaway preview page and checked in the DOM (wordmark colour, footer band, button labels, ID-panel edge, zero coral-on-white text, zero em-dashes) before the scaffolding was deleted.
+
 Log a change here when it would surprise someone returning in six months: a new
 dependency, a new route or section, a convention bent, a bug whose cause is worth
 remembering. Routine commits do not need an entry.

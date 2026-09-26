@@ -3,14 +3,24 @@ import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
 import Providers from "@/providers";
-import { Cormorant_Garamond, DM_Sans, Fredoka, Rubik, Unbounded } from "next/font/google";
+import { Cormorant_Garamond, DM_Sans, Rubik, Unbounded } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-const fredoka = Fredoka({
-  subsets: ["latin"],
+/**
+ * Fredoka is self-hosted instead of `next/font/google`: it is the only font in
+ * this project with two variable axes (wdth + wght), and Turbopack's Google
+ * font import map fails on it at build time ("next/font/google queries have
+ * exactly one entry") — the Vercel build died on exactly that. The file is the
+ * latin-subset variable woff2 (wght 300-700) Google itself serves for the
+ * wght-only query; `--font-fredoka` keeps its name, so globals.css and every
+ * `font-display` consumer are untouched.
+ */
+const fredoka = localFont({
+  src: "./fonts/Fredoka[wght].woff2",
   variable: "--font-fredoka",
-  weight: ["400", "500", "600", "700"],
+  weight: "300 700",
+  display: "swap",
 });
 const rubik = Rubik({
   subsets: ["latin"],
