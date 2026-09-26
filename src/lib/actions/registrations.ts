@@ -1284,7 +1284,6 @@ function stemfestDecisionSelection() {
     createdAt: t.createdAt,
     status: stemfestEffectivePaymentStatus(),
     decision: t.paymentDecision,
-    decidedAt: t.paymentDecidedAt,
     amount: stemfestPaymentAmount(),
   };
 }
@@ -1304,7 +1303,6 @@ interface StemfestDecisionTarget {
   /** Effective status *before* the write: the decision, or the forwarded-SMS match. */
   status: StemfestPaymentStatus;
   decision: StemfestPaymentStatus | null;
-  decidedAt: Date | null;
   amount: string | null;
 }
 
@@ -1331,7 +1329,7 @@ function confirmationAmount(amount: string | null): string | undefined {
   return Number.isFinite(value) ? formatBdt(value) : undefined;
 }
 
-/** Submission time as the email prints it: the admin's clock, same as `verifiedOn`. */
+/** Submission time as the email prints it, on the admin's clock. */
 function confirmationDate(value: Date | null): string | undefined {
   return value ? paymentConfirmationFormatter.format(value) : undefined;
 }
@@ -1348,7 +1346,6 @@ function confirmationDate(value: Date | null): string | undefined {
 async function deliverConfirmation(
   target: StemfestDecisionTarget,
   to: string,
-  confirmedAt: Date,
 ): Promise<{ sent: boolean; detail: string }> {
   const result = await sendPaymentVerifiedEmail({
     registrationCode: target.registrationCode || undefined,
@@ -1362,7 +1359,6 @@ async function deliverConfirmation(
     transactionId: target.transactionId,
     paymentNumber: target.paymentNumber,
     segments: target.segments,
-    verifiedOn: paymentConfirmationFormatter.format(confirmedAt),
     submittedOn: confirmationDate(target.createdAt),
     amount: confirmationAmount(target.amount),
   });
@@ -1478,11 +1474,9 @@ export async function setStemfestPaymentStatus(
 /**
  * Sends the confirmation again, for the admin whose participant never received it.
  *
- * A resend is only offered for a payment that reads `verified`, and the email is
- * dated from the decision on record (`payment_decided_at`) rather than from now —
- * a receipt that changes its date every time it is re-sent is not a receipt. Rows
- * verified by a forwarded SMS have no decision time, so the moment of the resend is
- * the best available answer.
+ * A resend is only offered for a payment that reads `verified` — the receipt tells
+ * the participant the club checked their payment, so there is nothing to send until
+ * it has.
  */
 export async function resendStemfestPaymentEmail(
   rowId: string,
@@ -1543,11 +1537,7 @@ async function deliverStemfestConfirmation(
     );
   }
 
-  const delivery = await deliverConfirmation(
-    target,
-    email,
-    target.decidedAt ?? new Date(),
-  );
+  const delivery = await deliverConfirmation(target, email);
 
   if (!delivery.sent) {
     return { ok: false, message: `No email went out — ${delivery.detail}` };

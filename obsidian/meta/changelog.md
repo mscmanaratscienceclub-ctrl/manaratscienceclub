@@ -16,6 +16,21 @@ For *why* the conventions are what they are, see [[decisions-log]].
 
 ---
 
+## 2026-09-26 — Payment receipt drops the **Confirmed on** row
+
+The payment-confirmed email no longer prints the moment the payment was
+confirmed. It still carries the registration ID, the participant's details, the
+TrxID and wallet number, the amount received and the submission date — only the
+confirmation timestamp is gone.
+
+Removing it took `verifiedOn` out of the template, `resend.ts` and
+`deliverConfirmation`, which in turn retired `decidedAt` from
+`stemfestDecisionSelection()`: that column was read by nothing but the line that
+dated the receipt, and a column read by nobody is the drift the selection's own
+comment warns against.
+
+---
+
 ## 2026-09-26 — New admin section: **bulk emails** (`/admin/emails`)
 
 Admins can now write to a filtered group of STEM Fest registrations in one go.

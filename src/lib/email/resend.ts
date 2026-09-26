@@ -179,8 +179,6 @@ export interface PaymentVerifiedEmailOptions {
   paymentNumber: string;
   /** The registration's `segments` value: the events, already described. */
   segments: string;
-  /** Confirmation time, already formatted in `ADMIN_TIME_ZONE`. */
-  verifiedOn: string;
   /** Submission time, already formatted. Optional for legacy rows. */
   submittedOn?: string;
   /** The amount a forwarded SMS reported, already formatted. Omitted if unknown. */
@@ -206,7 +204,6 @@ export async function sendPaymentVerifiedEmail({
   transactionId,
   paymentNumber,
   segments,
-  verifiedOn,
   submittedOn,
   amount,
 }: PaymentVerifiedEmailOptions): Promise<SendEmailResult> {
@@ -223,7 +220,6 @@ export async function sendPaymentVerifiedEmail({
       transactionId,
       paymentNumber,
       segments,
-      verifiedOn,
       submittedOn,
       amount,
     }),

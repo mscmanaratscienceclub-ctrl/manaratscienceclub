@@ -25,8 +25,6 @@ interface PaymentVerifiedEmailOptions {
    * separated sentence and guessing at separators would mangle it.
    */
   segments: string;
-  /** When the payment was confirmed, already formatted in the admin timezone. */
-  verifiedOn: string;
   /** When the registration was submitted, already formatted. Optional for legacy rows. */
   submittedOn?: string;
   /** The amount a forwarded SMS reported, already formatted. Omitted when unknown. */
@@ -105,7 +103,6 @@ export function getPaymentVerifiedEmailHtml({
   transactionId,
   paymentNumber,
   segments,
-  verifiedOn,
   submittedOn,
   amount,
 }: PaymentVerifiedEmailOptions): string {
@@ -177,7 +174,6 @@ ${detailRow("Transaction ID", escapeHtml(transactionId), true)}
 ${detailRow("bKash number", escapeHtml(paymentNumber || "—"), true)}
 ${amount ? detailRow("Amount received", escapeHtml(amount)) : ""}
 ${detailRow("Registered on", escapeHtml(submittedOn || "—"))}
-${detailRow("Confirmed on", verifiedOn)}
               </table>
 
 ${sectionHeading("Confirmed events")}
