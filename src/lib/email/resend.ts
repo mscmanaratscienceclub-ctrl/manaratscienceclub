@@ -3,6 +3,7 @@ import { siteConfig } from "@/lib/data";
 import { getVerificationEmailHtml } from "./templates/verification-email";
 import { getResetPasswordEmailHtml } from "./templates/reset-password";
 import { getPaymentVerifiedEmailHtml } from "./templates/payment-verified";
+import { getCustomEmailHtml } from "./templates/custom-message";
 
 const apiKey = process.env.RESEND_API_KEY;
 export const resend = apiKey ? new Resend(apiKey) : null;
@@ -129,6 +130,36 @@ export async function sendResetPasswordEmail(recipient: EmailRecipient) {
     html: getResetPasswordEmailHtml({ name: recipient.name, url: recipient.url ?? "" }),
     label: "PASSWORD RESET",
     recipient,
+  });
+}
+
+export interface CustomEmailOptions {
+  to: string;
+  name: string;
+  /** The subject line, also used as the message's heading. */
+  subject: string;
+  /** The admin's prose, with `{{name}}` optionally standing in for a name. */
+  body: string;
+}
+
+/**
+ * A message an admin wrote, sent to a filtered audience from `/admin/emails`.
+ *
+ * The same `sendEmail` path every other mail takes, so a custom blast is logged in
+ * development and rate-limited in production exactly like a receipt — there is no
+ * second way out of the building.
+ */
+export async function sendCustomEmail({
+  to,
+  name,
+  subject,
+  body,
+}: CustomEmailOptions): Promise<SendEmailResult> {
+  return sendEmail({
+    subject,
+    html: getCustomEmailHtml({ subject, body, name }),
+    label: "CUSTOM MESSAGE",
+    recipient: { to, name },
   });
 }
 

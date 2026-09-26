@@ -1,6 +1,6 @@
 ---
 tags: [meta, changelog]
-updated: 2026-09-25
+updated: 2026-09-26
 ---
 
 # Changelog
@@ -13,6 +13,53 @@ dependency, a new route or section, a convention bent, a bug whose cause is wort
 remembering. Routine commits do not need an entry.
 
 For *why* the conventions are what they are, see [[decisions-log]].
+
+---
+
+## 2026-09-26 — New admin section: **bulk emails** (`/admin/emails`)
+
+Admins can now write to a filtered group of STEM Fest registrations in one go.
+The page has two sections over a single audience:
+
+- **Custom message** — a subject and body an admin writes, with `{{name}}`
+  replaced per recipient. One message per *address*, not per registration, so a
+  family that registered two siblings is not written to twice.
+- **Payment confirmations** — the existing receipt
+  (`getPaymentVerifiedEmailHtml`) sent to every **verified** payment the filters
+  match. This is the "blast all verified mails at once" the club asked for; it
+  sends the *same* document the per-row button sends, so a participant cannot get
+  a different receipt depending on which button an admin pressed.
+
+**The audience is the URL, not client state.** The filter fields come straight
+out of `stemfestSource.filters` and the recipient query runs through the same
+`stemfestWhere` builder the Science Competition table and the printed report use,
+so "participants from Class 9" means exactly the rows the table shows for that
+filter, and a reload reproduces it. `getBulkEmailAudience(state, kind)` resolves
+both counts server-side before render, so the admin sees who a blast reaches
+before pressing anything.
+
+**A blast is sent in slices, ten at a time.** `sendBulkEmailBatch` rebuilds the
+audience itself (a client can name a filter state, never an address) and returns
+`sent` / `failed` / `failures` / `nextOffset`; `useBulkEmailSend` loops over
+`nextOffset` until it is `null`. One long request would hold a serverless
+invocation open past its budget and lose everything already sent; per-recipient
+failures are named in the UI, which is the point when two addresses bounce.
+Sends are sequential with a 600 ms pause — Resend allows two a second, and
+parallel sends would be throttled and reported as failures.
+
+**Every send is bounded at 400 recipients** (`BULK_EMAIL_MAX_RECIPIENTS`). Past
+it the audience query stops and the panel refuses, asking the admin to narrow the
+filters rather than silently mailing a truncated list. Sending is also two-step:
+the button only fires once confirmed.
+
+Plumbing: `deliverStemfestConfirmation(id)` was extracted from
+`resendStemfestPaymentEmail` so the bulk sender can authenticate once per batch
+instead of re-reading the session per recipient — the public action still checks
+the admin first. A new `sendCustomEmail` in `resend.ts` goes out through the same
+private `sendEmail`, so a blast is dev-logged and rate-limited like any other
+mail. Sidebar gains an **Outreach → Bulk Emails** entry. Contract, limits and the
+`{{name}}` token live in `src/lib/admin/bulk-email.ts` (a `"use server"` module
+may only export async functions, so the client composer imports them from there).
 
 ---
 
