@@ -17,7 +17,9 @@ export default function SendProgress({
 }) {
   if (!progress.running && !progress.finished) return null;
 
-  const processed = progress.sent + progress.failed;
+  // Skips count as processed: a recipient left alone is one the blast has
+  // finished deciding about, so the bar still reaches the end.
+  const processed = progress.sent + progress.failed + progress.skipped;
   const percent =
     progress.total > 0
       ? Math.min(100, Math.round((processed / progress.total) * 100))
@@ -26,8 +28,8 @@ export default function SendProgress({
   const headline = progress.running
     ? `Sending — ${processed} of ${progress.total}`
     : `Finished — ${progress.sent} sent${
-        progress.failed ? `, ${progress.failed} not sent` : ""
-      }`;
+        progress.skipped ? `, ${progress.skipped} left alone` : ""
+      }${progress.failed ? `, ${progress.failed} not sent` : ""}`;
 
   return (
     <div className="mt-4 rounded-xl border border-ink/10 bg-cream/40 p-4">
