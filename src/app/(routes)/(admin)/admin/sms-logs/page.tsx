@@ -1,4 +1,5 @@
-import { AlertTriangle, BadgeCheck, Clock, MessageSquareText, Trash2 } from "lucide-react";
+import { AlertTriangle, BadgeCheck, Clock, MessageSquareText, Radio, Trash2 } from "lucide-react";
+import PageHeader from "@/components/admin/page-header";
 import { getSmsLogs } from "@/lib/actions/registrations";
 import { smsLogStatusOptions, statusValue } from "@/lib/admin/statuses";
 import { formatCount, unwrap } from "@/lib/admin/source-status";
@@ -60,16 +61,16 @@ export default async function SmsLogsAdminPage({
 
   return (
     <div className="flex flex-col gap-8 p-6 md:p-10">
-      <div>
-        <h1 className="font-display text-3xl font-bold text-ink">
-          {source.reportTitle}
-        </h1>
-        <p className="mt-1 font-body text-ink/60">
-          {logs
+      <PageHeader
+        eyebrow="Payment reconciliation"
+        title={source.reportTitle}
+        description={
+          logs
             ? describeList(source, state, logs.rows.length, logs.total)
-            : source.reportNote}
-        </p>
-      </div>
+            : source.reportNote
+        }
+        icon={Radio}
+      />
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (

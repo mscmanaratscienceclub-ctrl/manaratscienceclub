@@ -1,3 +1,6 @@
+import { GraduationCap } from "lucide-react";
+
+import PageHeader from "@/components/admin/page-header";
 import { searchAmbassadorRegistrations } from "@/lib/actions/registrations";
 import {
   ambassadorSource,
@@ -37,14 +40,12 @@ export default async function CampusAmbassadorAdminPage({
 
   return (
     <div className="flex flex-col gap-8 p-6 md:p-10">
-      <div>
-        <h1 className="font-display text-3xl font-bold text-ink">
-          {source.reportTitle}
-        </h1>
-        <p className="mt-1 font-body text-ink/60">
-          {describeList(source, state, registrations.length, total)}
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Form responses"
+        title={source.reportTitle}
+        description={describeList(source, state, registrations.length, total)}
+        icon={GraduationCap}
+      />
       <RegistrationsTable
         source={source}
         state={state}

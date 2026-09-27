@@ -1,3 +1,6 @@
+import { Mail } from "lucide-react";
+
+import PageHeader from "@/components/admin/page-header";
 import { getBulkEmailAudience } from "@/lib/actions/registrations";
 import {
   parseAdminQuery,
@@ -33,16 +36,12 @@ export default async function BulkEmailPage({
 
   return (
     <div className="flex flex-col gap-8 p-6 md:p-10">
-      <div>
-        <h1 className="font-display text-3xl font-bold text-ink">
-          Bulk Emails
-        </h1>
-        <p className="mt-1 font-body text-ink/60">
-          Write to a filtered group of STEM Fest registrations, or send the payment
-          receipt to everyone whose payment is verified. Every message is sent from
-          the club&rsquo;s own address, one recipient at a time.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Outreach"
+        title="Bulk Emails"
+        description="Write to a filtered group of STEM Fest registrations, or send the payment receipt to everyone whose payment is verified. Every message is sent from the club's own address, one recipient at a time."
+        icon={Mail}
+      />
 
       <BulkEmailComposer
         state={state}

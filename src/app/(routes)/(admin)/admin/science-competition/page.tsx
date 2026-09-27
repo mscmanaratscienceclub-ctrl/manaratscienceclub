@@ -3,10 +3,12 @@ import {
   Banknote,
   CalendarDays,
   Clock,
+  FlaskConical,
   School,
   Trophy,
   XCircle,
 } from "lucide-react";
+import PageHeader from "@/components/admin/page-header";
 import {
   getStemfestStats,
   searchStemfestRegistrations,
@@ -142,14 +144,12 @@ export default async function ScienceCompetitionAdminPage({
 
   return (
     <div className="flex flex-col gap-8 p-6 md:p-10">
-      <div>
-        <h1 className="font-display text-3xl font-bold text-ink">
-          {source.reportTitle}
-        </h1>
-        <p className="mt-1 font-body text-ink/60">
-          {describeList(source, state, registrations.length, total)}
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Form responses"
+        title={source.reportTitle}
+        description={describeList(source, state, registrations.length, total)}
+        icon={FlaskConical}
+      />
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {statCards.map((stat) => (

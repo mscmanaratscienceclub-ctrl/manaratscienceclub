@@ -8,6 +8,15 @@ updated: 2026-09-27
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
 
+## 2026-09-27 — Admin panel visual polish: one page header, a sharper rail, no receipt backdrop
+
+A cohesion pass over every admin section, plus the payment receipt losing its
+painted page background.
+
+- **`PageHeader` extracted** (`src/components/admin/page-header.tsx`) and wired into all six admin pages (dashboard, campus ambassador, volunteer, science competition, SMS logs, bulk emails): a tinted teal icon chip, an eyebrow naming the section group, the title and the description, with an `action` slot. It replaces six hand-copied heading blocks whose margins and type scales had already started to drift.
+- **The rail reads better:** the active link gains a teal edge marker and a teal icon, not just a background change; the brand mark is a teal→purple gradient chip; nav spacing, section labels and the user block are tuned to one scale (`aria-current="page"` included, so screen readers get the state too).
+- **The payment receipt no longer paints a page background** — the `<body>` and wrapper table dropped their cream, so the mail is just the card on the client's own backdrop. `CREAM` stays as a card tint only.
+
 ## 2026-09-27 — Computer Science syllabus and three segment rulebooks published
 
 The club uploaded four new documents to the `pdfs` bucket; the site now links

@@ -4,10 +4,12 @@ import {
   BadgeCheck,
   Banknote,
   CalendarDays,
+  FlaskConical,
   Users,
 } from "lucide-react";
 
 import { DonutChart, RankedBars, StackedBarChart } from "@/components/admin/charts";
+import PageHeader from "@/components/admin/page-header";
 import RecentRegistrationsTable from "@/components/admin/recent-registrations-table";
 import { Panel, StatCard } from "@/components/admin/stat-card";
 import {
@@ -166,29 +168,25 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="flex flex-col gap-8 p-6 md:p-10">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="font-body text-xs font-semibold tracking-[0.18em] text-manara-teal uppercase">
-            Overview
-          </p>
-          <h1 className="mt-2 font-display text-3xl font-bold text-ink">Grand Admin</h1>
-          <p className="mt-1 max-w-2xl font-body text-ink/60">
-            STEM Fest entries, payment progress and referrer activity across the
-            science competition.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="rounded-lg border border-manara-teal/20 bg-manara-teal/[0.06] px-3 py-1.5 font-body text-xs font-medium text-manara-teal">
-            Accepting responses
-          </span>
-          <Link
-            href="/admin/reports/stemfest"
-            className="rounded-lg border border-ink/10 px-3 py-1.5 font-body text-xs font-medium text-ink/60 transition-colors hover:border-manara-teal/40 hover:text-manara-teal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-manara-teal"
-          >
-            Print a report
-          </Link>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow="Overview"
+        title="Grand Admin"
+        description="STEM Fest entries, payment progress and referrer activity across the science competition."
+        icon={FlaskConical}
+        action={
+          <>
+            <span className="rounded-lg border border-manara-teal/20 bg-manara-teal/[0.06] px-3 py-1.5 font-body text-xs font-medium text-manara-teal">
+              Accepting responses
+            </span>
+            <Link
+              href="/admin/reports/stemfest"
+              className="rounded-lg border border-ink/10 px-3 py-1.5 font-body text-xs font-medium text-ink/60 transition-colors hover:border-manara-teal/40 hover:text-manara-teal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-manara-teal"
+            >
+              Print a report
+            </Link>
+          </>
+        }
+      />
 
       {degraded && (
         <div
