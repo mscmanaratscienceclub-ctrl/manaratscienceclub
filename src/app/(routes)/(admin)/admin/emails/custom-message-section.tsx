@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, Send } from "lucide-react";
+import { Eye, Mail, Send } from "lucide-react";
 import type { AdminQueryState } from "@/lib/admin/filters";
 import {
   BULK_EMAIL_BODY_MAX,
@@ -9,10 +9,13 @@ import {
   BULK_EMAIL_NAME_TOKEN,
   BULK_EMAIL_SUBJECT_MAX,
   type BulkEmailAudience,
+  type BulkEmailPreview,
 } from "@/lib/admin/bulk-email";
+import { previewBulkEmail } from "@/lib/actions/registrations";
 import { useBulkEmailSend } from "@/lib/hooks/use-bulk-email-send";
 import { cn } from "@/lib/utils";
 import SendProgress from "./send-progress";
+import EmailPreviewModal from "./preview-email";
 
 /** One line saying how many people this will reach, or why it cannot go out. */
 function AudienceNote({ audience }: { audience: BulkEmailAudience }) {
@@ -62,11 +65,30 @@ export default function CustomMessageSection({
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [preview, setPreview] = useState<BulkEmailPreview | null>(null);
+  const [previewing, setPreviewing] = useState(false);
   const { progress, send, reset } = useBulkEmailSend();
 
   const count = audience.recipients.length;
   const filled = subject.trim().length > 0 && body.trim().length > 0;
   const ready = filled && count > 0 && !audience.truncated && !progress.running;
+  const canPreview = filled && count > 0 && !audience.truncated && !progress.running;
+
+  async function handlePreview() {
+    if (!canPreview || previewing) return;
+    setPreviewing(true);
+    try {
+      const result = await previewBulkEmail({
+        state,
+        kind: "custom",
+        subject: subject.trim(),
+        body: body.trim(),
+      });
+      setPreview(result);
+    } finally {
+      setPreviewing(false);
+    }
+  }
 
   async function handleSend() {
     setConfirming(false);
@@ -161,18 +183,32 @@ export default function CustomMessageSection({
             </button>
           </>
         ) : (
-          <button
-            type="button"
-            onClick={() => setConfirming(true)}
-            disabled={!ready}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-xl bg-manara-teal px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-manara-teal/90 focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none",
-              !ready && "cursor-not-allowed opacity-50",
-            )}
-          >
-            <Send className="h-4 w-4" aria-hidden="true" />
-            Send message
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={handlePreview}
+              disabled={!canPreview || previewing}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-xl border border-ink/15 bg-surface px-4 py-2 font-body text-sm font-semibold text-ink transition-colors hover:bg-cream focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none",
+                (!canPreview || previewing) && "cursor-not-allowed opacity-50",
+              )}
+            >
+              <Eye className="h-4 w-4" aria-hidden="true" />
+              {previewing ? "Rendering…" : "Preview"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              disabled={!ready}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-xl bg-manara-teal px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-manara-teal/90 focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none",
+                !ready && "cursor-not-allowed opacity-50",
+              )}
+            >
+              <Send className="h-4 w-4" aria-hidden="true" />
+              Send message
+            </button>
+          </>
         )}
 
         {!filled && !progress.running && (
@@ -193,6 +229,8 @@ export default function CustomMessageSection({
       </div>
 
       <SendProgress progress={progress} />
+
+      {preview?.ok && <EmailPreviewModal preview={preview} onClose={() => setPreview(null)} />}
     </section>
   );
 }

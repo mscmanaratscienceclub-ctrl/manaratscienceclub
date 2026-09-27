@@ -8,6 +8,27 @@ updated: 2026-09-27
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
 
+## 2026-09-27 — Bulk email preview before sending
+
+Admins can now see an email exactly as a recipient would before it goes out. Both
+sections of the bulk email page (`/admin/emails`) gained a **Preview** button that
+renders the message for the *first* person in the audience — no mail is sent and no
+API key is consulted, so it is purely a look.
+
+- **`previewBulkEmail`** (`src/lib/actions/registrations.ts`) — a new Server
+  Action that runs the *same* `bulkEmailRecipients` audience query a send uses,
+  resolves the merge tag / per-row receipt data for the first recipient, and returns the
+  rendered HTML plus the resolved subject. The `BulkEmailPreview` / `BulkEmailPreviewInput`
+  shapes live in `src/lib/admin/bulk-email.ts` beside the send contract.
+- **Custom message** — previews the free-form mail with `{{name}}` filled in for the
+  first recipient. **Payment confirmations** — previews the receipt built from that first
+  row's own registration, payment and event data, so what the admin sees is the real
+  document, not invented copy.
+- **`EmailPreviewModal`** (`src/app/(routes)/(admin)/admin/emails/preview-email.tsx`)
+  — renders the email in a sandboxed `<iframe srcDoc>`, which gives the inline-styled
+  table layout the same isolation a real email client would. Shows the recipient's name and
+  address and the resolved subject; closes on the button or Escape.
+
 ## 2026-09-27 — Admin panel visual polish: one page header, a sharper rail, no receipt backdrop
 
 A cohesion pass over every admin section, plus the payment receipt losing its

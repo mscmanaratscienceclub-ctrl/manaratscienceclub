@@ -167,6 +167,38 @@ export const bulkEmailSendSchema = z
     }
   });
 
+/** What the preview needs from a client: the same shape as a send, minus the cursor. */
+export interface BulkEmailPreviewInput {
+  state: AdminQueryState;
+  kind: BulkEmailKind;
+  subject?: string;
+  body?: string;
+}
+
+/**
+ * What a preview answers — the email rendered for one sample recipient, with no
+ * message actually sent.
+ *
+ * A preview must never send mail. It exists so an admin can see the email exactly
+ * as a recipient would before committing to a blast. It renders the *first* person
+ * in the real audience — via the same `bulkEmailRecipients` query a send uses — so
+ * merge tags resolve to a real name and a confirmation previews with that row's
+ * own data, not invented copy.
+ */
+export interface BulkEmailPreview {
+  /** The resolved subject line (confirmation subjects are built per row). */
+  subject: string;
+  /** The fully rendered, inline-styled email markup for `<iframe srcDoc>`. */
+  html: string;
+  /** The recipient the preview was built for, so the admin knows whose mail they see. */
+  sample: {
+    name: string;
+    email: string;
+  };
+  /** `true` when a custom message is ready to preview; `false` and no HTML otherwise. */
+  ok: boolean;
+}
+
 /**
  * The filter fields the audience bar exposes.
  *

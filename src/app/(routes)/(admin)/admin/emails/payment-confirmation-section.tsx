@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, Send } from "lucide-react";
+import { BadgeCheck, Eye, Send } from "lucide-react";
 import type { AdminQueryState } from "@/lib/admin/filters";
 import {
   BULK_EMAIL_MAX_RECIPIENTS,
   type BulkEmailAudience,
+  type BulkEmailPreview,
 } from "@/lib/admin/bulk-email";
+import { previewBulkEmail } from "@/lib/actions/registrations";
 import { useBulkEmailSend } from "@/lib/hooks/use-bulk-email-send";
 import { cn } from "@/lib/utils";
 import SendProgress from "./send-progress";
+import EmailPreviewModal from "./preview-email";
 
 /**
  * Sends the payment receipt (`getPaymentVerifiedEmailHtml`) to every verified
@@ -35,6 +38,8 @@ export default function PaymentConfirmationSection({
 }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
+  const [preview, setPreview] = useState<BulkEmailPreview | null>(null);
+  const [previewing, setPreviewing] = useState(false);
   const { progress, send, reset } = useBulkEmailSend();
 
   const count = audience.recipients.length;
@@ -44,6 +49,18 @@ export default function PaymentConfirmationSection({
   /** Who is actually left to write to: a receipt already sent is left alone. */
   const unsent = count - alreadySent;
   const ready = unsent > 0 && !audience.truncated && !progress.running;
+  const canPreview = count > 0 && !audience.truncated && !progress.running;
+
+  async function handlePreview() {
+    if (!canPreview || previewing) return;
+    setPreviewing(true);
+    try {
+      const result = await previewBulkEmail({ state, kind: "confirmation" });
+      setPreview(result);
+    } finally {
+      setPreviewing(false);
+    }
+  }
 
   async function handleSend() {
     setConfirming(false);
@@ -128,23 +145,37 @@ export default function PaymentConfirmationSection({
             </button>
           </>
         ) : (
-          <button
-            type="button"
-            onClick={() => setConfirming(true)}
-            disabled={!ready}
-            title={
-              ready
-                ? "Only registrations that have not received a receipt yet are written to."
-                : "Nobody in this audience is waiting on a receipt — narrow the filters, or verify some payments first."
-            }
-            className={cn(
-              "inline-flex items-center gap-2 rounded-xl bg-manara-teal px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-manara-teal/90 focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none",
-              !ready && "cursor-not-allowed opacity-50",
-            )}
-          >
-            <Send className="h-4 w-4" aria-hidden="true" />
-            Send confirmations
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={handlePreview}
+              disabled={!canPreview || previewing}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-xl border border-ink/15 bg-surface px-4 py-2 font-body text-sm font-semibold text-ink transition-colors hover:bg-cream focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none",
+                (!canPreview || previewing) && "cursor-not-allowed opacity-50",
+              )}
+            >
+              <Eye className="h-4 w-4" aria-hidden="true" />
+              {previewing ? "Rendering…" : "Preview"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              disabled={!ready}
+              title={
+                ready
+                  ? "Only registrations that have not received a receipt yet are written to."
+                  : "Nobody in this audience is waiting on a receipt — narrow the filters, or verify some payments first."
+              }
+              className={cn(
+                "inline-flex items-center gap-2 rounded-xl bg-manara-teal px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-manara-teal/90 focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none",
+                !ready && "cursor-not-allowed opacity-50",
+              )}
+            >
+              <Send className="h-4 w-4" aria-hidden="true" />
+              Send confirmations
+            </button>
+          </>
         )}
 
         {progress.finished && (
@@ -159,6 +190,8 @@ export default function PaymentConfirmationSection({
       </div>
 
       <SendProgress progress={progress} />
+
+      {preview?.ok && <EmailPreviewModal preview={preview} onClose={() => setPreview(null)} />}
     </section>
   );
 }

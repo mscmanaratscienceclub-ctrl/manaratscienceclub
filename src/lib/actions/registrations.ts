@@ -42,6 +42,8 @@ import {
   type BulkEmailBatchResult,
   type BulkEmailFailure,
   type BulkEmailKind,
+  type BulkEmailPreview,
+  type BulkEmailPreviewInput,
   type BulkEmailRecipient,
   type BulkEmailSendInput,
 } from "@/lib/admin/bulk-email";
@@ -78,6 +80,8 @@ import {
   type SchoolCountRow,
 } from "@/lib/admin/dashboard";
 import { sendCustomEmail, sendPaymentVerifiedEmail } from "@/lib/email/resend";
+import { getCustomEmailHtml } from "@/lib/email/templates/custom-message";
+import { getPaymentVerifiedEmailHtml } from "@/lib/email/templates/payment-verified";
 import { z } from "zod";
 
 function assertAdmin(role: string) {
@@ -1930,5 +1934,104 @@ export async function sendBulkEmailBatch(
     }
     throw error;
   }
+}
+
+/**
+ * Previews an email for the first recipient in the audience, without sending it.
+ *
+ * Renders the same HTML a recipient would see, using the same audience query the
+ * send uses, so merge tags and per-row data are resolved against a real person.
+ * The preview never leaves the building — no API key is consulted and no message
+ * is queued.
+ */
+export async function previewBulkEmail(
+  input: BulkEmailPreviewInput,
+): Promise<BulkEmailPreview> {
+  await requireAdmin();
+  const state = parseInput(bulkEmailStateSchema, input.state);
+  const kind = parseInput(
+    z.enum(["custom", "confirmation"]),
+    input.kind,
+  ) as BulkEmailKind;
+
+  const audience = await bulkEmailRecipients(state, kind);
+  const first = audience.recipients[0];
+
+  if (!first || audience.truncated) {
+    return {
+      ok: false,
+      subject: "",
+      html: "",
+      sample: { name: "", email: "" },
+    };
+  }
+
+  if (kind === "custom") {
+    const subject = input.subject?.trim() || "";
+    const body = input.body?.trim() || "";
+
+    if (!subject || !body) {
+      return {
+        ok: false,
+        subject: "",
+        html: "",
+        sample: { name: "", email: "" },
+      };
+    }
+
+    const html = getCustomEmailHtml({ subject, body, name: first.name });
+    return {
+      ok: true,
+      subject,
+      html,
+      sample: { name: first.name, email: first.email },
+    };
+  }
+
+  // Confirmation preview — fetch the full row data for the first recipient.
+  const t = stemfestRegistrations;
+  const target = await withDbTimeout(
+    "previewBulkEmail",
+    async (tx) => {
+      const [row] = await tx
+        .select(stemfestDecisionSelection())
+        .from(t)
+        .where(eq(t.id, first.id));
+      return row;
+    },
+  );
+
+  if (!target) {
+    return {
+      ok: false,
+      subject: "",
+      html: "",
+      sample: { name: "", email: "" },
+    };
+  }
+
+  const subject = target.registrationCode
+    ? `Registration confirmed - ${target.registrationCode} · STEM Fest '26-27`
+    : `Registration confirmed - STEM Fest '26-27`;
+
+  const html = getPaymentVerifiedEmailHtml({
+    registrationCode: target.registrationCode || undefined,
+    name: target.name,
+    classLabel: getStemfestClassLabel(target.class),
+    school: target.school,
+    phone: target.paymentNumber,
+    email: target.email ?? first.email,
+    transactionId: target.transactionId,
+    paymentNumber: target.paymentNumber,
+    segments: target.segments,
+    amount: confirmationAmount(target.totalFee, target.amount),
+  });
+
+  return {
+    ok: true,
+    subject,
+    html,
+    sample: { name: target.name, email: first.email },
+  };
 }
 
