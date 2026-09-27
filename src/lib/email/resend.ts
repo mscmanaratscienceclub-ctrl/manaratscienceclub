@@ -164,7 +164,7 @@ export async function sendCustomEmail({
 }
 
 export interface PaymentVerifiedEmailOptions {
-  /** The `<GENDER><CLASS><NNN>` ID minted on insert — the receipt's headline. */
+  /** The `<GENDER><CLASS><NNN>` ID minted on insert, the receipt's headline. */
   registrationCode?: string;
   to: string;
   name: string;
@@ -174,13 +174,13 @@ export interface PaymentVerifiedEmailOptions {
   school: string;
   /** The registered participant's phone. */
   phone: string;
+  /** The address the receipt prints as the participant's own. */
+  email?: string;
   transactionId: string;
   /** The bKash wallet the fee was sent from. */
   paymentNumber: string;
   /** The registration's `segments` value: the events, already described. */
   segments: string;
-  /** Submission time, already formatted. Optional for legacy rows. */
-  submittedOn?: string;
   /** The amount a forwarded SMS reported, already formatted. Omitted if unknown. */
   amount?: string;
 }
@@ -201,26 +201,26 @@ export async function sendPaymentVerifiedEmail({
   classLabel,
   school,
   phone,
+  email,
   transactionId,
   paymentNumber,
   segments,
-  submittedOn,
   amount,
 }: PaymentVerifiedEmailOptions): Promise<SendEmailResult> {
   return sendEmail({
     subject: registrationCode
-      ? `Payment confirmed — ${registrationCode} · STEM Fest, ${siteConfig.name}`
-      : `Payment confirmed - STEM Fest registration, ${siteConfig.name}`,
+      ? `Registration confirmed - ${registrationCode} · STEM Fest '26-27`
+      : `Registration confirmed - STEM Fest '26-27`,
     html: getPaymentVerifiedEmailHtml({
       registrationCode,
       name,
       classLabel,
       school,
       phone,
+      email,
       transactionId,
       paymentNumber,
       segments,
-      submittedOn,
       amount,
     }),
     label: "PAYMENT CONFIRMED",

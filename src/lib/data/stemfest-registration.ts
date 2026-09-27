@@ -667,16 +667,6 @@ export function getStemfestGenderLabel(gender: string | null): string | null {
 }
 
 /**
- * How a registration ID reads, shown under the gender field so a participant
- * understands what they are choosing it for. The ID itself is minted by the
- * database on insert (`drizzle/add_stemfest_registration_ids.sql`) — this is
- * copy only, and deliberately does not claim a format the trigger could drift
- * from: it shows the shape with a worked example.
- */
-export const stemfestRegistrationIdHint =
-  "Your registration ID is built from this and your class — e.g. M7001: M for male, 7 for Class 7, then your number.";
-
-/**
  * The category a participant lands in for one event, derived from their class.
  * `null` means the event isn't open to them at all.
  *
@@ -925,9 +915,8 @@ export const stemfestFormCopy = {
     "Optional — what your team should be called on the results sheet.",
   teamNamePlaceholder: "e.g. Circuit Breakers",
   referenceLabel: "Reference",
-  referenceHint:
-    "The person who referred you — the list changes with your school.",
   referencePlaceholder: "Select your reference",
+  referenceAwaitingSchool: "Select your school first",
   referenceGroupManarat: "Manarat Science Club",
   referenceGroupOther: "Visiting schools",
   teammateDetailsHint:
@@ -958,6 +947,4 @@ export const stemfestPaymentCopy = {
     "Open your bKash app or the confirmation SMS and copy the Transaction ID (TrxID).",
     "Enter the number you sent from and that TrxID below — that is how we match your payment to your registration.",
   ],
-  trxIdHint:
-    "A short code like 8N7A2B1C2D, found in your bKash confirmation SMS under “TrxID”.",
 } as const;

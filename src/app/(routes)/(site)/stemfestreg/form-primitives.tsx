@@ -74,14 +74,12 @@ export function Field({
   label,
   error,
   children,
-  hint,
 }: {
   index: string;
   id: string;
   label: string;
   error?: string;
   children: React.ReactNode;
-  hint?: string;
 }) {
   const reducedMotion = useReducedMotion();
 
@@ -101,7 +99,7 @@ export function Field({
           {label}
         </Label>
         {children}
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {error ? (
             <motion.p
               key="error"
@@ -112,16 +110,6 @@ export function Field({
             >
               <AlertCircle className="size-3.5 shrink-0" aria-hidden="true" />
               {error}
-            </motion.p>
-          ) : hint ? (
-            <motion.p
-              key="hint"
-              initial={reducedMotion ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="mt-2 font-space-body text-xs text-space-muted"
-            >
-              {hint}
             </motion.p>
           ) : null}
         </AnimatePresence>

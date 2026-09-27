@@ -1306,16 +1306,6 @@ interface StemfestDecisionTarget {
   amount: string | null;
 }
 
-/** How the email prints the moment of confirmation: the admin's clock, not the server's. */
-const paymentConfirmationFormatter = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  timeZone: ADMIN_TIME_ZONE,
-});
-
 /**
  * The amount the confirmation quotes.
  *
@@ -1327,11 +1317,6 @@ function confirmationAmount(amount: string | null): string | undefined {
 
   const value = Number(amount);
   return Number.isFinite(value) ? formatBdt(value) : undefined;
-}
-
-/** Submission time as the email prints it, on the admin's clock. */
-function confirmationDate(value: Date | null): string | undefined {
-  return value ? paymentConfirmationFormatter.format(value) : undefined;
 }
 
 
@@ -1356,10 +1341,12 @@ async function deliverConfirmation(
     // The phone the participant gave is their contact number; the row has no
     // separate phone column, so the wallet number is what the form collected.
     phone: target.paymentNumber,
+    // The receipt prints the address it was sent to; the row's email wins
+    // because an admin can correct it, with the send address as the fallback.
+    email: target.email ?? to,
     transactionId: target.transactionId,
     paymentNumber: target.paymentNumber,
     segments: target.segments,
-    submittedOn: confirmationDate(target.createdAt),
     amount: confirmationAmount(target.amount),
   });
 

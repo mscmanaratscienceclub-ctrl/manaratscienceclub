@@ -44,7 +44,6 @@ import {
   stemfestNoReferenceLabel,
   stemfestOtherSchoolLabel,
   stemfestPaymentCopy,
-  stemfestRegistrationIdHint,
   stemfestSchools,
   type StemfestClassId,
 } from "@/lib/data/stemfest-registration";
@@ -133,9 +132,11 @@ export default function StemfestRegistrationForm() {
     () => referencesForSchool(resolvedSchool),
     [resolvedSchool],
   );
-  // The field appears once a school is chosen — and for "not listed", once a
-  // name has been typed, because until then there is no school to pick a list by.
-  const showReferenceField =
+  // The reference field is always on screen, so the form never changes shape
+  // under the participant. Until there is a school to draw a list from it stays
+  // disabled and asks for the school first — which for "not listed" means a
+  // name has been typed, because that name is what picks the list.
+  const referenceReady =
     Boolean(values.school) && (!isOtherSchool || values.schoolOther.trim().length > 1);
 
   // ── Hydration: restore the draft, or the receipt if they already submitted ──
@@ -309,7 +310,6 @@ export default function StemfestRegistrationForm() {
               id="stemfest-school"
               label="School / college"
               error={errors.school?.message}
-              hint="Pick your school — if it isn’t listed, add its name yourself."
             >
               <Controller
                 control={control}
@@ -366,7 +366,6 @@ export default function StemfestRegistrationForm() {
                     id="stemfest-school-other"
                     label="Your school’s name"
                     error={errors.schoolOther?.message}
-                    hint="The full name, as it appears on your ID card."
                   >
                     <FieldShell invalid={Boolean(errors.schoolOther)}>
                       <Input
@@ -384,88 +383,79 @@ export default function StemfestRegistrationForm() {
               ) : null}
             </AnimatePresence>
 
-            {/* Keyed off the school above: the names change with the audience,
-                so the field exists only once there is a school to pick from. */}
-            <AnimatePresence initial={false}>
-              {showReferenceField ? (
-                <motion.div
-                  key="stemfest-reference"
-                  initial={reducedMotion ? false : { opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="overflow-hidden"
-                >
-                  <Field
-                    index={nextIndex()}
-                    id="stemfest-reference"
-                    label={stemfestFormCopy.referenceLabel}
-                    error={errors.reference?.message}
-                    hint={stemfestFormCopy.referenceHint}
-                  >
-                    <Controller
-                      control={control}
-                      name="reference"
-                      render={({ field }) => (
-                        <FieldShell invalid={Boolean(errors.reference)}>
-                          <Select
-                            value={field.value ?? ""}
-                            onValueChange={field.onChange}
-                          >
-                            <SelectTrigger
-                              id="stemfest-reference"
-                              aria-invalid={Boolean(errors.reference)}
-                            >
-                              {/* Radix labels the trigger from the selected
-                                  item, and items only mount when the list opens
-                                  — so a value restored from a draft would show a
-                                  blank trigger. The name *is* the value here, so
-                                  rendering it directly fixes that without a
-                                  second lookup. Radix skips its own item-text
-                                  portal when children are supplied. */}
-                              <SelectValue
-                                placeholder={stemfestFormCopy.referencePlaceholder}
-                              >
-                                {field.value === STEMFEST_NO_REFERENCE_ID
-                                  ? stemfestNoReferenceLabel
-                                  : field.value || undefined}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                <SelectLabel>
-                                  {isManaratAudience
-                                    ? stemfestFormCopy.referenceGroupManarat
-                                    : stemfestFormCopy.referenceGroupOther}
-                                </SelectLabel>
-                                {referenceOptions.map((name) => (
-                                  <SelectItem key={name} value={name}>
-                                    {name}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                              {/* The escape hatch sits below the list, like the
-                                  school picker's, so it never reads as a name. */}
-                              <SelectSeparator />
-                              <SelectItem value={STEMFEST_NO_REFERENCE_ID}>
-                                {stemfestNoReferenceLabel}
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FieldShell>
-                      )}
-                    />
-                  </Field>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
+            {/* Always on screen, so the form never changes shape under the
+                participant. Until a school is picked there is no list to draw
+                names from, so the picker stays disabled and asks for the
+                school first. */}
+            <Field
+              index={nextIndex()}
+              id="stemfest-reference"
+              label={stemfestFormCopy.referenceLabel}
+              error={errors.reference?.message}
+            >
+              <Controller
+                control={control}
+                name="reference"
+                render={({ field }) => (
+                  <FieldShell invalid={Boolean(errors.reference)}>
+                    <Select
+                      value={field.value ?? ""}
+                      onValueChange={field.onChange}
+                      disabled={!referenceReady}
+                    >
+                      <SelectTrigger
+                        id="stemfest-reference"
+                        aria-invalid={Boolean(errors.reference)}
+                      >
+                        {/* Radix labels the trigger from the selected item, and
+                            items only mount when the list opens, so a value
+                            restored from a draft would show a blank trigger. The
+                            name *is* the value here, so rendering it directly
+                            fixes that without a second lookup. Radix skips its
+                            own item-text portal when children are supplied. */}
+                        <SelectValue
+                          placeholder={
+                            referenceReady
+                              ? stemfestFormCopy.referencePlaceholder
+                              : stemfestFormCopy.referenceAwaitingSchool
+                          }
+                        >
+                          {field.value === STEMFEST_NO_REFERENCE_ID
+                            ? stemfestNoReferenceLabel
+                            : field.value || undefined}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>
+                            {isManaratAudience
+                              ? stemfestFormCopy.referenceGroupManarat
+                              : stemfestFormCopy.referenceGroupOther}
+                          </SelectLabel>
+                          {referenceOptions.map((name) => (
+                            <SelectItem key={name} value={name}>
+                              {name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                        {/* The escape hatch sits below the list, like the
+                            school picker's, so it never reads as a name. */}
+                        <SelectSeparator />
+                        <SelectItem value={STEMFEST_NO_REFERENCE_ID}>
+                          {stemfestNoReferenceLabel}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FieldShell>
+                )}
+              />
+            </Field>
 
             <Field
               index={nextIndex()}
               id="stemfest-class"
               label="Class"
               error={errors.classId?.message}
-              hint="Everything below is filtered to match this."
             >
               <Controller
                 control={control}
@@ -505,7 +495,6 @@ export default function StemfestRegistrationForm() {
               id="stemfest-gender"
               label="Gender"
               error={errors.gender?.message}
-              hint={stemfestRegistrationIdHint}
             >
               <Controller
                 control={control}
@@ -540,7 +529,6 @@ export default function StemfestRegistrationForm() {
               id="stemfest-phone"
               label="Phone number"
               error={errors.phone?.message}
-              hint="Where we reach you about schedules and results."
             >
               <FieldShell invalid={Boolean(errors.phone)}>
                 <Input
@@ -560,7 +548,6 @@ export default function StemfestRegistrationForm() {
               id="stemfest-email"
               label="Email address"
               error={errors.email?.message}
-              hint="Your payment confirmation — and your receipt — is emailed here."
             >
               <FieldShell invalid={Boolean(errors.email)}>
                 <Input
@@ -664,7 +651,6 @@ export default function StemfestRegistrationForm() {
                 id="stemfest-bkash-number"
                 label="bKash number"
                 error={errors.bkashNumber?.message}
-                hint="The number you sent the money from."
               >
                 <FieldShell invalid={Boolean(errors.bkashNumber)}>
                   <Input
@@ -685,7 +671,6 @@ export default function StemfestRegistrationForm() {
                 id="stemfest-bkash-trxid"
                 label="bKash Transaction ID"
                 error={errors.bkashTrxId?.message}
-                hint={stemfestPaymentCopy.trxIdHint}
               >
                 <FieldShell invalid={Boolean(errors.bkashTrxId)}>
                   <Input

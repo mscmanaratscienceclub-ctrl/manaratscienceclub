@@ -333,7 +333,6 @@ export default function VolunteerForm() {
                           index={String(fieldNumber).padStart(2, "0")}
                           id={fieldId}
                           label={question.label}
-                          hint={question.hint}
                           error={error}
                         >
                           {isTextarea ? (
