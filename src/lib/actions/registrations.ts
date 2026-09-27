@@ -65,12 +65,15 @@ import {
   formatBdt,
   getStemfestClassLabel,
   getStemfestSegment,
+  manaratSchoolLabel,
+  manaratSchoolLikePattern,
   stemfestEvents,
 } from "@/lib/data/stemfest-registration";
 import {
   DASHBOARD_TREND_DAYS,
   recentDayKeys,
   type EventPopularityRow,
+  type ReferenceCountRow,
   type RegistrationTrendPoint,
   type SchoolCountRow,
 } from "@/lib/admin/dashboard";
@@ -632,7 +635,9 @@ export async function getStemfestStats(): Promise<StemfestStats> {
       .select({
         total: sql<number>`count(*)::int`,
         thisWeek: sql<number>`count(*) filter (where ${t.createdAt} >= now() - interval '7 days')::int`,
-        uniqueSchools: sql<number>`count(distinct lower(btrim(${t.school})))::int`,
+        // Manarat spellings collapse to one name (see `manaratSchoolLabel`), so the
+        // host school counts once rather than once per way a participant typed it.
+        uniqueSchools: sql<number>`count(distinct case when ${t.school} ilike ${manaratSchoolLikePattern} then ${manaratSchoolLabel} else lower(btrim(${t.school})) end)::int`,
         // The same definition the status pill and the `payment=verified` filter
         // use, so the card cannot promise a number the table below it contradicts.
         // It counted matched SMS messages before, which drifted from both as soon
@@ -673,6 +678,8 @@ export async function getStemfestStats(): Promise<StemfestStats> {
 /** Rows in each chart's list before it stops. */
 const TOP_SCHOOL_LIMIT = 6;
 const RECENT_REGISTRATION_LIMIT = 6;
+/** Referrer rows on the dashboard's reference leaderboard before it stops. */
+const REFERENCE_LEADERBOARD_LIMIT = 8;
 
 /**
  * Daily `count(*)` for one table, keyed by the admin's calendar day.
@@ -712,12 +719,15 @@ async function dailyCounts(
 }
 
 /**
- * Registrations per day over the last `span` days, across all three forms.
+ * STEM Fest entries per day over the last `span` days.
  *
- * Every returned point carries one count per `registrationTrendSeries` entry, in
- * that order, and a day with no registrations returns a real zero rather than
- * being missing — a stacked chart that silently dropped empty days would shift
- * every bar after it.
+ * Every returned point carries one count per `stemfestTrendSeries` entry, in that
+ * order, and a day with no registrations returns a real zero rather than being
+ * missing — a chart that silently dropped empty days would shift every bar after
+ * it.
+ *
+ * Campus/batch ambassador and volunteer registrations are deliberately not read:
+ * they have their own admin sections and the dashboard no longer charts them.
  */
 export async function getRegistrationTrend(
   span: number = DASHBOARD_TREND_DAYS,
@@ -733,34 +743,16 @@ export async function getRegistrationTrend(
     // date) — which would then be compared against a date in every filter below.
     const since = sql`(now() at time zone ${ADMIN_TIME_ZONE})::date - ${days - 1}::int`;
 
-    // Sequential, never `Promise.all`: pipelining statements onto one pooled
-    // connection is what wedges Supavisor.
-    const ambassador = await dailyCounts(
-      tx,
-      campusAmbassadorRegistrations,
-      campusAmbassadorRegistrations.createdAt,
-      since,
-    );
     const stemfest = await dailyCounts(
       tx,
       stemfestRegistrations,
       stemfestRegistrations.createdAt,
       since,
     );
-    const volunteer = await dailyCounts(
-      tx,
-      volunteerRegistrations,
-      volunteerRegistrations.createdAt,
-      since,
-    );
 
     return dayKeys.map((day) => ({
       day,
-      counts: [
-        ambassador.get(day) ?? 0,
-        stemfest.get(day) ?? 0,
-        volunteer.get(day) ?? 0,
-      ],
+      counts: [stemfest.get(day) ?? 0],
     }));
   });
 }
@@ -806,62 +798,68 @@ async function stemfestEventCounts(
 }
 
 export interface DashboardBreakdown {
-  volunteerCount: number;
-  /** Volunteers who applied in the last seven days — the weekly KPI's third term. */
-  volunteerThisWeek: number;
-  recent: RecentAmbassadorRegistration[];
+  /**
+   * The latest STEM Fest entries — the dashboard's recent feed.
+   *
+   * This used to be ambassador responses; every figure on the panel is now the
+   * fest's own, so the feed is its most recent registrations.
+   */
+  recent: RecentStemfestRegistration[];
   events: EventPopularityRow[];
   topSchools: SchoolCountRow[];
   /**
-   * Distinct schools across both dated forms, counted once.
+   * Distinct schools among STEM Fest entries, counted once each.
    *
-   * Adding the two forms' own `uniqueSchools` would double-count every school that
-   * registered for both, so the number comes from the same union the school list
-   * is ranked on — the list is the top six of that union, and this is its size.
+   * Every Manarat spelling collapses to `manaratSchoolLabel` before counting, so
+   * the host school is one school here rather than one per way it was typed. It is
+   * the size of the same grouping the league table is ranked on — the list is its
+   * top six, and this is the whole population.
    */
   uniqueSchools: number;
+  /** Who referred the most STEM Fest entries; `reference` is `null` for nobody. */
+  referenceLeaderboard: ReferenceCountRow[];
+  /** How many distinct referrers exist, the "nobody referred them" bucket included. */
+  uniqueReferences: number;
 }
 
 /**
- * The dashboard's secondary figures: volunteers, the recent feed, event
- * popularity and the school league table.
+ * The dashboard's secondary figures: the recent feed, event popularity, the school
+ * league table and the reference leaderboard.
  *
  * One action rather than four, because the dashboard's concurrency budget is the
  * pool size: `src/db/index.ts` documents that more than four simultaneous sources
  * makes Supavisor lose responses. Its statements run sequentially here instead.
+ *
+ * Every figure is STEM Fest only. The volunteer and ambassador counts that used to
+ * live here are gone with the other forms' chart series — those forms keep their
+ * own table pages, and this panel stopped reporting them.
  */
 export async function getDashboardBreakdown(): Promise<DashboardBreakdown> {
   await requireAdmin();
-  const v = volunteerRegistrations;
-  const a = campusAmbassadorRegistrations;
   const s = stemfestRegistrations;
 
   return withDbTimeout("getDashboardBreakdown", async (tx) => {
-    const [volunteers] = await tx
-      .select({
-        total: sql<number>`count(*)::int`,
-        thisWeek: sql<number>`count(*) filter (where ${v.createdAt} >= now() - interval '7 days')::int`,
-      })
-      .from(v);
-
     const recent = await tx
       .select({
-        id: a.id,
-        name: a.name,
-        class: a.class,
-        school: a.school,
-        createdAt: a.createdAt,
+        id: s.id,
+        name: s.name,
+        class: s.class,
+        school: s.school,
+        reference: s.reference,
+        createdAt: s.createdAt,
       })
-      .from(a)
-      .orderBy(desc(a.createdAt))
+      .from(s)
+      .orderBy(desc(s.createdAt))
       .limit(RECENT_REGISTRATION_LIMIT);
 
     const events = await stemfestEventCounts(tx);
 
     // `count(*) over ()` is evaluated after `group by`, so it is the number of
-    // distinct schools in the whole union — the ranking's ceiling — rather than
+    // distinct schools in the whole table — the ranking's ceiling — rather than
     // the six rows returned here. `min(label)` keeps a real school's casing
-    // instead of the lower-cased key the grouping needs.
+    // instead of the lower-cased key the grouping needs, and grouping by
+    // `lower(label)` after a Manarat row has been normalised to
+    // `manaratSchoolLabel` is what makes every host-school spelling one group.
     const schoolRows = asRows<{
       label: string | null;
       count: number;
@@ -876,67 +874,55 @@ export async function getDashboardBreakdown(): Promise<DashboardBreakdown> {
             (count(*) over ())::int as total_groups
           from (
             select
-              lower(btrim(${a.school})) as key,
-              btrim(${a.school}) as label
-            from ${a}
-            union all
-            select
-              lower(btrim(${s.school})),
-              btrim(${s.school})
+              case
+                when ${s.school} ilike ${manaratSchoolLikePattern} then ${manaratSchoolLabel}
+                else btrim(${s.school})
+              end as label
             from ${s}
           ) as schools
-          group by key
+          group by lower(label)
         ) as ranked
         order by count desc, label asc
         limit ${TOP_SCHOOL_LIMIT}
       `),
     );
 
+    // References belong to STEM Fest entries. NULL means "not referred by
+    // anyone" rather than a missing answer, so it is kept as its own row and
+    // sorts last rather than being dropped.
+    const referenceRows = asRows<{
+      reference: string | null;
+      count: number;
+      total: number;
+    }>(
+      await tx.execute(sql`
+        select referrer as reference, cnt as count, total_groups as total
+        from (
+          select
+            ${s.reference} as referrer,
+            count(*)::int as cnt,
+            (count(*) over ())::int as total_groups
+          from ${s}
+          group by ${s.reference}
+        ) as ranked
+        order by count desc, referrer asc nulls last
+        limit ${REFERENCE_LEADERBOARD_LIMIT}
+      `),
+    );
+
     return {
-      volunteerCount: volunteers?.total ?? 0,
-      volunteerThisWeek: volunteers?.thisWeek ?? 0,
       recent,
       events,
       topSchools: schoolRows.map((row) => ({
-        school: row.label ?? "School not given",
+        school: row.label?.trim() ? row.label : "School not given",
         count: row.count,
       })),
       uniqueSchools: schoolRows[0]?.total ?? 0,
-    };
-  });
-}
-
-export interface AmbassadorStats {
-  total: number;
-  thisWeek: number;
-  thisMonth: number;
-  uniqueSchools: number;
-}
-
-/**
- * Dashboard numbers computed in SQL. Pulling every column of every row and
- * counting in JS grows linearly with registrations; these aggregates return a
- * fixed-size result no matter how many applications exist.
- */
-export async function getAmbassadorStats(): Promise<AmbassadorStats> {
-  await requireAdmin();
-  const t = campusAmbassadorRegistrations;
-
-  return withDbTimeout("getAmbassadorStats", async (tx) => {
-    const [row] = await tx
-      .select({
-        total: sql<number>`count(*)::int`,
-        thisWeek: sql<number>`count(*) filter (where ${t.createdAt} >= now() - interval '7 days')::int`,
-        thisMonth: sql<number>`count(*) filter (where ${t.createdAt} >= date_trunc('month', now()))::int`,
-        uniqueSchools: sql<number>`count(distinct lower(btrim(${t.school})))::int`,
-      })
-      .from(t);
-
-    return {
-      total: row?.total ?? 0,
-      thisWeek: row?.thisWeek ?? 0,
-      thisMonth: row?.thisMonth ?? 0,
-      uniqueSchools: row?.uniqueSchools ?? 0,
+      referenceLeaderboard: referenceRows.map((row) => ({
+        reference: row.reference,
+        count: row.count,
+      })),
+      uniqueReferences: referenceRows[0]?.total ?? 0,
     };
   });
 }
@@ -949,11 +935,13 @@ export async function getAmbassadorStats(): Promise<AmbassadorStats> {
  * nested `withDbTimeout` would open a *second* pooled connection, and the pool is
  * deliberately sized to the dashboard's fan-out (see `src/db/index.ts`).
  */
-export interface RecentAmbassadorRegistration {
+export interface RecentStemfestRegistration {
   id: string;
   name: string;
   class: string;
   school: string;
+  /** Who referred the entry; `null` when nobody did. */
+  reference: string | null;
   createdAt: Date;
 }
 

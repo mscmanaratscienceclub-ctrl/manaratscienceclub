@@ -1,5 +1,5 @@
 const KPI_CARDS = 4;
-const FORM_CARDS = 3;
+const LIST_PANELS = 3;
 const TABLE_ROWS = 6;
 const RANKED_ROWS = 5;
 const TREND_BARS = 30;
@@ -10,9 +10,8 @@ const TREND_BARS = 30;
  * trips — without this boundary the whole segment renders blank until the last
  * query resolves.
  *
- * The shapes mirror the real layout (four figures, a wide chart beside a ring, two
- * ranked lists, three entry points, a table) so the page does not reflow when the
- * data arrives.
+ * The shapes mirror the real layout (four figures, a wide chart beside a ring,
+ * three ranked lists, a table) so the page does not reflow when the data arrives.
  */
 export default function AdminLoading() {
   return (
@@ -81,8 +80,8 @@ export default function AdminLoading() {
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-2">
-        {Array.from({ length: 2 }, (_, panel) => (
+      <div className="grid gap-5 xl:grid-cols-3">
+        {Array.from({ length: LIST_PANELS }, (_, panel) => (
           <div key={panel} className="rounded-2xl bg-surface p-6 shadow-subtle">
             <div className="h-5 w-40 rounded bg-ink/10" />
             <div className="mt-2 h-3 w-52 rounded bg-ink/5" />
@@ -97,22 +96,6 @@ export default function AdminLoading() {
                 </div>
               ))}
             </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid gap-5 md:grid-cols-3">
-        {Array.from({ length: FORM_CARDS }, (_, index) => (
-          <div
-            key={index}
-            className="h-40 rounded-2xl bg-surface p-6 shadow-subtle motion-safe:animate-pulse"
-          >
-            <div className="flex items-center justify-between">
-              <div className="size-11 rounded-xl bg-ink/5" />
-              <div className="h-3.5 w-16 rounded bg-ink/5" />
-            </div>
-            <div className="mt-5 h-5 w-40 rounded bg-ink/10" />
-            <div className="mt-3 h-3 w-52 rounded bg-ink/5" />
           </div>
         ))}
       </div>

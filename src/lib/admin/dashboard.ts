@@ -48,20 +48,23 @@ export interface TrendSeries {
 }
 
 /**
- * The three forms the activity chart plots, **in stacking order**. The action
- * returns each day's counts in this same order, so a series and its numbers can
- * never drift apart.
+ * The series the activity chart plots, **in stacking order**. The action returns
+ * each day's counts in this same order, so a series and its numbers can never
+ * drift apart.
+ *
+ * STEM Fest only. The campus/batch ambassador and volunteer forms are separate
+ * sign-up flows with their own admin sections; folding their volume into this
+ * chart buried the science competition's own activity under forms the club does
+ * not run the fest with. The panel reads as one thing now — the fest's entries.
  */
-export const registrationTrendSeries: TrendSeries[] = [
-  { id: "ambassador", label: "Campus Ambassador", tone: "teal" },
+export const stemfestTrendSeries: TrendSeries[] = [
   { id: "stemfest", label: "STEM Fest events", tone: "purple" },
-  { id: "volunteer", label: "STEM Fest volunteers", tone: "yellow" },
 ];
 
 export interface RegistrationTrendPoint {
   /** `YYYY-MM-DD`, a calendar day in the admin's timezone. */
   day: string;
-  /** One count per entry in `registrationTrendSeries`, same order. */
+  /** One count per entry in `stemfestTrendSeries`, same order. */
   counts: number[];
 }
 
@@ -86,6 +89,18 @@ export interface EventPopularityRow {
 
 export interface SchoolCountRow {
   school: string;
+  count: number;
+}
+
+/**
+ * One row of the reference leaderboard.
+ *
+ * `reference` is `null` for STEM Fest entries nobody referred — the column stores
+ * "not referred by anyone" as NULL rather than a sentinel name, so the club's own
+ * lists of members stay free of a name that is not a name.
+ */
+export interface ReferenceCountRow {
+  reference: string | null;
   count: number;
 }
 

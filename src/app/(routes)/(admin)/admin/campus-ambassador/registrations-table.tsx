@@ -87,7 +87,9 @@ export default function RegistrationsTable({
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            {/* `min-w` is what makes the container above scroll at all: a
+                `w-full` table shrinks to fit instead of overflowing. */}
+            <table className="w-full min-w-[52rem]">
               <thead>
                 <tr className="border-b border-ink/5 text-left">
                   <th className="w-8 px-3 py-3" aria-label="Expand" />

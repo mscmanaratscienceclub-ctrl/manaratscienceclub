@@ -600,6 +600,25 @@ export function teamFee(teamSize: StemfestTeamSize): number {
 }
 
 /**
+ * The one token every host-school spelling shares, lower-cased.
+ *
+ * Held in a constant because two very different callers have to agree on it: the
+ * JS predicate below and the admin's SQL school grouping, which matches the same
+ * word with `ILIKE`. Keeping the word in one place is what stops a rename of the
+ * school from normalising in the panel but not on the form (or the reverse).
+ */
+const MANARAT_SCHOOL_TOKEN = "manarat";
+
+/**
+ * The pattern the admin's SQL uses to test the same thing as `isManaratSchool`.
+ *
+ * `%manarat%` under `ILIKE` is exactly this predicate's "contains, ignoring case",
+ * so the school league table and the form's rate tier cannot disagree about who
+ * counts as the host school.
+ */
+export const manaratSchoolLikePattern = `%${MANARAT_SCHOOL_TOKEN}%`;
+
+/**
  * Whether a *resolved* school name is the host school — the only thing the
  * discounted Olympiad rate above turns on.
  *
@@ -611,8 +630,20 @@ export function teamFee(teamSize: StemfestTeamSize): number {
  * with the way the admin's school league table already groups these names.
  */
 export function isManaratSchool(school: string | null | undefined): boolean {
-  return /manarat/i.test(school ?? "");
+  return (school ?? "").toLowerCase().includes(MANARAT_SCHOOL_TOKEN);
 }
+
+/**
+ * The host school's one canonical name in the admin's figures.
+ *
+ * Every Manarat spelling — the catalogue's entry, "Manarat", a hand-typed
+ * variation — is counted as this single school rather than as several. Resolved
+ * from `stemfestSchools` instead of written out again, so the label the panel
+ * groups on is the same label a participant who picked from the dropdown has.
+ */
+export const manaratSchoolLabel: string =
+  stemfestSchools.find((school) => isManaratSchool(school.name))?.name ??
+  "Manarat Dhaka International School & College";
 
 /**
  * One-line fee hint shown under each segment heading. Built from

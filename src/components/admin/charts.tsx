@@ -112,54 +112,62 @@ export function StackedBarChart({
         </p>
       </div>
 
-      <div
-        className="flex h-44 items-end gap-[3px] border-b border-ink/10"
-        role="img"
-        aria-label={ariaLabel}
-      >
-        {points.map((point, index) => {
-          const total = totals[index] ?? 0;
-
-          return (
-            <div
-              key={point.day}
-              className="group flex h-full flex-1 flex-col justify-end gap-px"
-              title={`${formatDayLabel(point.day)} — ${total} registration${total === 1 ? "" : "s"}`}
-            >
-              {series.map((entry, seriesIndex) => {
-                const value = point.counts[seriesIndex] ?? 0;
-                if (value === 0) return null;
-
-                return (
-                  <div
-                    key={entry.id}
-                    className="w-full rounded-[2px] transition-opacity duration-200 group-hover:opacity-70"
-                    style={{
-                      // A bar shorter than a pixel would vanish; the floor keeps a
-                      // single registration visible without distorting the rest.
-                      height: `${Math.max((value / ceiling) * 100, 1.5)}%`,
-                      backgroundColor: chartToneVar[entry.tone],
-                    }}
-                  />
-                );
-              })}
-              {/* A day with nothing in it gets a hairline so the column still
-                  reads as a day rather than as a gap in the data. */}
-              {total === 0 && <div className="h-px w-full bg-ink/15" />}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-2 flex gap-[3px]" aria-hidden="true">
-        {points.map((point, index) => (
-          <span
-            key={point.day}
-            className="flex-1 text-center font-body text-[0.6rem] text-ink/35"
+      {/* The bars and their day labels share one scroller so the axis can never
+          drift from the columns it labels. Thirty columns cannot fit a phone, and
+          squeezing them into it gives each day label a few pixels of cell — which
+          is exactly how they end up piled on top of each other. */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[36rem]">
+          <div
+            className="flex h-44 items-end gap-[3px] border-b border-ink/10"
+            role="img"
+            aria-label={ariaLabel}
           >
-            {index % labelEvery === 0 ? formatDayLabel(point.day) : ""}
-          </span>
-        ))}
+            {points.map((point, index) => {
+              const total = totals[index] ?? 0;
+
+              return (
+                <div
+                  key={point.day}
+                  className="group flex h-full flex-1 flex-col justify-end gap-px"
+                  title={`${formatDayLabel(point.day)} — ${total} registration${total === 1 ? "" : "s"}`}
+                >
+                  {series.map((entry, seriesIndex) => {
+                    const value = point.counts[seriesIndex] ?? 0;
+                    if (value === 0) return null;
+
+                    return (
+                      <div
+                        key={entry.id}
+                        className="w-full rounded-[2px] transition-opacity duration-200 group-hover:opacity-70"
+                        style={{
+                          // A bar shorter than a pixel would vanish; the floor keeps a
+                          // single registration visible without distorting the rest.
+                          height: `${Math.max((value / ceiling) * 100, 1.5)}%`,
+                          backgroundColor: chartToneVar[entry.tone],
+                        }}
+                      />
+                    );
+                  })}
+                  {/* A day with nothing in it gets a hairline so the column still
+                      reads as a day rather than as a gap in the data. */}
+                  {total === 0 && <div className="h-px w-full bg-ink/15" />}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-2 flex gap-[3px]" aria-hidden="true">
+            {points.map((point, index) => (
+              <span
+                key={point.day}
+                className="flex-1 text-center font-body text-[0.6rem] text-ink/35"
+              >
+                {index % labelEvery === 0 ? formatDayLabel(point.day) : ""}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
 
       <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
@@ -220,10 +228,17 @@ export function DonutChart({
   let offset = 0;
 
   return (
-    <div className={cn("flex items-center gap-6", className)}>
+    <div
+      className={cn(
+        // A 144px ring and its legend cannot share a phone's width, so they stack
+        // until there is room for the two to sit side by side.
+        "flex flex-col items-center gap-6 sm:flex-row",
+        className,
+      )}
+    >
       <svg
         viewBox="0 0 100 100"
-        className="size-36 shrink-0"
+        className="size-32 shrink-0 sm:size-36"
         role="img"
         aria-label={ariaLabel}
       >
@@ -283,7 +298,7 @@ export function DonutChart({
         </text>
       </svg>
 
-      <ul className="min-w-0 space-y-3">
+      <ul className="w-full min-w-0 space-y-3 sm:w-auto">
         {slices.map((slice) => (
           <li key={slice.id} className="flex items-baseline gap-2.5">
             <span

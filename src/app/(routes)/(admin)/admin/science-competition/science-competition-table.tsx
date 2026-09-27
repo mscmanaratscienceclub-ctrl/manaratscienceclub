@@ -178,7 +178,9 @@ export default function ScienceCompetitionTable({
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            {/* Ten columns: `min-w` is what makes the container above scroll at
+                all, since a `w-full` table shrinks rather than overflowing. */}
+            <table className="w-full min-w-[72rem]">
               <thead>
                 <tr className="border-b border-ink/5 text-left">
                   <th className="w-8 px-3 py-3" aria-label="Expand" />

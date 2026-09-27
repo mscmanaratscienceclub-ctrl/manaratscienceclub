@@ -245,14 +245,6 @@ async function registrationTrend(days: number) {
     const dayOf = (column: AnyColumn) =>
       sql<string>`to_char((${column} at time zone 'Asia/Dhaka')::date, 'YYYY-MM-DD')`;
 
-    const ambassador = await tx
-      .select({
-        day: dayOf(campusAmbassadorRegistrations.createdAt),
-        count: sql<number>`count(*)::int`,
-      })
-      .from(campusAmbassadorRegistrations)
-      .groupBy(dayOf(campusAmbassadorRegistrations.createdAt));
-
     const stemfest = await tx
       .select({
         day: dayOf(stemfestRegistrations.createdAt),
@@ -261,43 +253,27 @@ async function registrationTrend(days: number) {
       .from(stemfestRegistrations)
       .groupBy(dayOf(stemfestRegistrations.createdAt));
 
-    const volunteer = await tx
-      .select({
-        day: dayOf(volunteerRegistrations.createdAt),
-        count: sql<number>`count(*)::int`,
-      })
-      .from(volunteerRegistrations)
-      .groupBy(dayOf(volunteerRegistrations.createdAt));
-
     return {
       days,
-      buckets: ambassador.length + stemfest.length + volunteer.length,
+      buckets: stemfest.length,
     };
   });
 }
 
 /**
- * Mirrors `getDashboardBreakdown` — four sequential reads: a volunteer tally, the
- * recent feed, the event popularity join over a values list, and the school
- * ranking over a union of two tables.
+ * Mirrors `getDashboardBreakdown` — four sequential reads: the recent feed, the
+ * event popularity join over a values list, the school ranking, and the reference
+ * leaderboard. Every read is STEM Fest only, and the school ranking normalises
+ * Manarat spellings to one label before grouping.
  */
 async function dashboardBreakdown() {
-  const v = volunteerRegistrations;
-  const a = campusAmbassadorRegistrations;
   const s = stemfestRegistrations;
 
   return withDbTimeout("getDashboardBreakdown", async (tx) => {
-    const [volunteers] = await tx
-      .select({
-        total: sql<number>`count(*)::int`,
-        thisWeek: sql<number>`count(*) filter (where ${v.createdAt} >= now() - interval '7 days')::int`,
-      })
-      .from(v);
-
     const recent = await tx
-      .select({ id: a.id, name: a.name })
-      .from(a)
-      .orderBy(desc(a.createdAt))
+      .select({ id: s.id, name: s.name })
+      .from(s)
+      .orderBy(desc(s.createdAt))
       .limit(6);
 
     const events = await tx.execute(sql`
@@ -318,68 +294,62 @@ async function dashboardBreakdown() {
           count(*)::int as cnt,
           (count(*) over ())::int as total_groups
         from (
-          select lower(btrim(${a.school})) as key, btrim(${a.school}) as label
-          from ${a}
-          union all
-          select lower(btrim(${s.school})), btrim(${s.school})
+          select
+            case
+              when ${s.school} ilike '%manarat%' then 'Manarat Dhaka International School & College'
+              else btrim(${s.school})
+            end as label
           from ${s}
         ) as schools
-        group by key
+        group by lower(label)
       ) as ranked
       order by count desc, label asc
       limit 6
     `);
 
+    const references = await tx.execute(sql`
+      select referrer as reference, cnt as count
+      from (
+        select ${s.reference} as referrer, count(*)::int as cnt
+        from ${s}
+        group by ${s.reference}
+      ) as ranked
+      order by count desc, referrer asc nulls last
+      limit 8
+    `);
+
     return {
-      volunteerCount: volunteers?.total ?? 0,
       recent: recent.length,
       eventRows: Array.isArray(events) ? events.length : 0,
       schoolRows: Array.isArray(schools) ? schools.length : 0,
+      referenceRows: Array.isArray(references) ? references.length : 0,
     };
   });
 }
 
-// ── 3. The dashboard's four independent sources ──────────────────────────────
-console.log("\n3. Dashboard: four sources via allSettled");
+// ── 3. The dashboard's three independent sources ─────────────────────────────
+console.log("\n3. Dashboard: three sources via allSettled");
 const settled = await Promise.allSettled([
-  withDbTimeout("getAmbassadorStats", async (tx) => {
-    const t = campusAmbassadorRegistrations;
-    const [row] = await tx
-      .select({
-        total: sql<number>`count(*)::int`,
-        thisWeek: sql<number>`count(*) filter (where ${t.createdAt} >= now() - interval '7 days')::int`,
-        thisMonth: sql<number>`count(*) filter (where ${t.createdAt} >= date_trunc('month', now()))::int`,
-        uniqueSchools: sql<number>`count(distinct lower(btrim(${t.school})))::int`,
-      })
-      .from(t);
-    return row;
-  }),
   registrationTrend(30),
   dashboardBreakdown(),
   stemfestStats(),
 ]);
 const rejectedCount = settled.filter((r) => r.status === "rejected").length;
-check("all four dashboard sources fulfilled", rejectedCount === 0, `${settled.length - rejectedCount}/${settled.length} ok`);
-const ambassadorStats = settled[0].status === "fulfilled" ? settled[0].value : null;
-check(
-  "ambassador stats usable",
-  (ambassadorStats?.total ?? -1) >= 0,
-  `total=${ambassadorStats?.total} week=${ambassadorStats?.thisWeek} month=${ambassadorStats?.thisMonth} schools=${ambassadorStats?.uniqueSchools}`,
-);
-const trend = settled[1].status === "fulfilled" ? settled[1].value : null;
+check("all three dashboard sources fulfilled", rejectedCount === 0, `${settled.length - rejectedCount}/${settled.length} ok`);
+const trend = settled[0].status === "fulfilled" ? settled[0].value : null;
 check(
   "registration trend grouped without failing",
   typeof trend?.buckets === "number",
   `${trend?.days} days, ${trend?.buckets} day buckets`,
 );
-const breakdown = settled[2].status === "fulfilled" ? settled[2].value : null;
+const breakdown = settled[1].status === "fulfilled" ? settled[1].value : null;
 check(
   "dashboard breakdown returned all four reads",
-  typeof breakdown?.volunteerCount === "number" &&
-    typeof breakdown?.schoolRows === "number",
-  `volunteers=${breakdown?.volunteerCount} recent=${breakdown?.recent} events=${breakdown?.eventRows} schools=${breakdown?.schoolRows}`,
+  typeof breakdown?.recent === "number" &&
+    typeof breakdown?.referenceRows === "number",
+  `recent=${breakdown?.recent} events=${breakdown?.eventRows} schools=${breakdown?.schoolRows} referrers=${breakdown?.referenceRows}`,
 );
-const stemStats = settled[3].status === "fulfilled" ? settled[3].value : null;
+const stemStats = settled[2].status === "fulfilled" ? settled[2].value : null;
 check(
   "stemfest stats include folded-in verified count",
   typeof stemStats?.verifiedCount === "number",

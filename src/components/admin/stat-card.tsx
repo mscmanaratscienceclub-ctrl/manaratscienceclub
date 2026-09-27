@@ -80,6 +80,12 @@ export function StatCard({
  * Extracted so every section on the dashboard shares one heading treatment, one
  * padding scale and one description slot — the fastest way for a set of unrelated
  * figures to look like a single page.
+ *
+ * `min-w-0` is load-bearing: a panel is usually a grid item, and a grid item's
+ * default `min-width: auto` refuses to shrink below its content's min-content
+ * width. Without this, a panel holding anything with a minimum width — the
+ * activity chart's scroller, say — widens the whole grid instead of scrolling
+ * inside itself, which is exactly how a chart overflows a phone.
  */
 export function Panel({
   title,
@@ -95,7 +101,9 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={cn("rounded-2xl bg-surface shadow-subtle", className)}>
+    <section
+      className={cn("min-w-0 rounded-2xl bg-surface shadow-subtle", className)}
+    >
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-ink/5 px-6 py-4">
         <div>
           <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>

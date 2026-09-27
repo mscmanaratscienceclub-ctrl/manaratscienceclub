@@ -9,6 +9,24 @@ import {
 } from "./routes";
 
 /**
+ * Whether this is the local admin verification surface.
+ *
+ * `/admin-preview` renders the admin chrome, tables and charts with fixture data
+ * so the layout can be checked at a real phone width. `/admin` itself cannot be
+ * opened without an admin session, and the only database this checkout can reach
+ * is production. The surface is development-only, so the bypass is too: in a
+ * production build this returns false, the request falls through to the session
+ * check like any other private path, and the page 404s as well. Two dev-scoped
+ * gates rather than one, because a single mistake here would expose the chrome.
+ */
+function isDevPreviewRoute(request: NextRequest): boolean {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    request.nextUrl.pathname === "/admin-preview"
+  );
+}
+
+/**
  * `/register` is a real page again: it hosts the chooser between STEM Fest
  * event registration and the volunteer application. The old 308 to
  * `/stemfestreg` is gone — the path must render, not redirect.
@@ -29,7 +47,7 @@ export async function proxy(request: NextRequest) {
     return authRoutes.some((path) => request.nextUrl.pathname.startsWith(path));
   };
 
-  if (isApiRoute || isMonitoringRoute) {
+  if (isApiRoute || isMonitoringRoute || isDevPreviewRoute(request)) {
     return NextResponse.next();
   }
 

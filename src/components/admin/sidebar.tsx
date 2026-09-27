@@ -8,7 +8,17 @@ import { trackEvent, resetAnalytics } from "@/lib/analytics";
 import { clearSentryUser } from "@/lib/sentry-helpers";
 import { cn } from "@/lib/utils";
 
-interface SidebarProps { user: { name: string; email: string; role: string } }
+/**
+ * The rail's own width and scroll behaviour live here; *where* it is mounted does
+ * not. It renders in flow above `lg` and inside the off-canvas drawer below it
+ * (`admin-shell.tsx`), so it carries no visibility classes of its own and takes
+ * the caller's for that — otherwise the drawer would inherit the rail's
+ * `hidden lg:flex` and vanish on exactly the screens that need it.
+ */
+interface SidebarProps {
+  user: { name: string; email: string; role: string };
+  className?: string;
+}
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -23,7 +33,7 @@ const outreachItems = [
   { href: "/admin/emails", label: "Bulk Emails", icon: Mail, exact: false },
 ];
 
-export default function AdminSidebar({ user }: SidebarProps) {
+export default function AdminSidebar({ user, className }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const isActive = (href: string, exact: boolean) => exact ? pathname === href : pathname.startsWith(href);
@@ -53,7 +63,10 @@ export default function AdminSidebar({ user }: SidebarProps) {
   return (
     <aside
       data-print="chrome"
-      className="flex h-screen w-56 shrink-0 flex-col border-r border-white/8 bg-ink"
+      className={cn(
+        "flex h-full w-56 shrink-0 flex-col border-r border-white/8 bg-ink",
+        className,
+      )}
     >
       <div className="flex items-center gap-3 border-b border-white/8 px-4 py-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-manara-purple"><ShieldCheck className="size-4 text-white" /></div>
