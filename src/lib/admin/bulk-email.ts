@@ -140,6 +140,8 @@ export interface BulkEmailSendInput {
   /** Required for `custom`, ignored for `confirmation`. */
   subject?: string;
   body?: string;
+  /** Whether the `custom` body is sanitised HTML rather than escaped prose. */
+  allowHtml?: boolean;
 }
 
 export const bulkEmailSendSchema = z
@@ -148,6 +150,7 @@ export const bulkEmailSendSchema = z
     offset: z.number().int().min(0),
     subject: z.string().trim().max(BULK_EMAIL_SUBJECT_MAX).optional(),
     body: z.string().trim().max(BULK_EMAIL_BODY_MAX).optional(),
+    allowHtml: z.boolean().optional(),
   })
   .superRefine((value, ctx) => {
     if (value.kind !== "custom") return;
@@ -173,6 +176,8 @@ export interface BulkEmailPreviewInput {
   kind: BulkEmailKind;
   subject?: string;
   body?: string;
+  /** Whether the `custom` body is sanitised HTML rather than escaped prose. */
+  allowHtml?: boolean;
 }
 
 /**

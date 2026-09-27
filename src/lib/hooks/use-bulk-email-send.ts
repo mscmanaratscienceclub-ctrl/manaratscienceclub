@@ -39,6 +39,8 @@ export interface BulkSendRequest {
   kind: BulkEmailKind;
   subject?: string;
   body?: string;
+  /** Whether the `custom` body is sanitised HTML rather than escaped prose. */
+  allowHtml?: boolean;
   /** The audience size the page already showed, so the bar has a ratio at once. */
   expected: number;
 }
@@ -60,7 +62,7 @@ export function useBulkEmailSend() {
   const [progress, setProgress] = useState<BulkSendProgress>(INITIAL);
 
   const send = useCallback(
-    async ({ state, kind, subject, body, expected }: BulkSendRequest) => {
+    async ({ state, kind, subject, body, allowHtml, expected }: BulkSendRequest) => {
       setProgress({ ...INITIAL, running: true, total: expected });
 
       let offset = 0;
@@ -78,6 +80,7 @@ export function useBulkEmailSend() {
             offset,
             subject,
             body,
+            allowHtml,
           });
 
           if (!result.ok) {

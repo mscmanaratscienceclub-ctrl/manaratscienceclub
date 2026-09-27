@@ -8,6 +8,25 @@ updated: 2026-09-27
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
 
+## 2026-09-27 — Bulk email: transparent page background + optional HTML input
+
+Two quality-of-life changes for custom messages in the bulk email panel.
+
+- **No more cream page backdrop.** The custom-message template now renders on a
+  transparent page (`pageTransparent` in `shell.ts`) — the white card stands on
+  whatever the reader's client puts behind it, matching the payment receipt's
+  recent update. No `COLOR_CREAM` on the `<body>` or the outer table.
+- **Write in HTML option.** A checkbox between the Subject and Message fields
+  toggles the body between escaped prose and sanitised HTML. When checked, the
+  body passes through `sanitize-html` (already in dependencies) with a whitelist
+  that covers links, headings, lists, tables, emphasis and blockquotes — but
+  strips scripts, iframes, event handlers and `javascript:` links. The `{{name}}`
+  merge tag is resolved before sanitization in both modes.
+- **Plumbing.** The `allowHtml` boolean threads from the checkbox → `BulkSendRequest`
+  → `BulkEmailSendInput` / `BulkEmailPreviewInput` (with z.boolean()) →
+  `sendCustomEmail` → `getCustomEmailHtml`. The preview action (`previewBulkEmail`)
+  renders with the same flag so the preview matches the send.
+
 ## 2026-09-27 — Bulk email preview before sending
 
 Admins can now see an email exactly as a recipient would before it goes out. Both

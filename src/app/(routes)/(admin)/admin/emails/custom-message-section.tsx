@@ -64,6 +64,7 @@ export default function CustomMessageSection({
 }) {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
+  const [allowHtml, setAllowHtml] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [preview, setPreview] = useState<BulkEmailPreview | null>(null);
   const [previewing, setPreviewing] = useState(false);
@@ -83,6 +84,7 @@ export default function CustomMessageSection({
         kind: "custom",
         subject: subject.trim(),
         body: body.trim(),
+        allowHtml,
       });
       setPreview(result);
     } finally {
@@ -97,6 +99,7 @@ export default function CustomMessageSection({
       kind: "custom",
       subject: subject.trim(),
       body: body.trim(),
+      allowHtml,
       expected: count,
     });
   }
@@ -140,6 +143,26 @@ export default function CustomMessageSection({
 
         <div>
           <label
+            className="flex cursor-pointer items-center gap-2.5 select-none"
+          >
+            <input
+              type="checkbox"
+              checked={allowHtml}
+              onChange={(event) => setAllowHtml(event.target.checked)}
+              className="size-4 shrink-0 rounded border-ink/20 accent-manara-teal"
+            />
+            <span className="font-body text-sm text-ink">
+              Write in HTML
+            </span>
+            <span className="font-body text-xs text-ink/45">
+              Use formatting like links, bold text or a layout. Unsafe tags are
+              removed automatically.
+            </span>
+          </label>
+        </div>
+
+        <div>
+          <label
             htmlFor="bulk-email-body"
             className="mb-1 block font-body text-xs font-semibold tracking-wider text-ink/40 uppercase"
           >
@@ -151,12 +174,25 @@ export default function CustomMessageSection({
             value={body}
             maxLength={BULK_EMAIL_BODY_MAX}
             onChange={(event) => setBody(event.target.value)}
-            placeholder={`Hello ${BULK_EMAIL_NAME_TOKEN},\n\n`}
+            placeholder={
+              allowHtml
+                ? "<p>Hello {{name}},</p>\n<p>Your event schedule is ready.</p>\n<a href=\"https://...\">View it here</a>"
+                : `Hello ${BULK_EMAIL_NAME_TOKEN},\n\n`
+            }
             className="w-full resize-y rounded-xl border border-ink/10 bg-cream/40 px-3 py-2 font-body text-sm leading-relaxed text-ink outline-none placeholder:text-ink/35 focus:border-manara-teal"
           />
           <p className="mt-1 font-body text-xs text-ink/45">
-            A blank line starts a new paragraph. {BULK_EMAIL_NAME_TOKEN} becomes
-            each recipient’s name.
+            {allowHtml ? (
+              <>
+                HTML is sanitised before sending. {BULK_EMAIL_NAME_TOKEN} becomes
+                each recipient’s name. Preview to check it before you send.
+              </>
+            ) : (
+              <>
+                A blank line starts a new paragraph. {BULK_EMAIL_NAME_TOKEN}
+                becomes each recipient’s name.
+              </>
+            )}
           </p>
         </div>
       </div>

@@ -1763,12 +1763,14 @@ async function deliverCustomMessage(
   recipient: BulkEmailRecipient,
   subject: string,
   body: string,
+  allowHtml: boolean,
 ): Promise<AdminStatusActionResult> {
   const result = await sendCustomEmail({
     to: recipient.email,
     name: recipient.name,
     subject,
     body,
+    allowHtml,
   });
 
   if (result.success && !result.simulated) {
@@ -1802,11 +1804,12 @@ async function deliverBulkRecipient(
   recipient: BulkEmailRecipient,
   subject: string,
   body: string,
+  allowHtml: boolean,
 ): Promise<AdminStatusActionResult> {
   try {
     return kind === "confirmation"
       ? await deliverStemfestConfirmation(recipient.id)
-      : await deliverCustomMessage(recipient, subject, body);
+      : await deliverCustomMessage(recipient, subject, body, allowHtml);
   } catch (error) {
     if (error instanceof StatusRefusal) {
       return { ok: false, message: error.message };
@@ -1838,6 +1841,7 @@ export async function sendBulkEmailBatch(
       offset: input.offset,
       subject: input.subject,
       body: input.body,
+      allowHtml: input.allowHtml,
     });
 
     const audience = await bulkEmailRecipients(state, send.kind);
@@ -1890,6 +1894,7 @@ export async function sendBulkEmailBatch(
         recipient,
         send.subject ?? "",
         send.body ?? "",
+        send.allowHtml ?? false,
       );
 
       if (result.ok) {
@@ -1979,7 +1984,12 @@ export async function previewBulkEmail(
       };
     }
 
-    const html = getCustomEmailHtml({ subject, body, name: first.name });
+    const html = getCustomEmailHtml({
+      subject,
+      body,
+      name: first.name,
+      allowHtml: input.allowHtml ?? false,
+    });
     return {
       ok: true,
       subject,

@@ -184,6 +184,45 @@ ${footer()}
   `.trim();
 }
 
+/**
+ * A transparent-page variant of `page`: no painted page backdrop behind the card.
+ *
+ * Files that ship their own full-page layout (like the payment receipt) already
+ * drop the cream — the card just sits on whatever the client renders behind it,
+ * and its own border/radius set it apart rather than a coloured page. A custom
+ * blast can use it too, so an admin's message reads as correspondence on the
+ * reader's own backdrop instead of on the club's cream.
+ *
+ * The card itself stays intact — white surface, header, footer — only the outer
+ * wrapper drops its background colour.
+ */
+export function pageTransparent(bodyHtml: string, title: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light only">
+  <title>${escapeHtml(title)}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: ${FONT_STACK}; color: ${COLOR_INK};">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="width: 100%; max-width: 560px; background-color: #ffffff; border-radius: ${RADIUS_CONTAINER}; overflow: hidden; box-shadow: 0 6px 24px rgba(20, 35, 38, 0.08);">
+${header()}
+${bodyHtml}
+${footer()}
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
 /* ── Body primitives ────────────────────────────────────────────────────── */
 
 /** The white content panel between header and footer. */

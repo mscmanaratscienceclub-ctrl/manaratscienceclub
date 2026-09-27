@@ -140,6 +140,8 @@ export interface CustomEmailOptions {
   subject: string;
   /** The admin's prose, with `{{name}}` optionally standing in for a name. */
   body: string;
+  /** Whether the body is sanitised HTML rather than escaped prose. */
+  allowHtml?: boolean;
 }
 
 /**
@@ -147,17 +149,19 @@ export interface CustomEmailOptions {
  *
  * The same `sendEmail` path every other mail takes, so a custom blast is logged in
  * development and rate-limited in production exactly like a receipt — there is no
- * second way out of the building.
+ * second way out of the building. `allowHtml` is passed straight to the template,
+ * which sanitises the body before it reaches the markup.
  */
 export async function sendCustomEmail({
   to,
   name,
   subject,
   body,
+  allowHtml,
 }: CustomEmailOptions): Promise<SendEmailResult> {
   return sendEmail({
     subject,
-    html: getCustomEmailHtml({ subject, body, name }),
+    html: getCustomEmailHtml({ subject, body, name, allowHtml }),
     label: "CUSTOM MESSAGE",
     recipient: { to, name },
   });
