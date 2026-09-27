@@ -16,6 +16,7 @@ export const stemfestSegments: StemfestSegment[] = [
     description: "Five arenas of head-to-head academic combat. One champion per track.",
     items: [
       "Mathematics",
+      "Physics",
       "Bio-Chem",
       "General Science",
       "Computer Science",

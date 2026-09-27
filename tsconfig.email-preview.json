@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
+    "target": "es2022",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "outDir": ".email-preview",
+    "rootDir": ".",
+    "paths": { "@/*": ["./src/*"] },
+    "noEmit": false
+  },
+  "files": [".email-preview/render-src/render-email-preview.ts"],
+  "include": ["src/lib/email/templates/*.ts", "src/lib/data/index.ts", "src/lib/admin/bulk-email.ts"]
+}

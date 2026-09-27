@@ -66,9 +66,9 @@ function collectedLabel(stats: StemfestStats | null): string {
 function collectedNote(stats: StemfestStats | null): string {
   if (!stats) return "STEM Fest payments could not be loaded.";
   if (stats.amountCollected === null && stats.verifiedCount > 0) {
-    return `${stats.verifiedCount} verified, but no matched bKash message reported an amount.`;
+    return `${stats.verifiedCount} verified, but none of them carry a recorded fee.`;
   }
-  return "Totals reported by the matched bKash messages.";
+  return "Totals from the amounts each verified registration was asked to pay.";
 }
 
 export default async function AdminDashboardPage() {

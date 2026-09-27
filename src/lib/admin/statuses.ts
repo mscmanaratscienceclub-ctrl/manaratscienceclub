@@ -68,7 +68,7 @@ export const stemfestPaymentStatusOptions: AdminStatusOption<StemfestPaymentStat
       value: "verified",
       label: "Verified",
       description:
-        "Payment confirmed. Verifying emails the participant their confirmation.",
+        "Payment confirmed. Press Send confirmation to email the participant their receipt.",
       tone: "bg-emerald-50 text-emerald-700",
     },
     {

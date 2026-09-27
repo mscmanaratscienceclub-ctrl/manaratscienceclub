@@ -645,10 +645,11 @@ export async function getStemfestStats(): Promise<StemfestStats> {
         verifiedCount: sql<number>`count(*) filter (where ${stemfestEffectivePaymentStatus()} = 'verified')::int`,
         pendingCount: sql<number>`count(*) filter (where ${stemfestEffectivePaymentStatus()} = 'pending')::int`,
         rejectedCount: sql<number>`count(*) filter (where ${stemfestEffectivePaymentStatus()} = 'rejected')::int`,
-        // Summed only over verified rows, through the same amount fragment the
-        // receipt quotes — so the collection figure can never include a payment
-        // the club has not accepted.
-        amountCollected: sql<string | null>`sum(((${stemfestPaymentAmount()})::numeric)) filter (where ${stemfestEffectivePaymentStatus()} = 'verified')::text`,
+        // What the club collected, summed over verified rows. This uses the
+        // registration's own `total_fee` — the amount the club asked for and
+        // accepted — rather than the forwarded-SMS amount, which has been known to
+        // parse to one uniform figure. Same source the receipt quotes.
+        amountCollected: sql<string | null>`sum(${t.totalFee}) filter (where ${stemfestEffectivePaymentStatus()} = 'verified')::text`,
         // Every row, verified or not: the club asked for this money, so it is what
         // the panel compares `amountCollected` against.
         amountToCollect: sql<string | null>`sum(${t.totalFee})::text`,
@@ -1272,6 +1273,11 @@ function stemfestDecisionSelection() {
     createdAt: t.createdAt,
     status: stemfestEffectivePaymentStatus(),
     decision: t.paymentDecision,
+    // What the participant was told to pay, stored on the row as `total_fee`. This
+    // is the authoritative per-participant amount and what the receipt should quote.
+    totalFee: t.totalFee,
+    // What a forwarded SMS reported arrived, as text; only a fallback for legacy
+    // rows that predate `total_fee`.
     amount: stemfestPaymentAmount(),
   };
 }
@@ -1291,19 +1297,32 @@ interface StemfestDecisionTarget {
   /** Effective status *before* the write: the decision, or the forwarded-SMS match. */
   status: StemfestPaymentStatus;
   decision: StemfestPaymentStatus | null;
+  /** What the participant was told to pay, in BDT; `null` for legacy rows. */
+  totalFee: number | null;
   amount: string | null;
 }
 
 /**
  * The amount the confirmation quotes.
  *
- * `numeric` arrives as a string and is only ever formatted here, so an unparseable
- * value is dropped rather than printed to a participant as `NaN`.
+ * The authoritative figure is the registration's own `total_fee` — what the club
+ * asked that participant to pay, computed server-side per insert, so it is
+ * inherently per-participant. The forwarded-SMS amount (`amount`) is only a
+ * fallback for legacy rows filed before `total_fee` existed: it is as good as
+ * the SMS parser, and it has been known to report one uniform figure for many
+ * rows, which is exactly why it is not trusted for a receipt.
  */
-function confirmationAmount(amount: string | null): string | undefined {
-  if (!amount) return undefined;
+function confirmationAmount(
+  totalFee: number | null,
+  smsAmount: string | null,
+): string | undefined {
+  if (totalFee !== null && Number.isFinite(totalFee)) {
+    return formatBdt(totalFee);
+  }
 
-  const value = Number(amount);
+  if (!smsAmount) return undefined;
+
+  const value = Number(smsAmount);
   return Number.isFinite(value) ? formatBdt(value) : undefined;
 }
 
@@ -1335,7 +1354,7 @@ async function deliverConfirmation(
     transactionId: target.transactionId,
     paymentNumber: target.paymentNumber,
     segments: target.segments,
-    amount: confirmationAmount(target.amount),
+    amount: confirmationAmount(target.totalFee, target.amount),
   });
 
   if (result.success && !result.simulated) {

@@ -10,7 +10,7 @@ export const siteConfig = {
   bugReportUrl: "mailto:info@manaratscience.club?subject=Bug%20Report%20%7C%20MSC%20Website",
   social: {
     instagram: "https://www.instagram.com/manaratscience",
-    discord: " https://discord.gg/FTHAkQcSHJ",
+    discord: "https://discord.gg/FTHAkQcSHJ",
     facebook: "https://www.facebook.com/manaratscienceclub",
     boysCommunity: "https://chat.whatsapp.com/Eyja5DTaDmYAotXkQQsCl4?s=cl&p=i&mlu=1",
     girlsCommunity: "https://chat.whatsapp.com/F8bNUetkCdX8dsIDmXq7vi?s=cl&p=i&mlu=1",
@@ -511,9 +511,9 @@ export interface ShowcaseImage {
 
 /** Past STEM Fest event photos. */
 export const competitionShowcase: ShowcaseImage[] = [
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image1.png", alt: "MSC STEM Fest 2025 — photo 3" },
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image2.png", alt: "MSC STEM Fest 2025 — photo 4" },
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image3.png", alt: "MSC STEM Fest 2025 — photo 5" },
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image4.png", alt: "MSC STEM Fest 2025 — photo 6" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image1.png", alt: "MSC STEM Fest 2025 — photo 1" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image2.png", alt: "MSC STEM Fest 2025 — photo 2" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image3.png", alt: "MSC STEM Fest 2025 — photo 3" },
+  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image4.png", alt: "MSC STEM Fest 2025 — photo 4" },
  
 ];
