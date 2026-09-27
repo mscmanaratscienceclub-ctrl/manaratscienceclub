@@ -8,6 +8,37 @@ updated: 2026-09-27
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
 
+## 2026-09-27 — Narrowed the edge-fallback matcher to stop spamming useless edge calls
+
+The proxy (Next 16's middleware) previously ran on **every** request it wasn't told
+to skip: every public page load, every `/api/*` call and every static fetch spun up
+the edge function only to read the cookie, decide "public" (or "api") and pass
+straight through. On Vercel's free tier each of those is a metered edge-function
+invocation with no possible redirect — pure waste.
+
+**`src/proxy.ts`** now whitelists *only* the paths the proxy can actually decide on:
+`/signin`, `/signup` (bounce a signed-in user away), and the private areas
+`/admin/:path*`, `/cms/:path*`, `/profile` plus the dev-only `/admin-preview`
+(gate a signed-out user to `/signin`). The whole public site, static assets, `/api/*`
+and Sentry's `/monitoring` tunnel no longer invoke the edge function at all.
+
+The now-dead `/api/*` and `/monitoring` early-returns and the `publicRoutes`
+/`publicRoutePatterns` imports were removed. Security is unchanged: the `(admin)` and
+`(cms)` layouts and the `/profile` page already re-check the session server-side
+(defense in depth), so excluding them from the matcher costs nothing.
+
+## 2026-09-27 — Vercel Analytics wired into the root layout
+
+`@vercel/analytics` was already a dependency and already listed in the README's
+monitoring row, but the `<Analytics />` component was never rendered, so it had no
+effect. It is now mounted in the root layout (`src/app/layout.tsx`) next to the
+existing `<SpeedInsights />`. Like Speed Insights, it reports automatically to the Vercel
+project dashboard with no environment variables from the code side — no compile-time config
+or manual page-view tracking is required.
+
+- **`src/app/layout.tsx`** — `import { Analytics } from "@vercel/analytics/next"`;
+  `<Analytics />` rendered immediately after `<SpeedInsights />`.
+
 ## 2026-09-27 — Bulk email: transparent page background + optional HTML input
 
 Two quality-of-life changes for custom messages in the bulk email panel.

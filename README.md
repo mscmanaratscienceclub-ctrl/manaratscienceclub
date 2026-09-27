@@ -49,10 +49,14 @@ Three sibling groups, each with its own layout and visual language:
 
 ### Authorization — three layers
 
-1. **`src/proxy.ts`** (Next 16's replacement for `middleware.ts`) runs on every
-   request. It checks for a session *cookie* and redirects signed-out users away
-   from any route not listed in `src/routes.ts` (`publicRoutes` /
-   `publicRoutePatterns`). It never checks roles.
+1. **`src/proxy.ts`** (Next 16's replacement for `middleware.ts`) runs only on
+   the paths where it can make a decision — the auth routes (`/signin`, `/signup`)
+   and the private areas (`/admin/*`, `/cms/*`, `/profile`, and the dev-only
+   `/admin-preview`). It checks for a session *cookie*: on an auth route it
+   redirects an already-signed-in user away, and on a private route it redirects a
+   signed-out user to `/signin`. It never checks roles. Everything else — the whole
+   public site, static assets, `/api/*` and Sentry's `/monitoring` tunnel — is
+   excluded from the matcher so no edge function runs for it.
 2. **Layouts** (`(cms)/layout.tsx`, `(admin)/layout.tsx`) re-validate the
    session server-side and enforce role requirements, redirecting if needed.
 3. **Server actions** (`src/lib/actions/*`) repeat the check on every mutation

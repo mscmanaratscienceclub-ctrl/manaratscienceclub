@@ -4,8 +4,6 @@ import { getSessionCookie } from "better-auth/cookies";
 import {
   authRoutes,
   DEFAULT_LOGIN_REDIRECT,
-  publicRoutes,
-  publicRoutePatterns,
 } from "./routes";
 
 /**
@@ -34,20 +32,11 @@ function isDevPreviewRoute(request: NextRequest): boolean {
 export async function proxy(request: NextRequest) {
   const session = getSessionCookie(request);
 
-  const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
-  const isMonitoringRoute = request.nextUrl.pathname.startsWith("/monitoring");
-
-  const isPublicRoute =
-    publicRoutes.includes(request.nextUrl.pathname) ||
-    publicRoutePatterns.some((pattern) =>
-      pattern.test(request.nextUrl.pathname),
-    );
-
   const isAuthRoute = () => {
     return authRoutes.some((path) => request.nextUrl.pathname.startsWith(path));
   };
 
-  if (isApiRoute || isMonitoringRoute || isDevPreviewRoute(request)) {
+  if (isDevPreviewRoute(request)) {
     return NextResponse.next();
   }
 
@@ -60,7 +49,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (!session && !isPublicRoute) {
+  if (!session) {
     return NextResponse.redirect(new URL("/signin", request.url));
   }
 
@@ -68,14 +57,28 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
+  /*
+   * The matcher is a *whitelist* of the paths the proxy can actually make a
+   * decision on. Everywhere else — the whole public site, static assets, `/api/*`,
+   * `/monitoring` — never invokes the edge function at all.
+   *
+   * At build time the matcher ran on essentially every request: each public page
+   * load, each API call and each static fetch spun up the middleware only to read the
+   * cookie, decide "public" (or "api") and pass straight through. On Vercel's
+   * free tier every one of those is a metered edge-function invocation with no
+   * possible redirect, so the public surface is pure waste.
+   *
+   * The proxy's real jobs are: bounce an already-signed-in user off `/signin` and
+   * `/signup`, and gate the private areas (`/admin`, `/cms`, `/profile`) before
+   * the heavier server layouts render. Those layouts and pages re-check the session
+   * server-side (defense in depth), so narrowing the matcher costs no security.
+   */
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/signin",
+    "/signup",
+    "/admin/:path*",
+    "/admin-preview",
+    "/cms/:path*",
+    "/profile",
   ],
 };

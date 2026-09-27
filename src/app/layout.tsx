@@ -6,6 +6,7 @@ import Providers from "@/providers";
 import { Cormorant_Garamond, DM_Sans, Rubik, Unbounded } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 
 /**
  * Fredoka is self-hosted instead of `next/font/google`: it is the only font in
@@ -128,6 +129,7 @@ export default function RootLayout({
         />
         <Providers>{children}</Providers>
         <SpeedInsights />
+        <Analytics />
         {/* Google Analytics (gtag.js) */}
         <Script
           async
