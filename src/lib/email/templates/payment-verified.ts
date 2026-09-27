@@ -60,12 +60,15 @@ const CONTACTS = [
 ];
 
 /* ── Brand palette ────────────────────────────────────────────────────────
- * Copied from `src/app/globals.css`: the same cream page, ink text and Manara
- * teal the site is built on, so a receipt and the site read as one brand. Email
- * cannot use the tokens themselves, which is why `lib/email/templates/` is the
- * one place `verify.sh` allows raw hex. Every pairing below clears WCAG AAA:
- * ink on white is 16.4:1, teal-deep on the cream and teal tints is 13:1 or
- * better, and white on the teal header and footer is 7.37:1.
+ * Copied from `src/app/globals.css`: the same ink text and Manara teal the
+ * site is built on, so a receipt and the site read as one brand. The page
+ * behind the card is deliberately NOT painted — the mail is just the card, on
+ * whatever the reader's client puts behind it — which is why CREAM below is
+ * only a card tint, never a page colour. Email cannot use the tokens
+ * themselves, which is why `lib/email/templates/` is the one place `verify.sh`
+ * allows raw hex. Every pairing below clears WCAG AAA: ink on white is 16.4:1,
+ * teal-deep on the cream and teal tints is 13:1 or better, and white on the
+ * teal header and footer is 7.37:1.
  */
 const CREAM = "#FFF8EC";
 const INK = "#142326";
@@ -127,6 +130,9 @@ function card(
  * This mail deliberately does NOT use the shared shell: the club picked this
  * layout (a full-width branded header, numbered cards, a card per topic) from
  * the drafts they were shown, and the shell's 560px cream card would undo it.
+ * It also ships no page background of its own — no painted backdrop behind the
+ * card — so it sits on whatever the client renders; the card's own hairline
+ * border and radius are what set it apart, not a coloured page.
  * The colours are the site's own brand tokens, so the receipt matches the
  * website rather than introducing a palette of its own.
  *
@@ -228,8 +234,8 @@ export function getPaymentVerifiedEmailHtml({
     }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: ${CREAM}; -webkit-text-size-adjust: 100%; font-family: ${SANS}; color: ${INK}; line-height: 1.6;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: ${CREAM};">
+<body style="margin: 0; padding: 0; background-color: ${WHITE}; -webkit-text-size-adjust: 100%; font-family: ${SANS}; color: ${INK}; line-height: 1.6;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr>
       <td align="center" style="padding: 32px 12px;">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width: 100%; max-width: 600px; background-color: ${WHITE}; border: 1px solid ${HAIRLINE}; border-radius: 18px; overflow: hidden;">
