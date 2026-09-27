@@ -6,10 +6,12 @@
  * array the homepage hero reads, so a segment renamed there is renamed here too
  * and the two can never disagree about what the fest contains.
  *
- * The *details* are authored, not derived: every entry ships with `details: null`
- * and no files, which the page renders as reserved space. Publishing a rulebook
- * means filling in one of these fields — see the TODO on `resourceEntries`.
+ * The *details* are authored, not derived: an entry with no prose and no published
+ * rulebooks renders as reserved space. Publishing a rulebook means uploading the
+ * PDF and adding one line to `publishedRulebooks` below.
  */
+
+import { pdfUrl } from "@/lib/media";
 
 import { stemfestSegments } from "./stemfest";
 
@@ -20,6 +22,8 @@ export interface ResourceFile {
    * and the page renders the slot as unavailable rather than as a dead link.
    */
   href: string | null;
+  /** Object key inside the `pdfs` bucket, or `null` while unpublished. */
+  bucketPath: string | null;
 }
 
 export interface ResourceEntry {
@@ -57,7 +61,12 @@ export const resourcesCopy = {
   pendingLabel: "Details coming soon",
   pendingNote:
     "The club has not published this material yet. It will appear on this page before the event.",
+  /** Singular, for the reserved "Rulebook — coming soon" slot. */
   rulebookLabel: "Rulebook",
+  rulebooksLabel: "Published rulebooks",
+  openFileLabel: "Open PDF",
+  downloadFileLabel: "Download",
+  fileNewTabNote: "opens in a new tab",
   syllabusLinkLabel: "Syllabus PDFs",
   emptyItemsNote: "Event list to be confirmed.",
 } as const;
@@ -101,12 +110,34 @@ export const generalResources: GeneralResource[] = [
 ];
 
 /**
- * One entry per fest segment, with the detail slots left open.
+ * Object keys inside the public `pdfs` bucket, keyed by segment id.
  *
- * TODO(before the event): fill in `details` and push into `files` as the club
- * releases each segment's rulebook — `{ label, href }` per document, pointing at
- * a public path such as `/resources/robotics-rulebook.pdf`. Until then the page
- * shows the slots as reserved space.
+ * The same bucket `publishedSyllabi` uses (`src/lib/data/syllabus.ts`), and the
+ * same publishing gesture: upload the PDF, then add its key here. A segment with
+ * no entry renders its slot as reserved space rather than as a dead link.
+ *
+ * An entry is a *list* because a segment can release more than one document —
+ * Robotics has a rulebook per event, so both of its events appear here.
+ *
+ * The `-1` on the Robosoccer key is the club's own upload name from a re-upload;
+ * it is kept verbatim because it is the object key the bucket actually holds.
+ */
+const publishedRulebooks: Record<string, { label: string; bucketPath: string }[]> = {
+  robotics: [
+    { label: "LFR (Line Following Robot) rulebook", bucketPath: "LFR RULEBOOK.pdf" },
+    { label: "Robosoccer rulebook", bucketPath: "ROBOSOCCER RULEBOOK-1.pdf" },
+  ],
+  "project-display": [
+    { label: "Project Display rulebook", bucketPath: "PROJECT DISPLAY RULEBOOK.pdf" },
+  ],
+};
+
+/**
+ * One entry per fest segment, with the authored detail slots left open.
+ *
+ * `details` stays `null` until the club writes prose for a segment — the page
+ * falls back to its "coming soon" note. `files` comes from `publishedRulebooks`,
+ * so releasing a document is a one-line change there and never a component edit.
  */
 export const resourceEntries: ResourceEntry[] = stemfestSegments.map(
   (segment) => ({
@@ -115,6 +146,10 @@ export const resourceEntries: ResourceEntry[] = stemfestSegments.map(
     heading: segment.title,
     items: segment.items,
     details: null,
-    files: [],
+    files: (publishedRulebooks[segment.id] ?? []).map((document) => ({
+      label: document.label,
+      href: pdfUrl(document.bucketPath),
+      bucketPath: document.bucketPath,
+    })),
   }),
 );

@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
+  ArrowUpRight,
   BookOpen,
   CalendarClock,
+  Download,
   FileText,
   MapPin,
   ScrollText,
@@ -17,6 +19,8 @@ import {
   resourceEntries,
   resourcesCopy,
 } from "@/lib/data/resources";
+import { pdfUrl } from "@/lib/media";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Resources — Rulebooks & Segment Briefs | STEM Fest",
@@ -124,7 +128,10 @@ export default function ResourcesPage() {
           </ScrollReveal>
 
           <div className="mt-10 space-y-12">
-            {resourceEntries.map((entry) => (
+            {resourceEntries.map((entry) => {
+              const published = entry.files.length > 0;
+
+              return (
               <ScrollReveal key={entry.segmentId}>
                 <article className="grid gap-6 border-t border-space-line-soft pt-6 lg:grid-cols-12 lg:gap-10">
                   {/* Segment identity — names straight from the catalogue */}
@@ -156,16 +163,77 @@ export default function ResourcesPage() {
                     )}
                   </div>
 
-                  {/* Reserved space for the published detail */}
+                  {/* Published rulebooks, or the reserved slot until there are
+                      any. A published slot goes solid: the dashed border is the
+                      page's "nothing here yet" signal. */}
                   <div className="lg:col-span-8">
-                    <div className="border border-dashed border-space-line-soft bg-space-black/20 p-6">
-                      <p className="flex items-center gap-2 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-space-muted/80">
-                        <FileText className="size-3.5" aria-hidden="true" />
-                        {resourcesCopy.rulebookLabel} — {resourcesCopy.pendingLabel}
-                      </p>
-                      <p className="mt-3 max-w-[42rem] font-space-body text-sm leading-relaxed text-space-muted">
-                        {entry.details ?? resourcesCopy.pendingNote}
-                      </p>
+                    <div
+                      className={cn(
+                        "border bg-space-black/20 p-6",
+                        published
+                          ? "border-space-line-soft"
+                          : "border-dashed border-space-line-soft",
+                      )}
+                    >
+                      {published ? (
+                        <>
+                          <p className="flex items-center gap-2 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-ion">
+                            <FileText className="size-3.5" aria-hidden="true" />
+                            {resourcesCopy.rulebooksLabel}
+                          </p>
+                          <ul className="mt-4 space-y-3">
+                            {entry.files.map((file) => (
+                              <li
+                                key={file.bucketPath ?? file.label}
+                                className="flex flex-wrap items-baseline gap-x-6 gap-y-2"
+                              >
+                                <a
+                                  href={file.href ?? "#"}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 font-space-body text-sm text-space-ivory transition-colors hover:text-ion-bright"
+                                >
+                                  {file.label}
+                                  <ArrowUpRight
+                                    className="size-3.5"
+                                    aria-hidden="true"
+                                  />
+                                  <span className="sr-only">
+                                    ({resourcesCopy.fileNewTabNote})
+                                  </span>
+                                </a>
+                                {file.bucketPath && (
+                                  <a
+                                    href={pdfUrl(file.bucketPath, { download: true })}
+                                    className="inline-flex items-center gap-2 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-space-muted transition-colors hover:text-ion-bright"
+                                  >
+                                    <Download
+                                      className="size-3.5"
+                                      aria-hidden="true"
+                                    />
+                                    {resourcesCopy.downloadFileLabel}
+                                  </a>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                          {entry.details && (
+                            <p className="mt-4 max-w-[42rem] font-space-body text-sm leading-relaxed text-space-muted">
+                              {entry.details}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <p className="flex items-center gap-2 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-space-muted/80">
+                            <FileText className="size-3.5" aria-hidden="true" />
+                            {resourcesCopy.rulebookLabel} — {resourcesCopy.pendingLabel}
+                          </p>
+                          <p className="mt-3 max-w-[42rem] font-space-body text-sm leading-relaxed text-space-muted">
+                            {entry.details ?? resourcesCopy.pendingNote}
+                          </p>
+                        </>
+                      )}
 
                       {/* The syllabi live on their own page — this points at the
                           released PDFs rather than repeating the list here. */}
@@ -180,7 +248,8 @@ export default function ResourcesPage() {
                   </div>
                 </article>
               </ScrollReveal>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

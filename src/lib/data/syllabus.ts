@@ -52,16 +52,39 @@ export interface SyllabusSection {
  * Object keys inside the public `pdfs` bucket, keyed by event id.
  *
  * These are the filenames as uploaded, spaces and all — `pdfUrl` encodes them.
- * The five Olympiad subjects and the robotics events are the ones that have one
- * today; the rest are published by adding a line here.
+ *
+ * A document is listed here whenever the club has published the PDF a
+ * participant needs for that event, whatever the club named the file. That is
+ * why the robotics events point at `… RULEBOOK.pdf` keys: the syllabus page is
+ * the per-event index of "what do I download for my event", and for Robotics and
+ * Project Display the answer is their rulebook. The same files also appear on
+ * `/resources`, listed per segment, from `publishedRulebooks`
+ * (`src/lib/data/resources.ts`).
+ *
+ * Two keys carry an upload suffix — the "(1)" and the "-1" are the club's own
+ * upload names, kept verbatim because they are the object keys the bucket
+ * actually holds. Renaming them in the bucket means renaming them here too.
  */
 const publishedSyllabi: Record<string, { path: string; updated: string }> = {
+  // Olympiads — all five subjects.
   mathematics: { path: "MATH OLYMPIAD SYLLABUS.pdf", updated: "2026-09-22" },
   physics: { path: "PHYSICS OLYMPIAD SYLLABUS.pdf", updated: "2026-09-22" },
   "bio-chem": { path: "BIOCHEM OLYMPIAD SYLLABUS.pdf", updated: "2026-09-22" },
   "general-science": {
     path: "GEN SCIENCE OLYMPIAD SYLLABUS.pdf",
     updated: "2026-09-22",
+  },
+  "computer-science": {
+    path: "COMP SCI OLYMPIAD SYLLABUS (1).pdf",
+    updated: "2026-09-26",
+  },
+  // Robotics — one rulebook per event, and both are out.
+  lfr: { path: "LFR RULEBOOK.pdf", updated: "2026-09-26" },
+  robosoccer: { path: "ROBOSOCCER RULEBOOK-1.pdf", updated: "2026-09-26" },
+  // Project Display — a single event, so a single rulebook.
+  "project-display": {
+    path: "PROJECT DISPLAY RULEBOOK.pdf",
+    updated: "2026-09-27",
   },
 };
 

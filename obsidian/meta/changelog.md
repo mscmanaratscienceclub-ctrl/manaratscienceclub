@@ -1,12 +1,50 @@
 ---
 tags: [meta, changelog]
-updated: 2026-09-26
+updated: 2026-09-27
 ---
 
 # Changelog
 
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
+
+## 2026-09-27 — Computer Science syllabus and three segment rulebooks published
+
+The club uploaded four new documents to the `pdfs` bucket; the site now links
+them.
+
+- **`/syllabus`** — four events added to `publishedSyllabi`: `computer-science` (`COMP SCI OLYMPIAD SYLLABUS (1).pdf`), the two robotics events (`LFR RULEBOOK.pdf`, `ROBOSOCCER RULEBOOK-1.pdf`) and `project-display` (`PROJECT DISPLAY RULEBOOK.pdf`). The page is the per-event "what do I download for my event" index, so a robotics rulebook belongs there as much as an Olympiad syllabus does — its own doc comment already said the robotics events have one. The progress line moved from `04 / 12` to `08 / 12`; only E-sports and the Fun Segment are still pending.
+- **`/resources`** — new `publishedRulebooks` map in `src/lib/data/resources.ts`, keyed by segment id and resolved through `pdfUrl` the same way the syllabi are (so the uploaded filenames, spaces, brackets and the `-1` on a re-upload are percent-encoded). Robotics gets `LFR RULEBOOK.pdf` and `ROBOSOCCER RULEBOOK-1.pdf`; Project Display gets `PROJECT DISPLAY RULEBOOK.pdf`.
+- **The resources page now renders `files`** — it never had, so a published rulebook would have been invisible. A published slot goes from dashed to solid, lists each document with an Open PDF link (new tab) and a Download link, and only falls back to the "Rulebook — coming soon" placeholder when a segment has nothing out. `resourcesCopy` gained `rulebooksLabel` / `openFileLabel` / `downloadFileLabel` / `fileNewTabNote`.
+- The `TODO(before the event)` on `resourceEntries` is resolved and removed — `verify.sh` is down to 3 pre-existing WARNs.
+
+## 2026-09-27 — Admin dashboard is STEM Fest only; Manarat names merge; reference leaderboard added
+
+The overview mixed every form on the site — campus/batch ambassador and volunteer
+volume sat beside the science competition's own figures, so the fest's activity was
+buried under sign-up flows the club does not run the event with. The panel now reads
+as one thing.
+
+- **Charts and statistics no longer include CA/BA/volunteer data.** `registrationTrendSeries` became `stemfestTrendSeries` (one series) and `getRegistrationTrend` reads only `stemFestRegistrations`; `getAmbassadorStats` and the breakdown's `volunteerCount`/`volunteerThisWeek` are gone. The dashboard's KPIs are STEM Fest entries, verified payments, collected and last-7-days; the "form entry points" cards and the ambassador "Recent registrations" feed became STEM Fest rows (`recent-registrations-table.tsx` gained a Reference column). The separate ambassador and volunteer table pages are untouched.
+- **Manarat spellings normalise to one school.** `manaratSchoolLabel` (resolved from `stemfestSchools`, not re-typed) plus `manaratSchoolLikePattern` are the single source for both the JS predicate `isManaratSchool` and the SQL that groups schools, so the dashboard's league table and `getStemfestStats`'s unique-school count merge "Manarat", a typed variation and the catalogue entry into one row.
+- **Reference leaderboard.** `getDashboardBreakdown` returns `referenceLeaderboard` and `uniqueReferences` from a `group by reference` over `stemFestRegistrations`; `NULL` ("not referred by anyone", stored as NULL rather than a sentinel) is kept as its own row and sorts last. Rendered as a third ranked panel beside events and schools.
+- `scripts/verify-admin-db.ts` mirrors the new shape (three dashboard sources, STEM-Fest-only reads, the normalised school grouping and the reference query).
+
+## 2026-09-27 — Admin shell rebuilt for phones; tables and charts scroll instead of wrapping
+
+The panel was desktop-only, and the two defects were in the chrome every page
+inherits: a fixed 224px rail and `h-screen`. At 375px that left ~103px of content.
+
+- **`AdminShell` extracted** (`src/components/admin/admin-shell.tsx`) so the chrome has one owner; `(admin)/layout.tsx` is now the auth guard plus `<AdminShell user={...}>`. It is a client component — the drawer is interactive — while the pages stay server components and arrive as `children`.
+- **The rail moves off-canvas below `lg`**, behind a top bar and a labelled drawer (`role="dialog"`, `aria-modal`, Escape and the scrim both close it, focus returns to the toggle). `sidebar.tsx` no longer sets its own visibility — it takes the caller's — or the drawer would inherit the rail's `hidden lg:flex` and vanish on exactly the screens that need it.
+- **`h-screen` → `h-dvh`** on the shell. `100vh` is taller than a phone's visible area while the URL bar is showing, and the content pane is the only scroller, so its bottom sat unreachable under the browser chrome.
+- **All five tables scroll instead of wrapping.** Each `<table>` gained a `min-w-*`: a `w-full` table shrinks to its container, so the surrounding `overflow-x-auto` never engaged and cells wrapped into unreadable columns. The dashboard's recent-registrations table moved to `recent-registrations-table.tsx` so it can be previewed like the other four.
+- **Charts legible at phone width:** the 30-day stacked chart's bars and their day labels share one horizontal scroller (so the day cells cannot collide), and the donut stacks above its legend below `sm` at `size-32`.
+- **`Panel` gained `min-w-0`.** A panel is usually a grid item, and a grid item's default `min-width: auto` refuses to shrink below its content — so the chart's own scroller widened the whole grid instead of scrolling inside itself. That one line is what actually stopped the bar chart overflowing a phone.
+
+Verified on a dev server at 375×812 and 1440×900 from live DOM measurements (this environment cannot composite screenshots): rail off-canvas below `lg`, in flow at 224px above it; drawer opens, closes on Escape and on the scrim, restores focus; shell height equals the viewport and the document cannot scroll at either width; the content pane's bottom sits exactly at the viewport bottom; all five tables report `clientWidth < scrollWidth`; the stacked chart is scrollable at 375px (245→576) with zero overlapping label pairs and not scrollable at 1440px; the donut is column-direction at 375px, row at 1440px; nothing overflows the viewport outside a scroller. `tsc --noEmit`, `pnpm lint`, `pnpm build` and `verify.sh` (0 FAIL, 4 pre-existing WARNs) all clean.
+
+- **A dev-only verification surface exists at `/admin-preview`:** it renders the real `AdminShell`, the real five tables and both charts with fixture data, because `/admin` cannot be opened without an admin session and the only reachable database is production. It is gated twice — `notFound()` in the page and a `NODE_ENV !== "production"` bypass in `proxy.ts` — and in a production build it 307s to `/signin` like any other private path (verified against `pnpm start`).
 
 ## 2026-09-26 — Email templates rebuilt on a shared shell; Fredoka self-hosted
 
