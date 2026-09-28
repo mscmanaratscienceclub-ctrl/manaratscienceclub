@@ -52,9 +52,9 @@ export const stemfestRegistrations = pgTable(
      */
     gender: text("gender", { enum: ["male", "female", "other"] }),
     /**
-     * Who referred the participant, as chosen from the list their school maps to
-     * (`referencesForSchool`). Stored as the name rather than an id because the
-     * name is what the club reads and neither list is stable enough to key on.
+     * Who referred the participant, as chosen from the shared reference roster
+     * (`stemfestReferencesAll`). Stored as the name rather than an id because the
+     * name is what the club reads and the roster is not stable enough to key on.
      *
      * Nullable for two reasons: rows filed before the question existed have none,
      * and "not referred by anyone" is stored as NULL rather than as a sentinel, so

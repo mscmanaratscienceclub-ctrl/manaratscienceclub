@@ -14,6 +14,7 @@ const navigation = [
   { label: "Home", href: "/" },
   { label: "Members", href: "/legacy" },
   { label: "Research", href: "/blogs" },
+  { label: "Syllabus", href: "/syllabus" },
 ];
 
 function isActive(href: string, pathname: string) {

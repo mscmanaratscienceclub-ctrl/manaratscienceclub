@@ -443,17 +443,17 @@ export interface StemfestEntry {
 /**
  * Who sent the participant.
  *
- * Two lists, because the people who referred a registrant differ by audience:
- * host-school students come through the club's own members, everyone else through
- * the visiting schools' contacts. Which list a participant is offered follows
- * from their *resolved* school name via `referencesForSchool` — the same
- * `isManaratSchool` test the Olympiad rate turns on, so a participant who typed
- * their school through "not listed" is grouped the same way here.
+ * One list, offered to everyone. The club's two original rosters — host-school
+ * students coming through the club's own members, and the visiting schools'
+ * contacts — are still kept apart below only because that is how the club handed
+ * them over. Nothing about who may refer whom follows from where the registrant
+ * studies: a club member refers a visiting student and a visiting contact refers
+ * a host-school entrant, so the picker is no longer filtered by school.
  *
- * Both lists are the club's own wording, copied name for name. They are stored in
- * the order the club gave them and exported alphabetically: a dropdown of 49
- * names has to be scannable, and Radix Select jumps by the visible label, which
- * only helps when the list is sorted.
+ * Both rosters are the club's own wording, copied name for name. They are stored
+ * in the order the club gave them and exported alphabetically: a dropdown of
+ * 60-odd names has to be scannable, and Radix Select jumps by the visible label,
+ * which only helps when the list is sorted.
  */
 const otherSchoolReferenceNames: string[] = [
   "Abdullah Al Reyan",
@@ -530,12 +530,14 @@ function byName(a: string, b: string): number {
   return a.localeCompare(b, "en", { sensitivity: "base" });
 }
 
-export const stemfestReferencesForOtherSchools: string[] = [
-  ...otherSchoolReferenceNames,
-].sort(byName);
-
-export const stemfestReferencesForManarat: string[] = [
-  ...manaratReferenceNames,
+/**
+ * Every name — host-school and visiting alike — alphabetically.
+ *
+ * The only list the form offers and the only one validation accepts, so what a
+ * participant is shown and what the server will take cannot drift apart.
+ */
+export const stemfestReferencesAll: string[] = [
+  ...new Set([...otherSchoolReferenceNames, ...manaratReferenceNames]),
 ].sort(byName);
 
 /**
@@ -549,15 +551,6 @@ export const stemfestReferencesForManarat: string[] = [
 export const STEMFEST_NO_REFERENCE_ID = "no-reference";
 
 export const stemfestNoReferenceLabel = "Not referred by anyone";
-
-/** The names offered for a resolved school name, alphabetically. */
-export function referencesForSchool(
-  school: string | null | undefined,
-): string[] {
-  return isManaratSchool(school)
-    ? stemfestReferencesForManarat
-    : stemfestReferencesForOtherSchools;
-}
 
 /**
  * What actually goes on the row: the chosen name, or `null` for the escape
@@ -947,9 +940,7 @@ export const stemfestFormCopy = {
   teamNamePlaceholder: "e.g. Circuit Breakers",
   referenceLabel: "Reference",
   referencePlaceholder: "Select your reference",
-  referenceAwaitingSchool: "Select your school first",
-  referenceGroupManarat: "Manarat Science Club",
-  referenceGroupOther: "Visiting schools",
+  referenceGroup: "Who referred you",
   teammateDetailsHint:
     "Every teammate’s name, email and school — we use them for certificates and results.",
   confirmation:

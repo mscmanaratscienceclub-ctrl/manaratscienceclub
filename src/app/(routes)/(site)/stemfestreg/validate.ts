@@ -3,10 +3,10 @@ import {
   STEMFEST_NO_REFERENCE_ID,
   STEMFEST_OTHER_SCHOOL_ID,
   buildEntry,
-  referencesForSchool,
   stemfestClasses,
   stemfestEvents,
   stemfestGenders,
+  stemfestReferencesAll,
   stemfestSchools,
   type StemfestClassId,
   type StemfestEntry,
@@ -165,9 +165,8 @@ export const stemfestRegistrationSchema = z
       });
     }
 
-    // Checked against the list the *resolved* school maps to, which is the same
-    // resolution the row is written with — so "not listed" is judged on the name
-    // the participant typed rather than on the sentinel.
+    // One list for every school, so this is a plain membership test: each name on
+    // the roster is accepted from every participant.
     const reference = values.reference?.trim() ?? "";
     if (!reference) {
       ctx.addIssue({
@@ -177,12 +176,12 @@ export const stemfestRegistrationSchema = z
       });
     } else if (
       reference !== STEMFEST_NO_REFERENCE_ID &&
-      !referencesForSchool(resolveSchoolName(values)).includes(reference)
+      !stemfestReferencesAll.includes(reference)
     ) {
       ctx.addIssue({
         code: "custom",
         path: ["reference"],
-        message: "Pick a reference from the list for your school",
+        message: "Pick a reference from the list",
       });
     }
 

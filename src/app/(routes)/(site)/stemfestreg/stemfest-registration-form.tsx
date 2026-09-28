@@ -33,8 +33,6 @@ import {
   STEMFEST_OTHER_SCHOOL_ID,
   computeFeeSummary,
   eligibleSegmentsForClass,
-  isManaratSchool,
-  referencesForSchool,
   resolveReferenceName,
   stemfestClasses,
   stemfestClassGroups,
@@ -44,6 +42,7 @@ import {
   stemfestNoReferenceLabel,
   stemfestOtherSchoolLabel,
   stemfestPaymentCopy,
+  stemfestReferencesAll,
   stemfestSchools,
   type StemfestClassId,
 } from "@/lib/data/stemfest-registration";
@@ -124,21 +123,6 @@ export default function StemfestRegistrationForm() {
   const selectedEventIds = values.eventIds ?? [];
   const isOtherSchool = values.school === STEMFEST_OTHER_SCHOOL_ID;
 
-  // Resolved once, exactly as the server resolves it, so the list of names a
-  // participant is offered is the list the server will accept from them.
-  const resolvedSchool = resolveSchoolName(values);
-  const isManaratAudience = isManaratSchool(resolvedSchool);
-  const referenceOptions = useMemo(
-    () => referencesForSchool(resolvedSchool),
-    [resolvedSchool],
-  );
-  // The reference field is always on screen, so the form never changes shape
-  // under the participant. Until there is a school to draw a list from it stays
-  // disabled and asks for the school first — which for "not listed" means a
-  // name has been typed, because that name is what picks the list.
-  const referenceReady =
-    Boolean(values.school) && (!isOtherSchool || values.schoolOther.trim().length > 1);
-
   // ── Hydration: restore the draft, or the receipt if they already submitted ──
   useEffect(() => setMounted(true), []);
 
@@ -163,16 +147,6 @@ export default function StemfestRegistrationForm() {
     const timeout = setTimeout(() => writeStored(DRAFT_KEY, values), 500);
     return () => clearTimeout(timeout);
   }, [values, mounted, previousSubmission]);
-
-  // ── Clear a reference that belongs to the school they just moved away from ──
-  useEffect(() => {
-    if (!mounted) return;
-    const current = values.reference?.trim() ?? "";
-    // The escape hatch is school-independent, so it survives a change of school.
-    if (!current || current === STEMFEST_NO_REFERENCE_ID) return;
-    if (referenceOptions.includes(current)) return;
-    setValue("reference", "", { shouldValidate: false });
-  }, [mounted, referenceOptions, values.reference, setValue]);
 
   // ── Drop picks the newly-chosen class isn't eligible for ───────────────────
   useEffect(() => {
@@ -384,9 +358,8 @@ export default function StemfestRegistrationForm() {
             </AnimatePresence>
 
             {/* Always on screen, so the form never changes shape under the
-                participant. Until a school is picked there is no list to draw
-                names from, so the picker stays disabled and asks for the
-                school first. */}
+                participant, and never disabled: the roster is the same for every
+                school, so a reference can be picked before or after the school. */}
             <Field
               index={nextIndex()}
               id="stemfest-reference"
@@ -401,7 +374,6 @@ export default function StemfestRegistrationForm() {
                     <Select
                       value={field.value ?? ""}
                       onValueChange={field.onChange}
-                      disabled={!referenceReady}
                     >
                       <SelectTrigger
                         id="stemfest-reference"
@@ -414,11 +386,7 @@ export default function StemfestRegistrationForm() {
                             fixes that without a second lookup. Radix skips its
                             own item-text portal when children are supplied. */}
                         <SelectValue
-                          placeholder={
-                            referenceReady
-                              ? stemfestFormCopy.referencePlaceholder
-                              : stemfestFormCopy.referenceAwaitingSchool
-                          }
+                          placeholder={stemfestFormCopy.referencePlaceholder}
                         >
                           {field.value === STEMFEST_NO_REFERENCE_ID
                             ? stemfestNoReferenceLabel
@@ -428,11 +396,9 @@ export default function StemfestRegistrationForm() {
                       <SelectContent>
                         <SelectGroup>
                           <SelectLabel>
-                            {isManaratAudience
-                              ? stemfestFormCopy.referenceGroupManarat
-                              : stemfestFormCopy.referenceGroupOther}
+                            {stemfestFormCopy.referenceGroup}
                           </SelectLabel>
-                          {referenceOptions.map((name) => (
+                          {stemfestReferencesAll.map((name) => (
                             <SelectItem key={name} value={name}>
                               {name}
                             </SelectItem>

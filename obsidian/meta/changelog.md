@@ -1,12 +1,34 @@
 ---
 tags: [meta, changelog]
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # Changelog
 
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
+
+## 2026-09-28 — Reference picker is school-independent; Syllabus joins the navbar
+
+The reference roster is **one list for everybody** now. It used to be two — the
+club's own members for host-school participants, the visiting schools' contacts for
+everyone else — picked by `referencesForSchool(resolvedSchool)` off the same
+`isManaratSchool` test the Olympiad rate uses. Referrals do not work that way: a
+club member refers a visiting student and a visiting contact refers a host-school
+entrant, so the split only hid names a participant was allowed to use.
+
+`stemfestReferencesAll` — the two rosters merged, de-duplicated, alphabetical, 64
+names — is the only list the form offers and the only one `validate.ts` accepts;
+the row is still written as the chosen name or `NULL` for "not referred by anyone".
+`referencesForSchool` is deleted, the picker no longer waits for a school to be
+chosen, and the watcher that cleared a "stale" name on a school change is gone.
+`stemfestFormCopy` keeps one group label ("Who referred you") instead of one per
+audience, and the two source rosters stay in `stemfest-registration.ts` because
+they are the club's wording, name for name.
+
+**`/syllabus` is in the navbar.** `src/components/home/msc-nav.tsx` gained a
+**Syllabus** entry beside Home, Members and Research — desktop and mobile read the
+same array, and the route was already public in `src/routes.ts`.
 
 ## 2026-09-27 — Narrowed the edge-fallback matcher to stop spamming useless edge calls
 
