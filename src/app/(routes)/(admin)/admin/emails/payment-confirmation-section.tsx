@@ -12,6 +12,7 @@ import {
 import { previewBulkEmail } from "@/lib/actions/registrations";
 import { useBulkEmailSend } from "@/lib/hooks/use-bulk-email-send";
 import { cn } from "@/lib/utils";
+import AudienceEmailList from "./audience-email-list";
 import SendProgress from "./send-progress";
 import EmailPreviewModal from "./preview-email";
 
@@ -123,6 +124,10 @@ export default function PaymentConfirmationSection({
           )}
           .
         </p>
+      )}
+
+      {!audience.truncated && count > 0 && (
+        <AudienceEmailList recipients={audience.recipients} />
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-3">

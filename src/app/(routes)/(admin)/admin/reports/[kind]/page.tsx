@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { getAdminReportRows } from "@/lib/actions/registrations";
+import { siteConfig } from "@/lib/data";
 import {
   ADMIN_TIME_ZONE,
   REPORT_ROW_LIMIT,
@@ -28,11 +29,10 @@ const generatedFormatter = new Intl.DateTimeFormat("en-GB", {
  * The printable report for one admin source, honouring the filters it was opened
  * with.
  *
- * It parses the query string with the same `parseAdminQuery` the table pages use,
- * and runs the same WHERE builders through `getAdminReportRows` — an export is the
- * list on screen with the paging removed, never a second, separately written
- * query that could disagree with it. Everything here is server-rendered and plain
- * HTML, so the print stylesheet has no client state to fight with.
+ * The markup is structured as a *document* (masthead, scope block, table,
+ * footer) rather than as the admin page it came from. The `@media print` block in
+ * `globals.css` styles that structure into a clean A4 PDF; on screen it reads as a
+ * readable preview of the same report.
  */
 export default async function AdminReportPage({
   params,
@@ -48,11 +48,12 @@ export default async function AdminReportPage({
   const state = parseAdminQuery(source, await searchParams);
   const report = await getAdminReportRows(source.id, state);
   const filters = describeFilters(source, state);
+  const generated = generatedFormatter.format(new Date());
 
   return (
     <div
       data-print="report"
-      className="mx-auto w-full max-w-[210mm] p-6 md:p-10"
+      className="mx-auto w-full max-w-[880px] px-4 py-6 md:px-8"
     >
       <div
         data-print="chrome"
@@ -68,52 +69,64 @@ export default async function AdminReportPage({
         <ReportPrintButton />
       </div>
 
-      <header className="mb-6 border-b border-ink/10 pb-4">
-        <h1 className="font-display text-3xl font-bold text-ink">
-          {source.reportTitle}
-        </h1>
-        <p className="mt-1 font-body text-ink/60">{source.reportNote}</p>
-        <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2 font-body text-sm">
+      {/* ── Masthead ─────────────────────────────────────────────────────────────── */}
+      <header className="border-b-4 border-manara-teal pb-5">
+        <div className="flex items-start justify-between gap-6">
           <div>
-            <dt className="text-ink/40">Rows</dt>
-            <dd className="font-medium text-ink">
+            <p className="font-body text-xs font-semibold tracking-[0.18em] text-manara-teal uppercase">
+              {siteConfig.name} · Admin export
+            </p>
+            <h1 className="mt-1 font-display text-3xl font-bold text-ink">
+              {source.reportTitle}
+            </h1>
+            <p className="mt-1 max-w-xl font-body text-sm text-ink/60">
+              {source.reportNote}
+            </p>
+          </div>
+          <div className="shrink-0 border-l border-ink/10 pl-5 text-right">
+            <p className="font-body text-[11px] font-semibold tracking-wider text-ink/40 uppercase">
+              Generated
+            </p>
+            <p className="mt-0.5 font-body text-sm font-medium text-ink">
+              {generated}
+            </p>
+          </div>
+        </div>
+      </header>
+
+      {/* ── Scope block ─────────────────────────────────────────────────────────── */}
+      <section aria-label="Report scope" className="my-5">
+        <dl className="grid gap-x-8 gap-y-2 sm:grid-cols-3">
+          <div>
+            <dt className="font-body text-[11px] font-semibold tracking-wider text-ink/40 uppercase">
+              Rows
+            </dt>
+            <dd className="font-body text-sm font-medium text-ink">
               {report.rows.length} of {report.total}
             </dd>
           </div>
           <div>
-            <dt className="text-ink/40">Sort</dt>
-            <dd className="font-medium text-ink">
+            <dt className="font-body text-[11px] font-semibold tracking-wider text-ink/40 uppercase">
+              Sort
+            </dt>
+            <dd className="font-body text-sm font-medium text-ink">
               {adminSortLabel(source, state.sort)}
             </dd>
           </div>
           <div>
-            <dt className="text-ink/40">Generated</dt>
-            <dd className="font-medium text-ink">
-              {generatedFormatter.format(new Date())}
+            <dt className="font-body text-[11px] font-semibold tracking-wider text-ink/40 uppercase">
+              Active filters
+            </dt>
+            <dd className="font-body text-sm font-medium text-ink">
+              {filters.length === 0
+                ? "None — every row"
+                : filters
+                    .map((filter) => `${filter.label}: ${filter.display}`)
+                    .join(" · ")}
             </dd>
           </div>
         </dl>
-
-        <div className="mt-4">
-          <p className="font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
-            Filters
-          </p>
-          {filters.length === 0 ? (
-            <p className="mt-1 font-body text-sm text-ink/60">
-              None — this report covers every row.
-            </p>
-          ) : (
-            <ul className="mt-1 flex flex-wrap gap-x-6 gap-y-1 font-body text-sm text-ink/70">
-              {filters.map((filter) => (
-                <li key={filter.label}>
-                  <span className="text-ink/40">{filter.label}: </span>
-                  {filter.display}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </header>
+      </section>
 
       {report.truncated && (
         <p
@@ -171,6 +184,13 @@ export default async function AdminReportPage({
           {source.empty.filtered}
         </p>
       )}
+
+      <p
+        data-print="footer"
+        className="mt-6 border-t border-ink/10 pt-3 text-center font-body text-xs text-ink/45"
+      >
+        {siteConfig.name} — {source.reportTitle} · Generated {generated}
+      </p>
     </div>
   );
 }

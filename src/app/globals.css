@@ -87,11 +87,8 @@
      Absolute units on purpose: paper has no viewport to be relative to, so
      points and millimetres are the only honest measure here. Used by the
      `@media print` block at the end of this file. */
-  --print-page-margin: 12mm;
   --print-title-size: 16pt;
-  --print-body-size: 9.5pt;
-  --print-cell-padding: 3pt 4pt;
-  --print-rule: color-mix(in srgb, var(--ink) 30%, transparent);
+  --print-rule: color-mix(in srgb, var(--ink) 28%, transparent);
 }
 
 @theme inline {
@@ -554,9 +551,28 @@ html {
    ─────────────────────────────────────────────────────────────────────────── */
 
 @media print {
+  /* The whole report is a single professional A4 document. The `@page` margin boxes
+     put a running footer (page x of y) on every sheet; the content below styles the
+     document's masthead, scope strip and table as a designed report rather than a web
+     page. Sizes are points/mm on purpose — see the print tokens at the top of this
+     file. */
   @page {
     size: A4;
-    margin: var(--print-page-margin);
+    margin: 18mm 14mm 20mm 14mm;
+
+    @bottom-left {
+      content: "Manarat Science Club";
+      font-family: var(--font-sans), sans-serif;
+      font-size: 7.5pt;
+      color: #8a9497;
+    }
+
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-family: var(--font-sans), sans-serif;
+      font-size: 7.5pt;
+      color: #8a9497;
+    }
   }
 
   html {
@@ -586,44 +602,167 @@ html {
   [data-print="report"] {
     max-width: none;
     padding: 0;
-    font-size: var(--print-body-size);
-    /* Keep the status pills and the amber ceiling warning from being washed
-       out by the browser's default ink-saving adjustment. */
+    color: var(--ink);
+    font-family: var(--font-sans), sans-serif;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
 
-  [data-print="report"] h1 {
-    font-size: var(--print-title-size);
+  /* ── Masthead ─────────────────────────────────────────────────────── */
+  [data-print="report"] header {
+    padding-bottom: 4mm;
+    border-bottom: 0.6mm solid var(--manara-teal);
+    break-after: avoid;
+    break-inside: avoid;
   }
 
+  [data-print="report"] header p:first-child {
+    font-family: var(--font-sans), sans-serif;
+    font-size: 7pt;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--manara-teal);
+  }
+
+  [data-print="report"] header h1 {
+    margin-top: 1.5mm;
+    font-family: var(--font-display), var(--font-sans), sans-serif;
+    font-size: var(--print-title-size);
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  [data-print="report"] header h1 ~ p {
+    margin-top: 1mm;
+    max-width: 120mm;
+    font-size: 8.5pt;
+    line-height: 1.4;
+    color: #435458;
+  }
+
+  [data-print="report"] header div > div:last-child {
+    border-left: 0.2mm solid var(--print-rule);
+    padding-left: 4mm;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  [data-print="report"] header div > div:last-child p {
+    font-family: var(--font-sans), sans-serif;
+    font-size: 7pt;
+    color: #435458;
+  }
+
+  [data-print="report"] header div > div:last-child p:first-child {
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-size: 6.5pt;
+    color: #6b767a;
+  }
+
+  /* ── Scope strip ─────────────────────────────────────────────────── */
+  [data-print="report"] section[aria-label="Report scope"] {
+    margin: 4mm 0 5mm;
+    padding: 2.5mm 0;
+    border-top: 0.2mm solid var(--print-rule);
+    border-bottom: 0.2mm solid var(--print-rule);
+    break-after: avoid;
+  }
+
+  [data-print="report"] section[aria-label="Report scope"] dl {
+    display: flex;
+    gap: 10mm;
+    margin: 0;
+  }
+
+  [data-print="report"] section[aria-label="Report scope"] dt {
+    font-family: var(--font-sans), sans-serif;
+    font-size: 6.5pt;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6b767a;
+  }
+
+  [data-print="report"] section[aria-label="Report scope"] dd {
+    margin: 0.6mm 0 0;
+    font-size: 8pt;
+    color: var(--ink);
+  }
+
+  /* ── Table ─────────────────────────────────────────────────────── */
+  [data-print="report"] thead {
+    display: table-header-group;
+  }
+
+  [data-print="report"] th {
+    padding: 1.6mm 2mm;
+    border-bottom: 0.35mm solid var(--ink);
+    font-family: var(--font-sans), sans-serif;
+    font-size: 7pt;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink);
+    text-align: left;
+  }
+
+  [data-print="report"] th:last-child {
+    text-align: right;
+  }
+
+  [data-print="report"] tbody tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  [data-print="report"] td {
+    padding: 1.7mm 2mm;
+    font-size: 8pt;
+    line-height: 1.35;
+    color: #26383c;
+    vertical-align: top;
+  }
+
+  /* Zebra striping makes long reports readable on paper. The browser's default
+     ink-saving would strip it unless we pin exact colour adjustment, which the parent
+     `[data-print="report"]` already does. */
+  [data-print="report"] tbody tr:nth-child(even) {
+    background-color: #f4f6f5;
+  }
+
+  [data-print="report"] tbody tr {
+    border-bottom: 0.15mm solid var(--print-rule);
+  }
+
+  /* ── Amber ceiling warning ─────────────────────────────────────── */
+  [data-print="report"] [role="status"] {
+    margin: 3mm 0;
+    padding: 2.5mm 3mm;
+    background-color: #fff7e0;
+    border: 0.2mm solid #e8c230;
+    font-size: 8pt;
+    color: #5c4800;
+    break-inside: avoid;
+  }
+
+  /* ── In-document footer ─────────────────────────────────────── */
+  [data-print="report"] [data-print="footer"] {
+    margin-top: 6mm;
+    padding-top: 2mm;
+    border-top: 0.2mm solid var(--print-rule);
+    text-align: center;
+    font-size: 7pt;
+    color: #6b767a;
+  }
+
+  /* Nothing on a report should cast a shadow or glow on paper. */
   [data-print="report"] *,
   [data-print="report"] *::before,
   [data-print="report"] *::after {
     box-shadow: none !important;
     text-shadow: none !important;
-  }
-
-  /* The caption and the filter list belong with the first rows, not alone at
-     the foot of a page. */
-  [data-print="report"] header {
-    break-after: avoid;
-    break-inside: avoid;
-  }
-
-  [data-print="report"] thead {
-    display: table-header-group;
-  }
-
-  [data-print="report"] tr {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  /* A 5%-opacity hairline is invisible on paper; the report gets a real rule. */
-  [data-print="report"] th,
-  [data-print="report"] td {
-    padding: var(--print-cell-padding);
-    border-bottom: 1px solid var(--print-rule);
   }
 }

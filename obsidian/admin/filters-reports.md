@@ -179,13 +179,27 @@ print CSS what it is looking at, so no component has to know how it is printed:
 | `data-print="content"` | `(admin)/layout.tsx` scroll column | Drops the flex/overflow box |
 | `data-print="report"` | `reports/[kind]/page.tsx` | A4 page, repeats `<thead>`, rows never split |
 
-They are attribute selectors rather than Tailwind `print:` utilities because each
-one has to outweigh a flex/height/overflow rule already sitting on that element.
-The `@media print` block in `src/app/globals.css` explains the same reasoning
-from the CSS side, and the print sizes and hairlines are tokens
-(`--print-page-margin`, `--print-title-size`, `--print-body-size`,
-`--print-cell-padding`, `--print-rule`) rather than literals — see
+The printout is plain HTML, so the stylesheet has no client state to fight with. The
+report page is structured as a *document* — a masthead (club name, title, generated
+stamp), a scope strip (rows, sort, active filters), the table and a closing footer —
+and the `@media print` block in `src/app/globals.css` styles that structure into a
+clean A4 PDF: a running footer with the club name and "Page x of y" on every sheet,
+zebra-striped rows that never split, a repeating table header and pinning `@media print`
+attributes for the shell. Print sizes use points/mm; the title size and hairline come from
+tokens (`--print-title-size`, `--print-rule`) rather than literals — see
 [[design-system]].
+
+The four `data-print` hooks — set by the admin layout, the sidebar and the report
+page — tell the print CSS what it is looking at, so no component has to know how it is
+printed:
+
+| Hook | Element | Effect on paper |
+|------|---------|-----------------|
+| `data-print="shell"` | `(admin)/layout.tsx` root | Unwinds `h-screen` + `overflow-hidden` |
+| `data-print="chrome"` | `admin/sidebar.tsx`, the report's back-link row | `display: none` |
+| `data-print="content"` | `(admin)/layout.tsx` scroll column | Drops the flex/overflow box |
+| `data-print="report"` | `reports/[kind]/page.tsx` | A4 document — masthead, scope strip, table |
+| `data-print="footer"` | the report's closing line | In-document footer under the table |
 
 > [!warning] A blank second page is the usual symptom
 > The admin shell is a fixed-height, scrollable viewport. Without unwinding it, a

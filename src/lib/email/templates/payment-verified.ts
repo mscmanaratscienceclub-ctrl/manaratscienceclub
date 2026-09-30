@@ -39,7 +39,7 @@ const FEST_NAME = "STEM Fest '26-27";
 const FEST_DATES = "16th & 17th October 2026";
 
 /** Where the fest happens, hyperlinked from the venue line. */
-const VENUE_URL = "https://share.google.com/sKeWjGpKw9LBPpPNd";
+const VENUE_URL = "https://share.google/b8LRwJlxs93jL0wD7";
 const VENUE_LABEL =
   "Manarat Dhaka International School & College, Gulshan-2, Dhaka";
 

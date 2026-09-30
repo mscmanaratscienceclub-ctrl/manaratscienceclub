@@ -132,6 +132,7 @@ const COLUMNS = [
   // against each other without leaving the page.
   "Amount",
   "Status",
+  "Verify email",
   "Submitted",
 ];
 
@@ -178,9 +179,9 @@ export default function ScienceCompetitionTable({
           />
         ) : (
           <div className="overflow-x-auto">
-            {/* Ten columns: `min-w` is what makes the container above scroll at
+            {/* Twelve columns: `min-w` is what makes the container above scroll at
                 all, since a `w-full` table shrinks rather than overflowing. */}
-            <table className="w-full min-w-[72rem]">
+            <table className="w-full min-w-[78rem]">
               <thead>
                 <tr className="border-b border-ink/5 text-left">
                   <th className="w-8 px-3 py-3" aria-label="Expand" />
@@ -302,6 +303,9 @@ function RegistrationRow({
         <td className="px-4 py-4">
           <PaymentStatusCell row={row} />
         </td>
+        <td className="px-4 py-4">
+          <VerifyEmailCell row={row} />
+        </td>
         <td className="px-4 py-4 font-body text-sm text-ink/60">
           {dateFormatter.format(new Date(row.createdAt))}
         </td>
@@ -310,7 +314,7 @@ function RegistrationRow({
       {expanded && (
         <tr className="bg-cream/60">
           <td />
-          <td colSpan={10} className="px-4 pt-1 pb-6">
+          <td colSpan={11} className="px-4 pt-1 pb-6">
             <section className="mt-4">
               <h3 className="mb-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
                 Registration Details
@@ -449,6 +453,47 @@ function PaymentStatusCell({ row }: { row: StemfestRow }) {
   );
 }
 
+
+/**
+ * Whether the participant's verification (payment confirmation) email has gone out.
+ *
+ * Reading a whole table of who has and has not received their receipt used to mean
+ * expanding every row and looking at the "Confirmation sent" line; this cell puts the
+ * answer on the row itself so an admin can scan the column at a glance. It shows an
+ * em dash (not "not sent") when the email cannot go out yet because the payment is
+ * not verified or no address is on file — a missing capability is never a failure.
+ */
+function VerifyEmailCell({ row }: { row: StemfestRow }) {
+  // The receipt only ever goes to a verified payment with an address on file.
+  if (row.status !== "verified" || !row.email) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+        <Mail className="h-3.5 w-3.5" aria-hidden="true" />
+        N/A
+      </span>
+    );
+  }
+
+  const sent = row.emailSentAt !== null;
+
+  return sent ? (
+    <span
+      title={`Sent ${dateTimeFormatter.format(new Date(row.emailSentAt!))}`}
+      className="inline-flex cursor-help items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700"
+    >
+      <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
+      Sent
+    </span>
+  ) : (
+    <span
+      title="Payment verified but no receipt sent yet — open the row and press Send confirmation."
+      className="inline-flex cursor-help items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700"
+    >
+      <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+      Not sent
+    </span>
+  );
+}
 
 /** One line saying what the confirmation's state actually is, and why. */
 function describeConfirmation(row: StemfestRow): string {

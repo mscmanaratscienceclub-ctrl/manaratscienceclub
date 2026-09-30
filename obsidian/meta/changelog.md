@@ -8,6 +8,84 @@ updated: 2026-09-28
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
 
+## 2026-09-29 — Admin reports export as a proper, designed A4 PDF
+
+The `/admin/reports/[kind]` export used to print as the raw admin page — a bare
+heading and an unstyled table. The report page is now a real document and the
+`@media print` stylesheet renders it as a clean, professional A4 PDF:
+
+- **Masthead** — club name, report title, report note and a "Generated" stamp with a
+  teal rule beneath, like a headed report.
+- **Scope strip** — rows, sort and the active filters presented as labelled meta,
+  replacing the flattened "<dl>".
+- **Table** — a printed header row with a solid rule, zebra-striped (pinned via
+  `print-color-adjust: exact`) body rows that never split, and consistent mm padding.
+- **Running footer** on every page — "Manarat Science Club" bottom-left and
+  "Page x of y" bottom-right, via `@page` margin boxes.
+- The amber row-limit warning and the in-document footer both print styled, not as raw
+  boxes.
+
+No PDF library was added — this still ends at the browser's "Save as PDF", exactly
+as [[decisions-log]] (ADR-0029) requires. The unused print tokens
+(`--print-page-margin`, `--print-body-size`, `--print-cell-padding`) were dropped;
+the title size and hairline remain `--print-title-size` / `--print-rule`.
+
+## 2026-09-29 — Bulk email tab always shows the exact addresses it will send to
+
+Both sections of `/admin/emails` (Custom message and Payment confirmations) now show
+the **actual recipient list** — each participant's name and email — directly under the
+audience count, so an admin can see exactly which addresses a blast will reach instead of
+trusting a number. A new shared client component (`audience-email-list.tsx`) renders
+the list inside a bounded, scrollable box with a heading stating the total, so a large
+audience (up to `BULK_EMAIL_MAX_RECIPIENTS`) cannot turn the page into a mile
+of text. The list is hidden only when the audience is truncated (nothing can be sent) or
+empty; it reflects the same URL-driven filters the buttons send against, so what is shown
+is always what would be mailed.
+
+## 2026-09-29 — STEM Fest table shows each participant's verification-email status at a glance
+
+The Science Competition admin table (`/admin/science-competition`) now has a **Verify
+email** column so an admin can see, row by row, whether each participant has
+received their payment-verification email without expanding every row.
+
+Each cell reads the row's stored `email_sent_at` (already carried by
+`searchStemfestRegistrations`) and shows one of three badges:
+- **Sent** (green) — `emailSentAt` is set; hovering reveals the send moment.
+- **Not sent** (amber) — the payment is verified and an address is on file, but no
+  receipt has gone out yet; the hint points at the "Send confirmation" button in the
+  expanded row.
+- **N/A** (grey) — the receipt cannot be sent yet because the payment is not verified
+  or no address is on file (a missing capability, never a failure).
+
+No data-model change was needed — the signal already existed in
+`stem_fest_registrations.payment_email_sent_at`; this surfaces it on the row.
+The expanded row's `colSpan` and the table's `min-w` were bumped for the new
+column.
+
+## 2026-09-28 — `scripts/replay-payment-sms.mjs`: replay pasted payment SMS through the real ingest
+
+The forwarder app is the only writer of `stem_fest_payment_sms`, so when it
+misses messages (phone offline, app reinstalled, notification swiped) the only
+remedy was hand-editing the table — which bypasses the parser, the TrxID
+reconciliation and the dedupe key in one go.
+
+The new script reads pasted bKash text from **stdin** (one message per "You have
+received" block; nothing personal is stored in the repo), splits it, reads each
+`at dd/mm/yyyy hh:mm` stamp as Bangladesh time (+06:00), and POSTs every message
+to `/api/webhooks/sms` with `x-forwarder-secret` from `.env` — so ingestion runs
+the production code path end to end. Each message carries a stable
+`clientMessageId` (`manual-replay:<TrxID>`), which makes a re-run a recognised
+duplicate instead of a second row. Usage:
+
+```
+node --env-file=.env scripts/replay-payment-sms.mjs [baseUrl] < sms.txt
+```
+
+`baseUrl` defaults to `localhost:3000`; point it at a dev port or at the
+deployment. First use backfilled seven payments (25–27 Sep, ৳200–৳700) that the
+forwarder never delivered — all seven reconciled `matched` to their registrations
+by TrxID.
+
 ## 2026-09-28 — Reference picker is school-independent; Syllabus joins the navbar
 
 The reference roster is **one list for everybody** now. It used to be two — the
