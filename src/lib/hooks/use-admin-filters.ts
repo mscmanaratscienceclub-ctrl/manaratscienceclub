@@ -4,11 +4,9 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   buildAdminHref,
-  buildReportHref,
   FILTER_QUERY_PARAM,
   type AdminQueryState,
   type AdminSortId,
-  type AdminSourceId,
 } from "@/lib/admin/filters";
 import { useDebouncedValue } from "./use-debounce";
 
@@ -25,8 +23,14 @@ export interface AdminFilterControls {
   clearAll: () => void;
   setSort: (sort: AdminSortId) => void;
   goToPage: (page: number) => void;
-  /** Href of the printable report for exactly what is on screen. */
-  exportHref: string;
+  /**
+   * The filter state an export opens on: exactly what is on screen.
+   *
+   * The export dialog asks for the state rather than a finished link because
+   * what is exported is not only a filter state — the admin picks the columns
+   * and the format in the dialog too, and only it can put those three together.
+   */
+  exportState: AdminQueryState;
 }
 
 /**
@@ -41,18 +45,23 @@ export interface AdminFilterControls {
  * nothing actually changed. Without that, the debounced search box re-commits its
  * own value on every server render and navigates in a loop.
  *
+ * It knows nothing about the source behind the table: it drives a URL, and the
+ * href it builds is the whole of what it needs to know.
+ *
  * A change is applied to the state we have already sent while its navigation is
  * still in flight, rather than to the props we were last rendered with: the server
  * state only arrives when its round trip finishes, so two changes inside one round
  * trip would otherwise each derive from the state before either and the second
  * would silently drop the first.
+ *
+ * The same in-flight state is what `exportState` reports, for the same reason —
+ * exporting a filter the moment it was picked must not export the list from
+ * before it.
  */
 export function useAdminFilters({
-  sourceId,
   basePath,
   state,
 }: {
-  sourceId: AdminSourceId;
   basePath: string;
   state: AdminQueryState;
 }): AdminFilterControls {
@@ -178,10 +187,10 @@ export function useAdminFilters({
     // Built from the *live* search box rather than the committed query, so
     // exporting right after typing still includes the term being typed — and from
     // the in-flight state, so it also includes a filter still being fetched.
-    exportHref: buildReportHref(sourceId, {
+    exportState: {
       ...(inFlight.current ?? state),
       query: search.trim(),
       page: 1,
-    }),
+    },
   };
 }

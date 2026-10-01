@@ -155,7 +155,6 @@ export default function ScienceCompetitionTable({
 }: ScienceCompetitionTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const controls = useAdminFilters({
-    sourceId: source.id,
     basePath: source.path,
     state,
   });

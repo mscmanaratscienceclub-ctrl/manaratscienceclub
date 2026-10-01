@@ -158,45 +158,45 @@ in `filters.ts` because a `"use server"` module may only export async functions.
 ## Printing
 
 Two surfaces reach paper, and both end at the browser's own print dialog — there
-is no PDF library in the stack:
+is no PDF library in the stack (ADR-0032):
 
 1. **`/admin/reports/[kind]`** — a real server-rendered page. It parses the
    incoming query string with the same `parseAdminQuery` the table used, runs
-   `getAdminReportRows`, and prints a heading, the resolved filter list
-   (`describeFilters`), the row count and the sorted table. `ExportPdfLink` in
-   the filter bar always points here, carrying the current filters via
-   `buildReportHref`, so an export is never "the table, but unfiltered".
-2. **`ReportPrintButton`** on the report page calls `window.print()`.
+   `getAdminReportRows`, and prints a masthead (club name, title, generated
+   stamp), a scope strip (rows, sort, active filters, and the column subset when
+   the export dialog chose one), the sorted table and a closing footer.
+2. **`ReportPrintButton`** calls `window.print()` by hand. **`AutoPrint`** does it
+   for you when the page arrives with `print=1` — which is what makes the export
+   dialog's "PDF" choice a one-click PDF. It waits for `document.fonts.ready`
+   first, because the `৳` sign and the Bengali SMS bodies are the two things a
+   fallback font shows up on most clearly.
 
-The printout is plain HTML, so the stylesheet has no client state to fight with.
-Four hooks — set by the admin layout, the sidebar and the report page — tell the
-print CSS what it is looking at, so no component has to know how it is printed:
-
-| Hook | Element | Effect on paper |
-|------|---------|-----------------|
-| `data-print="shell"` | `(admin)/layout.tsx` root | Unwinds `h-screen` + `overflow-hidden` |
-| `data-print="chrome"` | `admin/sidebar.tsx`, the report's back-link row | `display: none` |
-| `data-print="content"` | `(admin)/layout.tsx` scroll column | Drops the flex/overflow box |
-| `data-print="report"` | `reports/[kind]/page.tsx` | A4 page, repeats `<thead>`, rows never split |
-
-The printout is plain HTML, so the stylesheet has no client state to fight with. The
-report page is structured as a *document* — a masthead (club name, title, generated
-stamp), a scope strip (rows, sort, active filters), the table and a closing footer —
-and the `@media print` block in `src/app/globals.css` styles that structure into a
-clean A4 PDF: a running footer with the club name and "Page x of y" on every sheet,
-zebra-striped rows that never split, a repeating table header and pinning `@media print`
-attributes for the shell. Print sizes use points/mm; the title size and hairline come from
-tokens (`--print-title-size`, `--print-rule`) rather than literals — see
+The `@media print` block in `src/app/globals.css` styles that document structure
+into a clean A4 PDF: a tinted band behind the repeating table header, zebra rows
+that never split, tabular numerals, and the document's own closing footer.
+Print sizes are points/mm; the title size and hairline come from tokens
+(`--print-title-size`, `--print-rule`) rather than literals — see
 [[design-system]].
 
-The four `data-print` hooks — set by the admin layout, the sidebar and the report
-page — tell the print CSS what it is looking at, so no component has to know how it is
+`@page` margin is **zero on purpose**. Chrome draws its own date/title strip and
+URL footer *inside* whatever page margin you leave — the screenshot that opened
+ADR-0033 — and Chrome does not support `@page` margin boxes, so the running
+"Page x of y" footer they once promised never existed there. With zero margins
+the strip has nowhere to draw and the document carries its own 14/18mm padding
+on `[data-print="report"]`. Keep the margin at zero or the strip returns.
+
+The report page also exports `generateMetadata`, because the tab title is the
+filename Chrome proposes in "Save as PDF" — through the root template it becomes
+`STEM Fest Registrations | Manarat Science Club.pdf`.
+
+Six hooks — set by the admin layout, the shell, the sidebar and the report page —
+tell the print CSS what it is looking at, so no component has to know how it is
 printed:
 
 | Hook | Element | Effect on paper |
 |------|---------|-----------------|
 | `data-print="shell"` | `(admin)/layout.tsx` root | Unwinds `h-screen` + `overflow-hidden` |
-| `data-print="chrome"` | `admin/sidebar.tsx`, the report's back-link row | `display: none` |
+| `data-print="chrome"` | `admin/sidebar.tsx`, `admin-shell.tsx`'s mobile top bar and drawer, the report's back-link row | `display: none` |
 | `data-print="content"` | `(admin)/layout.tsx` scroll column | Drops the flex/overflow box |
 | `data-print="report"` | `reports/[kind]/page.tsx` | A4 document — masthead, scope strip, table |
 | `data-print="footer"` | the report's closing line | In-document footer under the table |
@@ -207,6 +207,54 @@ printed:
 > prints blank. If a report ever does that again, check the `data-print`
 > attributes before touching the table.
 
+## Exporting
+
+**Export** in the filter bar opens a dialog (`src/components/admin/export-dialog.tsx`)
+that owns the three choices an export needs — none of which a single link can carry:
+
+| Section | What it offers |
+|---------|----------------|
+| Format | **PDF** — opens `/admin/reports/[kind]?…&print=1` in a new tab, keeping the filtered list where it was. **Excel** — downloads `/api/admin/export/[kind]?…` |
+| Fields | The source's `reportColumns` as checkboxes, in the order the report prints them |
+| Filters | Every filter the source has, plus the search box, seeded from `useAdminFilters().exportState` |
+
+The contract for all of it is `src/lib/admin/exports.ts`: the reserved `cols` and
+`print` parameters, `buildPrintHref` / `buildExcelHref`, the file name
+(`msc-<source>-YYYY-MM-DD.xlsx`) and the sheet name. Everything an export is
+filtered by is still an `AdminQueryState`, so a filter can only mean one thing. An
+invalid or missing `cols` resolves to every column — a hand-edited URL lands on the
+full report, never on an empty table — and the dialog refuses to submit an empty
+column set rather than falling back to all of them.
+
+**Nothing is stored, in either format** (ADR-0032):
+
+- **PDF** — no file is generated server-side at all. The report page is handed to
+  the browser, whose own "Save as PDF" writes it on the admin's machine. That is
+  also the only way `৳`, the Bengali SMS bodies and the club's typefaces come out
+  right without a font file to carry them.
+- **Excel** — `src/app/api/admin/export/[kind]/route.ts` builds the workbook in
+  memory, streams it in one response and forgets it. `Cache-Control: no-store`.
+  Two sheets: the rows (frozen header row, the widths from `AdminReportColumn.width`,
+  landscape past six columns) and a **Scope** sheet repeating the rows, sort,
+  active filters, columns and the admin who asked — the same thing the printed
+  report's scope strip says, so a spreadsheet opened next month can still say what
+  it is.
+
+Every cell is text, deliberately: the values are the report's own formatted strings
+(a fee reads `৳1,450.00`, a day reads `18 Sep 2026`), and one row builder feeding
+both formats is what keeps the sheet and the paper agreeing.
+
+Both formats read `getAdminReportRows`, so a spreadsheet and a PDF of the same
+filters cannot disagree about a row. If `REPORT_ROW_LIMIT` bites, the Excel route
+answers `413` rather than handing back a spreadsheet quietly missing rows — a file
+someone has already sorted and formatted is the worst place to discover a
+truncation. The dialog shows that sentence and stays open.
+
+`scripts/verify-excel-export.run.mjs` (`pnpm export:verify`) exercises the writer
+with no database and no session: it builds a workbook of the same shape and reads
+it back out of its own ZIP container, asserting the two sheets, the frozen header,
+the column widths, and that `৳` and Bengali text survive.
+
 ## Extending
 
 **A new filter** — add a field to the source's `filters` array, then make the
@@ -215,7 +263,10 @@ Nothing else changes: the filter bar renders it, `parseAdminQuery` validates it,
 and the chip, the empty-state copy and the report's filter list all follow.
 
 **A new report column** — add `{ id, label }` to `reportColumns` *and* the key to
-the mapper in `getAdminReportRows`. Both, in the same commit.
+the mapper in `getAdminReportRows`. Both, in the same commit. Add `width` when the
+default (the label's own width) would clip the values under it in Excel — an SMS
+body, a list of events. It shapes the `.xlsx` only; the printed report sizes its
+own columns.
 
 **A new source** — add an `AdminSourceConfig`, register it in `adminSources`,
 write the WHERE builder and the `getAdminReportRows` case, add the route, and add

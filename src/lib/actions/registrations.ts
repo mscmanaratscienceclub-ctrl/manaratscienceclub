@@ -1962,12 +1962,29 @@ export async function previewBulkEmail(
   const audience = await bulkEmailRecipients(state, kind);
   const first = audience.recipients[0];
 
+  // Who a confirmation would actually write to. A row that already carries an accepted
+  // receipt is left alone by the send (see `sendBulkEmailBatch`), so it must not
+  // appear in the preview's list of what will be sent.
+  const previewRecipients =
+    kind === "confirmation"
+      ? audience.recipients
+          .filter((recipient) => !recipient.alreadySent)
+          .map((recipient) => ({
+            name: recipient.name,
+            email: recipient.email,
+          }))
+      : audience.recipients.map((recipient) => ({
+          name: recipient.name,
+          email: recipient.email,
+        }));
+
   if (!first || audience.truncated) {
     return {
       ok: false,
       subject: "",
       html: "",
       sample: { name: "", email: "" },
+      recipients: [],
     };
   }
 
@@ -1981,6 +1998,7 @@ export async function previewBulkEmail(
         subject: "",
         html: "",
         sample: { name: "", email: "" },
+        recipients: [],
       };
     }
 
@@ -1995,6 +2013,7 @@ export async function previewBulkEmail(
       subject,
       html,
       sample: { name: first.name, email: first.email },
+      recipients: previewRecipients,
     };
   }
 
@@ -2017,6 +2036,7 @@ export async function previewBulkEmail(
       subject: "",
       html: "",
       sample: { name: "", email: "" },
+      recipients: [],
     };
   }
 
@@ -2042,6 +2062,7 @@ export async function previewBulkEmail(
     subject,
     html,
     sample: { name: target.name, email: first.email },
+    recipients: previewRecipients,
   };
 }
 

@@ -551,28 +551,19 @@ html {
    ─────────────────────────────────────────────────────────────────────────── */
 
 @media print {
-  /* The whole report is a single professional A4 document. The `@page` margin boxes
-     put a running footer (page x of y) on every sheet; the content below styles the
-     document's masthead, scope strip and table as a designed report rather than a web
-     page. Sizes are points/mm on purpose — see the print tokens at the top of this
-     file. */
+  /* The whole report is a single professional A4 document: the rules below style
+     its masthead, scope strip and table. Sizes are points/mm on purpose — see the
+     print tokens at the top of this file.
+
+     Chrome's own header/footer (the date-and-title strip, then the URL and page
+     count) draws inside whatever @page margin you leave, so the margins are zero
+     and the report carries its own 14/18mm padding instead — see
+     [data-print="report"]. Keep the margins at zero or the strip returns.
+     (@page margin boxes are CSS Paged Media and no-ops in Chrome — never add
+     running headers here; the document has its own in-flow footer.) */
   @page {
     size: A4;
-    margin: 18mm 14mm 20mm 14mm;
-
-    @bottom-left {
-      content: "Manarat Science Club";
-      font-family: var(--font-sans), sans-serif;
-      font-size: 7.5pt;
-      color: #8a9497;
-    }
-
-    @bottom-right {
-      content: "Page " counter(page) " of " counter(pages);
-      font-family: var(--font-sans), sans-serif;
-      font-size: 7.5pt;
-      color: #8a9497;
-    }
+    margin: 0;
   }
 
   html {
@@ -580,13 +571,14 @@ html {
   }
 
   body {
-    background-color: var(--color-surface);
+    background-color: white;
   }
 
   [data-print="shell"] {
     display: block;
     height: auto;
     overflow: visible;
+    background-color: white;
   }
 
   [data-print="chrome"] {
@@ -599,9 +591,14 @@ html {
     overflow: visible;
   }
 
+  /* With @page margin at zero the document is its own margin: 14mm sides and a
+     touch more headroom above the masthead than a page margin would give. The
+     bottom padding is generous — the last page's footer should sit in the
+     content, not against the paper's edge. */
   [data-print="report"] {
     max-width: none;
-    padding: 0;
+    padding: 18mm 14mm 16mm;
+    background-color: white;
     color: var(--ink);
     font-family: var(--font-sans), sans-serif;
     print-color-adjust: exact;
@@ -695,10 +692,15 @@ html {
   /* ── Table ─────────────────────────────────────────────────────── */
   [data-print="report"] thead {
     display: table-header-group;
+    /* Keep the heading band glued to the first data row when a page break
+       falls between them. */
+    break-after: avoid;
+    page-break-after: avoid;
   }
 
   [data-print="report"] th {
-    padding: 1.6mm 2mm;
+    padding: 2mm 2.2mm;
+    background-color: #eef3f2;
     border-bottom: 0.35mm solid var(--ink);
     font-family: var(--font-sans), sans-serif;
     font-size: 7pt;
@@ -709,7 +711,9 @@ html {
     text-align: left;
   }
 
-  [data-print="report"] th:last-child {
+  /* Headings follow their column's alignment, which the markup sets per column
+     (Amount is right-aligned); they are not all right-aligned. */
+  [data-print="report"] th[scope="col"].text-right {
     text-align: right;
   }
 
@@ -719,11 +723,12 @@ html {
   }
 
   [data-print="report"] td {
-    padding: 1.7mm 2mm;
+    padding: 1.7mm 2.2mm;
     font-size: 8pt;
     line-height: 1.35;
     color: #26383c;
     vertical-align: top;
+    font-variant-numeric: tabular-nums;
   }
 
   /* Zebra striping makes long reports readable on paper. The browser's default
@@ -735,6 +740,16 @@ html {
 
   [data-print="report"] tbody tr {
     border-bottom: 0.15mm solid var(--print-rule);
+  }
+
+  /* Exactly one empty row's worth of space between the last row and the
+     document footer, wherever the table ends. */
+  [data-print="report"] tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  [data-print="report"] table {
+    margin-bottom: 3mm;
   }
 
   /* ── Amber ceiling warning ─────────────────────────────────────── */

@@ -59,6 +59,13 @@ export const POST = handle(async (req) => {
 });
 ```
 
+> [!warning] `handle()` is not installed in this project
+> `src/lib/api/` does not exist here. The routes that ship — `/api/upload` and
+> `/api/webhooks/sms` — hand-build their `NextResponse`s and answer
+> `{ error: "…" }` with an explicit status, and that is the convention to match.
+> A file-download route cannot use a JSON success envelope at all regardless,
+> because its body *is* the file (see `/api/admin/export/[kind]`).
+
 ### Extract only when it pays
 
 Keep logic in the route by default. Lift code into a shared module only when

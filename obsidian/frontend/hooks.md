@@ -56,12 +56,15 @@ motion/smooth-scroll layer — see [[admin/filters-reports]].
 ### `useAdminFilters`
 
 ```ts
-const controls = useAdminFilters({ sourceId: source.id, basePath: source.path, state });
+const controls = useAdminFilters({ basePath: source.path, state });
 ```
 
 Returns `AdminFilterControls`: `search` / `setSearch`, `setFilter(id, value)`,
 `clearFilter(id)` (also accepts `q` for the search box), `clearAll`, `setSort`,
-`goToPage`, `isPending` and `exportHref`.
+`goToPage`, `isPending` and `exportState`.
+
+It knows nothing about the source behind the table — it drives a URL, and the href
+it builds is the whole of what it needs to know.
 
 - **The URL is the state.** Every setter rebuilds it with `buildAdminHref` from
   `src/lib/admin/filters.ts` — the same function the pages and the report route
@@ -84,8 +87,11 @@ Returns `AdminFilterControls`: `search` / `setSearch`, `setFilter(id, value)`,
   returns to the previous page of the same list.
 - **`clearAll` keeps the sort.** The sort is how the admin is reading the list,
   not a criterion narrowing it, and resetting it under them is a surprise.
-- **`exportHref` is built from the *live* search box**, not the committed query,
-  so exporting right after typing still includes the term being typed.
+- **`exportState` is built from the *live* search box**, not the committed query,
+  so an export opened right after typing still includes the term being typed — and
+  from the in-flight state, so it also includes a filter still being fetched. It is
+  a *state*, not a finished link, because the export dialog decides the columns and
+  the format on top of it; only the dialog can put all three together.
 
 ## Adding a hook
 

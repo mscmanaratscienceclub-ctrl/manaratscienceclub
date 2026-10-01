@@ -85,7 +85,7 @@ export default function AdminShell({
 
       {/* Narrow screens get the same rail as a drawer over the page. */}
       {navOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
+        <div data-print="chrome" className="fixed inset-0 z-40 lg:hidden">
           <button
             type="button"
             aria-label="Close navigation menu"
@@ -114,7 +114,10 @@ export default function AdminShell({
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-3 border-b border-ink/5 bg-surface px-4 py-3 lg:hidden">
+        <div
+          data-print="chrome"
+          className="flex items-center gap-3 border-b border-ink/5 bg-surface px-4 py-3 lg:hidden"
+        >
           <button
             ref={menuButtonRef}
             type="button"

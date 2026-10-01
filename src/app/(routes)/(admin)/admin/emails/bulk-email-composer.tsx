@@ -32,7 +32,6 @@ export default function BulkEmailComposer({
   confirmationAudience: BulkEmailAudience;
 }) {
   const controls = useAdminFilters({
-    sourceId: "stemfest",
     basePath: BULK_EMAIL_PATH,
     state,
   });

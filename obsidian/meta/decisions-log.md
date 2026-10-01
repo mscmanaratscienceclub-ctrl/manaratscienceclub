@@ -1,6 +1,6 @@
 ---
 tags: [meta, decision]
-updated: 2026-08-30
+updated: 2026-09-30
 ---
 
 # Decisions Log (ADRs)
@@ -16,6 +16,96 @@ fine; write a new ADR that says so rather than editing the old one.
 Template: [[templates/adr-note]].
 
 ---
+
+## ADR-0033 — `@page` margin is zero on paper; the document is its own margin
+
+**Status:** Accepted · 2026-09-30
+
+**Decision.** The print block in `src/app/globals.css` sets `@page { margin: 0 }`
+and `[data-print="report"]` carries the page padding instead (`18mm 14mm 16mm`).
+Never give `@page` a nonzero margin on this site, and never add `@page` margin
+boxes (`@bottom-left`, `@bottom-right`, …) — they are CSS Paged Media and a
+silent no-op in Chrome and Edge.
+
+**Why.** Chrome and Edge draw their own print header/footer — the date, the
+title and the URL — *inside* whatever margin `@page` leaves. The report
+page's `document.title` is exactly what that strip prints, so "9/30/26, 8:58 PM |
+Manarat Science Club" appeared above the masthead on every sheet. Margin boxes
+were already in the stylesheet promising a footer that Chrome never drew. With a
+zero margin the strip has nowhere to draw, and the document controls 100% of the
+paper: the masthead spacing, the generous last-page footer, all of it in normal
+flow where every rule already applies.
+
+**Consequences.**
+
+- Page margins now live in the `[data-print="report"]` padding — move them there
+  or nowhere.
+- There is no running footer with the page number; the document's own footer
+  closes the last sheet only. Accepting that is the price of Chrome-proof
+  output without a PDF library (ADR-0032).
+- The `data-print="chrome"` hook now also covers `admin-shell.tsx`'s mobile top
+  bar and nav drawer, which printed above the report on narrow screens.
+- Verified by printing a DOM fixture with the compiled stylesheet through
+  headless Edge with Chrome's default header/footer enabled: identical bytes with
+  `--no-pdf-header-footer`, no chrome text in the PDF, tinted header band
+  repeating on page 2, rows never split.
+
+---
+
+## ADR-0032 — An export is built in memory and never stored; `write-excel-file` writes the spreadsheet
+
+**Status:** Accepted · 2026-09-30
+
+**Decision.** The admin panel exports in two formats, and **neither is written
+anywhere** — not a bucket, not a temp file, not a cache entry:
+
+- **PDF** stays what it has always been: the print-ready report page handed to the
+  browser, whose own "Save as PDF" produces the file on the admin's machine. **No
+  PDF library is added.**
+- **Excel** is a real `.xlsx`, built in memory by `write-excel-file` in
+  `src/app/api/admin/export/[kind]/route.ts`, streamed in one response
+  (`Content-Disposition: attachment`, `Cache-Control: no-store`) and forgotten.
+
+**Why a library at all, and why this one.** A `.xlsx` is a ZIP of XML, and
+hand-rolling one means owning a container format for no benefit. The three real
+options:
+
+| Option | Dependencies | Unpacked | Verdict |
+|--------|--------------|----------|---------|
+| `write-excel-file` 4.1.1 | **1** (`fflate`) | **1.8 MB** | Chosen |
+| `exceljs` 4.4.0 | 9 (`archiver`, `unzipper`, `jszip`, `tmp`, …) | 21.8 MB | Rejected — 12× the install for the same sheet |
+| `xlsx` (SheetJS CE) | — | — | Rejected — the npm release is 0.18.5 from 2022 and carries known advisories; current builds live off-npm |
+
+All three are permissively licensed and all three can write a sheet. What decided it
+is that this route runs as a serverless function on Vercel's free tier, where the
+bundle the function carries is metered: one dependency and 1.8 MB against nine and
+21.8 MB, for a file that holds text. The claim is verified rather than assumed —
+`pnpm export:verify` (`scripts/verify-excel-export.run.mjs`) builds a workbook of the
+same shape and reads it back out of its ZIP container.
+
+**Why not a PDF library.** The report has to carry `৳`, Bengali SMS bodies and the
+club's own typefaces. A server-side generator would need a Unicode font subset kept
+in the repository and re-embedded whenever it changed, and would still have to be
+taught the layout the print stylesheet already expresses. The browser already has all
+three — and the file it writes never leaves the admin's machine, which is the
+strongest possible answer to "where does the export live?".
+
+**Consequences.**
+
+- **There is nothing to clean up.** No bucket policy, no lifecycle rule, no signed
+  URL to expire, and no export that can outlive the session that asked for it.
+- **Both formats share one row builder.** `getAdminReportRows` feeds the report page
+  and the route, so a spreadsheet and a PDF of the same filters cannot disagree about
+  a row.
+- **Cells are text on purpose.** The values are the report's own formatted strings
+  (`৳1,450.00`, `18 Sep 2026`), so the amount column will not sum in Excel. Typing it
+  as a number would mean a second formatter and a second answer to "what was asked
+  for" — a worse trade than a green triangle in Excel.
+- **A truncated export is refused, not delivered.** Past `REPORT_ROW_LIMIT` the route
+  answers `413`; a spreadsheet that is quietly missing rows is worse than no
+  spreadsheet, because someone will have sorted and formatted it before noticing.
+- **Any future server-side artefact needs a new ADR** saying where the bytes live and
+  who deletes them. This one is a promise about what this project does *not* keep.
 
 ## ADR-0031 — Registration IDs are minted by a database trigger, never by the application
 

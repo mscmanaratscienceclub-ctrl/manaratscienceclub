@@ -200,6 +200,16 @@ export interface BulkEmailPreview {
     name: string;
     email: string;
   };
+  /**
+   * Every address this blast will actually write to, so the preview shows exactly who
+   * the send would reach. For a confirmation this is the audience minus rows that
+   * already carry a receipt (they are left alone); for a custom message it is the
+   * deduplicated audience.
+   */
+  recipients: {
+    name: string;
+    email: string;
+  }[];
   /** `true` when a custom message is ready to preview; `false` and no HTML otherwise. */
   ok: boolean;
 }

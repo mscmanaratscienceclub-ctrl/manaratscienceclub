@@ -10,7 +10,7 @@ import {
 import type { AdminFilterControls } from "@/lib/hooks/use-admin-filters";
 import { cn } from "@/lib/utils";
 import { FilterField } from "./filter-controls";
-import ExportPdfLink from "./export-pdf-link";
+import ExportDialog from "./export-dialog";
 
 /**
  * Search, filters, sort and export for one admin table.
@@ -21,6 +21,10 @@ import ExportPdfLink from "./export-pdf-link";
  * everything else is behind "More filters" — a dozen controls at once is a wall,
  * not a tool — and it opens itself whenever a hidden filter is active, so a chip
  * is never the only evidence of a filter that is narrowing the list.
+ *
+ * Export sits here rather than in the table because it exports the same thing the
+ * bar is describing: the source's columns, filtered the same way. The dialog it
+ * opens owns the format and field choices on top of that.
  */
 export default function FilterBar({
   source,
@@ -95,7 +99,7 @@ export default function FilterBar({
           </select>
         </div>
 
-        <ExportPdfLink href={controls.exportHref} />
+        <ExportDialog source={source} state={controls.exportState} />
       </div>
 
       {showSecondary && (

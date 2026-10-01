@@ -61,7 +61,7 @@ export const registrationChoices: RegistrationChoice[] = [
     points: [
       "Olympiads and E-sports in every class",
       "Robotics (LFR & Robosoccer) squads for Class 7 to university",
-      "Project Display for Class 9 and above",
+      "Project Display for Class 3 and above",
     ],
     ctaLabel: "Register for STEM Fest",
     href: "/stemfestreg",

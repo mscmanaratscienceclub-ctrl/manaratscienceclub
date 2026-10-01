@@ -114,6 +114,27 @@ only when a project needs them (ADR-0020):
 Still undecided: payments, i18n, data-fetching libraries, testing. Document here
 when adopted and add an ADR to [[decisions-log]].
 
+## Added by this project
+
+The sections above are inherited from the starter and do **not** describe this
+project — it runs `pnpm` (not Yarn), on GSAP + `motion` + three.js (not
+`@react-spring/web`), with TypeScript 6 and ESLint 10. See ADR-0023 for the split
+and [[decisions-log]] for the decisions behind it.
+
+| Package | Version | Role |
+|---------|---------|------|
+| `write-excel-file` | `4.1.1` | Builds the admin panel's `.xlsx` exports, in memory, server-side |
+
+Chosen over `exceljs` (nine dependencies, 21.8 MB unpacked) and `xlsx`/SheetJS CE
+(the npm release is 0.18.5 from 2022 and carries known advisories):
+`write-excel-file` is MIT, brings **one** dependency (`fflate`) and 1.8 MB. It is
+imported in exactly one place — `src/app/api/admin/export/[kind]/route.ts`, which
+pins `runtime = "nodejs"` because the writer zips with Node's own stream and zlib.
+No PDF library was added, and none should be: see ADR-0032.
+
+`pnpm export:verify` (`scripts/verify-excel-export.run.mjs`) is the smoke test — it
+exercises the writer with no database and no session.
+
 ## Related
 
 [[system-overview]] · [[folder-structure]]

@@ -1,6 +1,6 @@
 ---
 tags: [frontend, admin, stable]
-updated: 2026-09-14
+updated: 2026-09-30
 ---
 
 # Catalog — Admin Components
@@ -14,10 +14,14 @@ the house rules.
 
 | File | Export | Props | Role |
 |------|--------|-------|------|
-| `filter-bar.tsx` | `FilterBar` | `source`, `state`, `controls` | Search box, the `primary` filters, sort, export link, chips, and **More filters** for the rest |
-| `filter-controls.tsx` | `FilterField` | `field`, `value`, `onChange` | One control, chosen by `field.kind` — text, select, date or number |
+| `filter-bar.tsx` | `FilterBar` | `source`, `state`, `controls` | Search box, the `primary` filters, sort, the **Export** dialog, chips, and **More filters** for the rest |
+| `filter-controls.tsx` | `FilterField` | `field`, `value`, `onChange`, `immediate?` | One control, chosen by `field.kind` — text, select, date or number. `immediate` commits every keystroke instead of debouncing, for the export dialog |
 | `pagination.tsx` | `Pagination` | `page`, `totalPages`, `onPage` | Footer pager; renders `null` at one page so a short list has no dead controls |
-| `export-pdf-link.tsx` | `ExportPdfLink` | `href`, `label?`, `disabled?` | Opens the printable report in a new tab, keeping the filtered list where it was |
+| `export-dialog.tsx` | `ExportDialog` | `source`, `state` | The **Export** button and the modal it opens: format, fields, filters, and the two ways an export leaves |
+| `export-format-choice.tsx` | `ExportFormatChoice` | `value`, `onChange`, `firstOptionRef` | PDF / Excel radios, each with the note saying what will actually happen |
+| `export-field-list.tsx` | `ExportFieldList` | `columns`, `selected`, `onToggle`, `onSelectAll` | The report's columns as checkboxes, in the order the report prints them |
+| `export-filter-fields.tsx` | `ExportFilterFields` | `source`, `query`, `values`, `activeCount`, `onQueryChange`, `onValueChange`, `onClearAll` | Every filter the source has, plus the search box |
+| `auto-print.tsx` | `AutoPrint` | — | Opens the print dialog once the report's fonts have loaded — renders nothing (`print=1`) |
 | `report-print-button.tsx` | `ReportPrintButton` | — | `window.print()`. The only script on the report page |
 | `admin-empty-state.tsx` | `AdminEmptyState` | `icon`, `label`, `onClearAll?` | Empty-table state; offers **Clear all filters** when filters are what emptied it |
 | `sidebar.tsx` | `AdminSidebar` | `user: { name, email, role }` | Admin navigation; carries `data-print="chrome"` so it never prints |
@@ -29,7 +33,7 @@ its page of rows; the table itself is the client leaf:
 
 ```
 page.tsx (server)                 table.tsx (client leaf)
-  parseAdminQuery(source, sp)  →    useAdminFilters({ sourceId, basePath, state })
+  parseAdminQuery(source, sp)  →    useAdminFilters({ basePath, state })
   searchXRegistrations(state)  →      <FilterBar source state controls />
   rows / total / page / pages  →      <AdminEmptyState … />
                                       <Pagination page totalPages onPage={controls.goToPage} />

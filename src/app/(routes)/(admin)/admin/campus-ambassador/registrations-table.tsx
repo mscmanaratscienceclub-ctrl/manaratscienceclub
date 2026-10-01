@@ -63,7 +63,6 @@ export default function RegistrationsTable({
 }: RegistrationsTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const controls = useAdminFilters({
-    sourceId: source.id,
     basePath: source.path,
     state,
   });

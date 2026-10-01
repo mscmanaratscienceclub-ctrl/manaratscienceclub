@@ -22,7 +22,9 @@
  * | `date`    | inclusive day range — a `to` date covers that day    |
  * | `number`  | numeric bound — `min` is `>=`, `max` is `<=`         |
  *
- * `q`, `sort` and `page` are reserved parameter names and may not be a field id.
+ * `q`, `sort` and `page` are reserved parameter names and may not be a field id —
+ * as are `cols` and `print`, which the export contract in
+ * `src/lib/admin/exports.ts` owns.
  */
 
 import { stemfestClasses } from "@/lib/data/stemfest-registration";
@@ -79,6 +81,13 @@ export interface AdminReportColumn {
   label: string;
   /** Amounts and other figures print right-aligned so they line up. */
   align?: "left" | "right";
+  /**
+   * Excel column width in characters. The printed report sizes its own columns,
+   * so this only shapes the `.xlsx`, and only where the default — the label's
+   * own width — would clip the values underneath it, such as an SMS body or a
+   * list of events.
+   */
+  width?: number;
 }
 
 export interface AdminSourceConfig {
@@ -217,11 +226,11 @@ export const ambassadorSource: AdminSourceConfig = {
   defaultSort: DEFAULT_SORT,
   reportColumns: [
     { id: "type", label: "Type" },
-    { id: "name", label: "Name" },
+    { id: "name", label: "Name", width: 22 },
     { id: "class", label: "Class" },
-    { id: "school", label: "School" },
+    { id: "school", label: "School", width: 32 },
     { id: "phone", label: "Phone" },
-    { id: "email", label: "Email" },
+    { id: "email", label: "Email", width: 26 },
     { id: "gender", label: "Gender" },
     { id: "firstTime", label: "First-time CA" },
     { id: "facebook", label: "Facebook" },
@@ -280,7 +289,7 @@ export const volunteerSource: AdminSourceConfig = {
   sort: sortNewestFirst,
   defaultSort: DEFAULT_SORT,
   reportColumns: [
-    { id: "name", label: "Name" },
+    { id: "name", label: "Name", width: 22 },
     { id: "classSection", label: "Class section" },
     { id: "roll", label: "Roll" },
     { id: "shift", label: "Shift" },
@@ -358,10 +367,10 @@ export const stemfestSource: AdminSourceConfig = {
   defaultSort: DEFAULT_SORT,
   reportColumns: [
     { id: "registrationCode", label: "ID" },
-    { id: "name", label: "Student" },
+    { id: "name", label: "Student", width: 22 },
     { id: "class", label: "Class" },
-    { id: "school", label: "School / college" },
-    { id: "segments", label: "Events" },
+    { id: "school", label: "School / college", width: 30 },
+    { id: "segments", label: "Events", width: 40 },
     { id: "amountToSend", label: "Amount" },
     { id: "transactionId", label: "TrxID" },
     { id: "paymentNumber", label: "Payment number" },
@@ -417,7 +426,7 @@ export const smsSource: AdminSourceConfig = {
     { id: "amount", label: "Amount", align: "right" },
     { id: "senderNumber", label: "Sender number" },
     { id: "status", label: "Status" },
-    { id: "message", label: "Message" },
+    { id: "message", label: "Message", width: 60 },
   ],
 };
 

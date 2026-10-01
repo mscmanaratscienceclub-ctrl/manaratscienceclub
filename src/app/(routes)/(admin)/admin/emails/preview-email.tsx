@@ -70,13 +70,39 @@ export default function EmailPreviewModal({
           </button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-auto bg-cream">
-          <iframe
-            title={`Email preview for ${preview.sample.name}`}
-            srcDoc={preview.html}
-            className="h-full min-h-[480px] w-full border-0 bg-transparent"
-            sandbox=""
-          />
+        <div className="min-h-0 flex-1 overflow-hidden bg-cream">
+          <div className="h-full overflow-y-auto">
+            {preview.recipients.length > 0 && (
+              <section className="border-b border-ink/10 bg-surface px-5 py-3">
+                <p className="font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
+                  Sending to {preview.recipients.length}{" "}
+                  {preview.recipients.length === 1 ? "address" : "addresses"}
+                </p>
+                <ul className="mt-1 max-h-36 divide-y divide-ink/5 overflow-y-auto">
+                  {preview.recipients.map((recipient, index) => (
+                    <li
+                      key={`${recipient.email}-${index}`}
+                      className="flex flex-wrap items-baseline gap-x-2 py-1 font-body text-sm"
+                    >
+                      <span className="font-medium text-ink/80">
+                        {recipient.name}
+                      </span>
+                      <span className="break-all font-mono text-xs text-ink/55">
+                        {recipient.email}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            <iframe
+              title={`Email preview for ${preview.sample.name}`}
+              srcDoc={preview.html}
+              className="h-[60vh] min-h-[480px] w-full border-0 bg-transparent"
+              sandbox=""
+            />
+          </div>
         </div>
       </div>
     </div>

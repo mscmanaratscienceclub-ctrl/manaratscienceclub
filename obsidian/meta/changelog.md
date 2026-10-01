@@ -1,12 +1,83 @@
 ---
 tags: [meta, changelog]
-updated: 2026-09-28
+updated: 2026-09-30
 ---
 
 # Changelog
 
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
+
+## 2026-10-01 — Bulk email preview shows the full recipient list
+
+The Preview dialog on `/admin/emails` now lists every address the blast will actually
+send to — not just the first sample recipient's rendered email — so an admin can
+eyeball the audience before committing. For a confirmation blast, the list excludes
+rows that already carry an accepted receipt (they are left alone by the send). A
+new `recipients` field on `BulkEmailPreview` carries the filtered list; the preview
+modal renders it in a bounded, scrollable section above the rendered iframe.
+
+## 2026-09-30 — The printed report loses the browser chrome and grows up
+
+The first paper export came out with "9/30/26, 8:58 PM | Manarat Science Club"
+above the masthead and the admin shell's "☰ Menu — Grand Admin" bar under it.
+Both are gone: the shell's mobile top bar and drawer now carry
+`data-print="chrome"`, and `@page` margin is zero so Chrome's own date/title
+strip has nowhere to draw — the document carries its own 14/18mm margins instead
+(ADR-0033). While the sheet was out: the repeating table header got a tinted
+band, the Amount column's heading right-aligns with its figures (it previously
+followed a `th:last-child` rule that misaligned whenever the last column wasn't
+the amount), cells use tabular numerals, and the report page sets its own
+`<title>` — which is also the filename Chrome proposes in "Save as PDF"
+(`STEM Fest Registrations | Manarat Science Club.pdf`). The `@page` margin boxes
+that promised a running "Page x of y" footer were removed: they are CSS Paged
+Media and never rendered in Chrome.
+
+## 2026-09-30 — Export gets a dialog: choose the format, the fields and the filters
+
+**Export** in the admin filter bar is now a modal instead of a link to the printed
+report. It asks the three questions an export actually has, and answers each from the
+source's own contract rather than a second copy of it:
+
+- **Format** — **PDF** opens `/admin/reports/[kind]?…&print=1` in a new tab, where the
+  browser's "Save as PDF" is one click; **Excel** downloads a real `.xlsx`.
+- **Fields** — every `reportColumns` entry as a checkbox, in the order the report
+  prints them, with *All fields* / *None* and a live count. An empty selection disables
+  the action rather than quietly exporting every column.
+- **Filters** — the search box and *every* filter the source declares, including the
+  ones behind "More filters" on the table, seeded from the table's current view and
+  applied to this export only. Nothing is written to the URL, so narrowing an export
+  never disturbs the list behind the dialog.
+
+The contract is the new `src/lib/admin/exports.ts` — the reserved `cols` and `print`
+parameters, `buildPrintHref` / `buildExcelHref`, the file name and the sheet name.
+`src/lib/admin/filters.ts` gained an optional `width` on `AdminReportColumn` (Excel
+only) and two more reserved parameter names. `useAdminFilters` now returns
+**`exportState`** instead of a finished `exportHref`, because only the dialog can put
+format, fields and filters together; `src/components/admin/export-pdf-link.tsx` is
+gone, and the dialog's PDF choice opens the same printable report it always did.
+
+**Nothing is stored, in either format** (ADR-0032). The PDF is still written by the
+browser, on the admin's machine. The spreadsheet is built in memory by the new
+`/api/admin/export/[kind]` route, streamed in one response and forgotten
+(`Cache-Control: no-store`). `write-excel-file` was added for it — **one** dependency
+(`fflate`), 1.8 MB unpacked, against `exceljs`'s nine and 21.8 MB — and the route
+answers `413` past `REPORT_ROW_LIMIT` rather than handing back a spreadsheet quietly
+missing rows. The workbook carries a frozen header row, the declared column widths, and
+a second **Scope** sheet repeating the rows, sort, filters, columns and the admin who
+asked, so a file opened next month can still say what it is.
+
+`pnpm export:verify` (`scripts/verify-excel-export.run.mjs`) exercises the writer with
+no database and no session: it builds a workbook of the same shape and reads it back out
+of its own ZIP container — two sheets, frozen header, widths, and `৳` and Bengali text
+intact.
+
+The dialog is a native `<dialog>` opened with `showModal()`, so the browser traps focus,
+answers Escape and dims the page behind it. Focus is moved to the first format option on
+open, so the first Enter press is a choice rather than a dismissal. Nothing in it is
+animated. Verified live at 375 px and 1440 px: 334 px wide with 12 px gutters on a phone
+with the sections stacked and the body scrolling inside the sheet, 44 rem with two-column
+format cards and a three-column field grid on a desktop, nothing overflowing at either.
 
 ## 2026-09-29 — Admin reports export as a proper, designed A4 PDF
 

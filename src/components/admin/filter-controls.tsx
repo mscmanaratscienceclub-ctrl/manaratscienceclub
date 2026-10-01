@@ -15,10 +15,18 @@ export function FilterField({
   field,
   value,
   onChange,
+  immediate = false,
 }: {
   field: AdminFilterField;
   value: string;
   onChange: (id: string, value: string) => void;
+  /**
+   * Commit every keystroke instead of waiting for a pause. The filter bar
+   * debounces because each change is a server query; the export dialog has no
+   * query behind it and a download must include the last character typed, even
+   * when the admin types it and clicks straight away.
+   */
+  immediate?: boolean;
 }) {
   switch (field.kind) {
     case "select":
@@ -26,9 +34,24 @@ export function FilterField({
     case "date":
       return <DateField field={field} value={value} onChange={onChange} />;
     case "number":
-      return <TypedField field={field} value={value} onChange={onChange} numeric />;
+      return (
+        <TypedField
+          field={field}
+          value={value}
+          onChange={onChange}
+          immediate={immediate}
+          numeric
+        />
+      );
     case "text":
-      return <TypedField field={field} value={value} onChange={onChange} />;
+      return (
+        <TypedField
+          field={field}
+          value={value}
+          onChange={onChange}
+          immediate={immediate}
+        />
+      );
   }
 }
 
@@ -121,17 +144,19 @@ function TypedField({
   field,
   value,
   onChange,
+  immediate = false,
   numeric = false,
 }: {
   field: AdminFilterField;
   value: string;
   onChange: (id: string, value: string) => void;
+  immediate?: boolean;
   numeric?: boolean;
 }) {
   const id = useId();
   const [input, setInput] = useState(value);
   const committed = useRef(value);
-  const debounced = useDebouncedValue(input, 350);
+  const debounced = useDebouncedValue(input, immediate ? 0 : 350);
 
   useEffect(() => {
     if (value === committed.current) return;
