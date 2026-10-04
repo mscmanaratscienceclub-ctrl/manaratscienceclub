@@ -1,6 +1,6 @@
 ---
 tags: [backend, database, security, audit]
-updated: 2026-09-13
+updated: 2026-10-03
 ---
 
 # Supabase Architecture Audit — 2026-09-13
@@ -373,6 +373,40 @@ the connection ever moved to a limited role, every read would silently return
 `[]` rather than error. Worth re-reading ADR-0024 before changing the
 connecting role. Also confirmed: `session` returns `[]` to `anon` over the Data
 API, so session tokens are not exposed.
+
+## Egress remediation (2026-10-03)
+
+The **dominant** metered-cost driver for this project is **storage egress (cached +
+general)**, not Postgres. *Cached egress* is bytes served through Supabase's CDN edge;
+*general egress* is anything leaving Supabase (including a CDN cache miss, which pulls
+the origin). Two code+storage patterns were chasing the same cost:
+
+1. **`/render/image/` re-transforms on every request.** `renderedImageUrl()` pointed at
+   a raw multi-megabyte legacy original made Supabase pull the source and re-encode on
+   **every page view** — repeat reads of a busy blog page compound as both cached and
+   general egress. Fixed in code (2026-10-03): `avatarUrl()` and an egress guard
+   in `renderedImageUrl()` now serve already-optimised (`optimized/*`) and small
+   immutable uploads **verbatim**; only genuine legacy originals are transformed. See
+   [[changelog]].
+2. **Legacy originals still in the bucket.** The `optimize-bucket-images.mjs` pass
+   shrunk 23.5 MB → 0.85 MB into `optimized/*` but *left the originals in
+   place*. Any code path (or manual URL) that hits an original re-pays the full multi-MB
+   weight per fetch.
+
+### Storage-side actions (not code — do these once)
+
+- **Archive and drop** the legacy multi-MB originals in `avatars` now that `optimized/*`
+  holds the display bytes. `2.x MB → tens of KB` per object removes the worst egress
+  source outright. Keep the `optimized/` set (and the content-addressed UUID uploads,
+  already ≤512px WebP).
+- **Set a long `cache-control` on everything in `pdfs`.** PDFs are large and fetched on
+  every download; without an immutable header the CDN re-validates against origin each time,
+  inflating general egress for a static club document. One-time `storage.objects` update (or
+  upload with the header) makes repeat downloads cheap cached egress.
+- **Enable Supabase Edge Functions / custom domain CDN caching** is optional; the object-level
+  `cache-control` above is the main lever and needs no extra infra.
+- Keep `profile-form`/`/api/upload` compressing to 512px WebP — that is what keeps
+  new avatar egress near zero.
 
 ## Related
 

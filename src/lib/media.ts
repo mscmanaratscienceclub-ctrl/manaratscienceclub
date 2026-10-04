@@ -62,17 +62,34 @@ export function bucketImage(path: string): string {
 }
 
 /**
+ * `true` when a public-object URL already points at a WebP under `optimized/`,
+ * i.e. the final display bytes produced by `scripts/optimize-bucket-images.mjs`.
+ * Those objects carry an immutable one-year cache and are already the size the
+ * browser wants — transforming them again is pure wasted egress.
+ */
+export function isOptimizedObjectUrl(url: string): boolean {
+  return /\/storage\/v1\/object\/public\/avatars\/optimized\//.test(url);
+}
+
+/**
  * Turn a Supabase *public object* URL into a *render* URL, so Supabase's own
  * CDN performs the resize/encode instead of Vercel's image optimizer.
  *
- * Use this for image URLs that aren't known at build time — e.g. an author
- * avatar pasted into the CMS pointing at a raw multi-megabyte original.
+ * **Egress guard.** An object that is already pre-optimised (`optimized/*`,
+ * produced by the bucket script) is returned **untouched** — the `render/image`
+ * endpoint would otherwise pull the original back out of storage and re-encode on
+ * every request, which is the single largest driver of metered egress in this
+ * project. Only genuinely multi-megabyte *originals* that are not yet optimised
+ * should be forced through the transform.
+ *
  * Returns the input untouched when it isn't a public object URL.
  */
 export function renderedImageUrl(
   url: string,
   options: { width: number; height?: number; quality?: number },
 ): string {
+  if (isOptimizedObjectUrl(url)) return url;
+
   const match =
     /^(https?:\/\/[^/]+)\/storage\/v1\/object\/public\/(.+)$/.exec(url);
   if (!match) return url;
@@ -86,5 +103,38 @@ export function renderedImageUrl(
   if (options.height) params.set("height", String(options.height));
 
   return `${match[1]}/storage/v1/render/image/public/${match[2]}?${params.toString()}`;
+}
+
+/**
+ * Resolve a stored avatar/profile image to the URL that should actually be sent to
+ * the browser, choosing the cheapest option that still looks right.
+ *
+ * - A URL that is **already optimised** (`optimized/*`, or a small immutable
+ *   upload such as the 512px WebP `profile-form`/`/api/upload` produce) is
+ *   served **directly** — no `render/image` transform, so Supabase never re-pulls
+ *   the original for it.
+ * - A raw legacy original is forced through `render/image` once per distinct width
+ *   so the browser gets a small 2x WebP instead of a multi-megabyte file.
+ *
+ * Prefer this over calling `renderedImageUrl` by hand on stored avatar URLs: it
+ * centralises the "is this already small?" decision that used to be split across
+ * the profile form and the blog author card, and it is what keeps new uploads off
+ * the metered transform path at all.
+ */
+export function avatarUrl(
+  url: string | null | undefined,
+  width: number,
+): string | null {
+  if (!url) return null;
+  // Blob previews are client-in-memory and can never be touched by a CDN.
+  if (url.startsWith("blob:")) return url;
+  // Already-final bytes → serve verbatim.
+  if (isOptimizedObjectUrl(url)) return url;
+  // A UUID-named upload in the avatars root is what `/api/upload` writes — the
+  // profile form compresses it to ≤512px WebP before the request, so it is
+  // already small and immutable. Serving it directly bypasses the transform.
+  if (/\/avatars\/[0-9a-f-]{36}\.(webp|png|jpe?g)$/.test(url)) return url;
+  // Everything else is treated as a raw legacy original → resize once via CDN.
+  return renderedImageUrl(url, { width });
 }
 

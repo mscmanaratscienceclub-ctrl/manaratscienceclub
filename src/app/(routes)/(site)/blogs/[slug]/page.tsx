@@ -5,7 +5,7 @@ import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import TocSidebar from "../_components/toc-sidebar";
 import sanitizeHtml from "sanitize-html";
 import Image from "next/image";
-import { renderedImageUrl } from "@/lib/media";
+import { avatarUrl } from "@/lib/media";
 
 // Force dynamic rendering — prevents Next.js from prerenderering all slugs
 // in parallel at build time (would exhaust the Supabase free-tier pool)
@@ -117,12 +117,11 @@ export default async function BlogPostPage({ params }: PageProps) {
   const toc = extractToc(post.content ?? "");
   const relatedPosts = await getRelatedPosts(slug);
   const displayName = post.customAuthorName ?? post.authorName;
-  // Avatars pasted into the CMS point at raw bucket originals, which can be
-  // many megabytes. Ask Supabase's CDN for a 2x 40px WebP instead of shipping
-  // the original or paying Vercel for an on-demand transformation.
-  const displayAvatar = post.customAuthorAvatar
-    ? renderedImageUrl(post.customAuthorAvatar, { width: 80 })
-    : null;
+  // Avatars pasted into the CMS can point at raw bucket originals, which can be
+  // many megabytes. `avatarUrl` serves an already-optimised/small avatar verbatim
+  // and only pushes a genuine legacy original through Supabase's CDN transform once,
+  // so a blog page never re-pulls-and-re-encodes the source on every view.
+  const displayAvatar = avatarUrl(post.customAuthorAvatar, 80);
 
 
   return (

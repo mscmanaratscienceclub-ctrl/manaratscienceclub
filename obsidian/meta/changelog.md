@@ -1,12 +1,36 @@
 ---
 tags: [meta, changelog]
-updated: 2026-09-30
+updated: 2026-10-03
 ---
 
 # Changelog
 
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
+
+## 2026-10-03 — Stop re-transforming uploaded avatars (Supabase egress)
+
+`render/image` is Supabase's on-the-fly transform endpoint: it pulls the source
+object back out of storage and re-encodes on **every request**, so any busy page
+that points it at a multi-megabyte legacy original burns metered egress repeatedly.
+
+- `src/lib/media.ts` gained `isOptimizedObjectUrl()` (does the URL already point at a
+  pre-optimised `optimized/*` WebP?) and `avatarUrl(url, width)`, which resolves
+  a stored avatar to the cheapest correct URL: already-optimised objects and the small
+  immutable UUID uploads `/api/upload` writes (the profile form compresses to 512px
+  WebP before the request) are served **verbatim**; only genuine legacy originals fall
+  through to `render/image`. `renderedImageUrl()` now also short-circuits
+  `optimized/*` URLs instead of re-transforming them.
+- The blog author card (`/blogs/[slug]`) and the profile form now call `avatarUrl()`
+  instead of always pushing stored avatars through `render/image`, so an already-small or
+  pre-optimised avatar is never re-pulled-and-re-encoded.
+- New helpers are re-exported from `src/lib/supabase.ts` and documented in
+  [[frontend/utils]].
+
+Storage-side follow-ups (not code — see [[backend/supabase-audit-2026-09-13]]):
+legacy multi-MB originals in the `avatars` bucket should be archived/dropped now that
+`optimized/*` holds the display bytes, and PDFs in `pdfs` should carry a long
+`cache-control` to keep repeat downloads off origin.
 
 ## 2026-10-01 — Bulk email preview shows the full recipient list
 
@@ -16,6 +40,12 @@ eyeball the audience before committing. For a confirmation blast, the list exclu
 rows that already carry an accepted receipt (they are left alone by the send). A
 new `recipients` field on `BulkEmailPreview` carries the filtered list; the preview
 modal renders it in a bounded, scrollable section above the rendered iframe.
+
+The **Payment confirmations** section's on-page recipient list ("Going to N addresses")
+now matches the send button too: it previously listed *every* verified registration the
+filters matched (including those already receipted), so it could say "Going to 101
+addresses" while the button sent only the 25 that were still waiting. It now filters
+to the same unsent rows the button will write to.
 
 ## 2026-09-30 — The printed report loses the browser chrome and grows up
 

@@ -1,6 +1,6 @@
 ---
 tags: [frontend, stable]
-updated: 2026-08-30
+updated: 2026-10-03
 ---
 
 # Catalog — Utilities
@@ -20,7 +20,16 @@ client) re-exports all of it.
 | `AVATARS_BUCKET` | the `avatars` bucket name |
 | `storagePublicUrl(bucket, path)` | public CDN URL for any object |
 | `bucketImage(path)` | URL for a **pre-optimised** WebP under `optimized/` — see [[decisions-log\|ADR-0025]] |
-| `renderedImageUrl(url, { width, height?, quality? })` | rewrite a public object URL to Supabase's `/render/image/` endpoint so Supabase resizes it, not Vercel; returns non-storage URLs untouched |
+| `renderedImageUrl(url, { width, height?, quality? })` | rewrite a public object URL to Supabase's `/render/image/` endpoint so Supabase resizes it, not Vercel; returns non-storage URLs untouched. **Egress guard:** already-optimised (`optimized/*`) URLs are returned untouched. |
+| `isOptimizedObjectUrl(url)` | `true` when a URL points at a pre-optimised WebP under `optimized/` |
+| `avatarUrl(url, width)` | resolve a stored avatar to the cheapest correct URL — serve already-optimised/small uploads verbatim, only `render/image`-transform genuine legacy originals |
+
+> [!warning] Egress: avoid `/render/image/` for objects you already control
+> The `render/image` endpoint pulls the original back out of storage and re-encodes on
+> **every request** — for a multi-megabyte legacy original on a busy blog page that is
+> the single largest source of metered Supabase egress. Prefer `avatarUrl()` /
+> `isOptimizedObjectUrl()` so already-final bytes are served directly, and pre-optimise
+> write-time uploads instead of transforming on read.
 
 The origin comes from `NEXT_PUBLIC_SUPABASE_URL`, so no component or data module
 hardcodes the project host. Anything rendered through `bucketImage()` is already

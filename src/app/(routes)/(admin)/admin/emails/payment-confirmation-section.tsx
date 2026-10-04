@@ -126,8 +126,12 @@ export default function PaymentConfirmationSection({
         </p>
       )}
 
-      {!audience.truncated && count > 0 && (
-        <AudienceEmailList recipients={audience.recipients} />
+      {!audience.truncated && unsent > 0 && (
+        <AudienceEmailList
+          recipients={audience.recipients.filter(
+            (recipient) => !recipient.alreadySent,
+          )}
+        />
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-3">

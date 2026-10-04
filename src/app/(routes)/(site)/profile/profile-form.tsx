@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient } from "@/lib/auth/client";
-import { renderedImageUrl } from "@/lib/media";
+import { avatarUrl } from "@/lib/media";
 import { toast } from "sonner";
 import {
   Form,
@@ -190,16 +190,21 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
           <div className="relative">
             <div className="relative flex size-24 items-center justify-center overflow-hidden border border-dashed border-space-line-soft bg-space-deep">
               {/* A `blob:` preview can't be fetched by any optimizer, so it must
-                stay unoptimized. A stored avatar is routed through Supabase's
-                render endpoint first, keeping even a legacy multi-megabyte
-                upload down to a ~10 KB 2x WebP — served verbatim, never via
+                stay unoptimized. A stored avatar goes through `avatarUrl`, which serves
+                an already-optimised/small upload verbatim and only routes a genuine
+                legacy multi-megabyte original through Supabase's render endpoint once —
+                keeping bytes off the metered transform path. Served verbatim, never via
                 Vercel's optimizer. */}
             {imagePreview ? (
               <Image
                 src={
                   imagePreview.startsWith("blob:")
                     ? imagePreview
-                    : renderedImageUrl(imagePreview, { width: 192 })
+                    : // `avatarUrl` serves an already-optimised/small avatar
+                      // verbatim and only transforms a legacy original once, so a
+                      // stored profile picture never re-pulls the source through the
+                      // metered `render/image` path on every profile view.
+                      (avatarUrl(imagePreview, 192) ?? imagePreview)
                 }
                 alt="Profile"
                 fill

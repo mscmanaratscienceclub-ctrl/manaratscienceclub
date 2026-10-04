@@ -34,5 +34,7 @@ export {
   bucketImage,
   renderedImageUrl,
   storagePublicUrl,
+  avatarUrl,
+  isOptimizedObjectUrl,
 } from "@/lib/media";
 
