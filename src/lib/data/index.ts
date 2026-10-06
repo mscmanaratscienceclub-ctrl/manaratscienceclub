@@ -1,3 +1,8 @@
+import { bucketOriginal, contentImage } from "@/lib/media";
+
+// Content images are named by their original bucket path — contentImage resolves
+// them to the pre-optimised, one-year-cached WebP.
+
 // ─── Site Config ──────────────────────────────────────────────────────────────
 
 export const siteConfig = {
@@ -41,7 +46,7 @@ export const leadership: LeadershipMember[] = [
     name: "Dr. Maksud Alam",
     designation: "MCCA Convener and Club In-Charge, MSC",
     role: "faculty-advisor",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/maksud.png",
+    image: contentImage("adminimages/maksud.png"),
     quote: "The Manarat Science Club continues to shine as a vibrant center of creativity, curiosity, and scientific enthusiasm. This year, our students have achieved remarkable success, earning awards in science fairs, quiz competitions, and Olympiads. Their research projects and innovative models ranging from environmental solutions to technological prototypes have been widely appreciated for their originality and practical value. Our hands-on workshops, experiments, and project-based activities have further strengthened students' analytical thinking and teamwork skills. Participation in exhibitions and science festivals has given our young learners the opportunity to showcase their talents with confidence, receiving recognition for both their scientific understanding and presentation skills. We are also proud of the new collaborations established with academic and scientific organizations. Through expert-led seminars and mentorship sessions, students have gained valuable insights that inspire them to aim higher and think beyond the classroom. I express my heartfelt gratitude to our respected Principal and Vice Principal for their constant encouragement and guidance. Their support has played a vital role in the club's continued growth and success. As we look ahead, we remain committed to nurturing curiosity and empowering our students to become future thinkers, innovators, and problem-solvers. Let science lead the way.",
   },
   {
@@ -49,7 +54,7 @@ export const leadership: LeadershipMember[] = [
     name: "Roksana Khanam",
     designation: "Club In-Charge, MSC",
     role: "faculty-advisor",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/roksana.png",
+    image: contentImage("adminimages/roksana.png"),
     quote: "It gives me immense pleasure to share a few words on behalf of Manarat Science Club. Science is not just a subject learned in classrooms it is a mindset of inquiry, observation, and discovery. Our club is committed to nurturing this curiosity and empowering our students to think critically and creatively about the world around them. This year, we have introduced several new initiatives to inspire scientific engagement among our learners. One of our key activities is \"Science Talk,\" a platform where students confidently present scientific concepts, innovations, and real-world applications. This initiative has strengthened their communication skills and enhanced peer learning. We are also proud to begin publishing our own student-led science journals, showcasing research articles, experiment findings, creative scientific writing, and innovative ideas from our young scientists. This publication will serve as a space for students to express curiosity and develop academic writing skills with a scientific outlook. In addition to these, our workshops, exhibitions, experiments, and collaborative projects continue to make the Science Club a hub of exploration and hands-on learning. We remain dedicated to creating opportunities that help students grow as thinkers, innovators, and problem-solvers. I extend my heartfelt appreciation to our respected Principal and Vice Principal for their continuous encouragement, visionary leadership, and unwavering support. Their guidance has shaped the club's success and motivated our students to reach greater heights.",
   },
   {
@@ -154,7 +159,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-ajmain",
     name: "Mohammad Ajmain Faieq",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/ajmain.png",
+    image: contentImage("adminimages/ajmain.png"),
     batch: "2026–2027",
     role: "President",
     socials: {},
@@ -162,7 +167,7 @@ export const currentMembers: Member[] = [
     {
     id: "current-ehsas",
     name: "Ehsas Mostafa",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/ehsas.webp",
+    image: contentImage("adminimages/ehsas.webp"),
     batch: "2026–2027",
     role: "Vice President",
     socials: {},
@@ -170,7 +175,7 @@ export const currentMembers: Member[] = [
     {
     id: "current-nafisa",
     name: "Nafisa Nawar",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/nafisa.webp",
+    image: contentImage("adminimages/nafisa.webp"),
     batch: "2026–2027",
     role: "Vice President",
     socials: {},
@@ -178,7 +183,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-yasa",
     name: "Yasa Rahman",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/yasa.jpg",
+    image: contentImage("adminimages/yasa.jpg"),
     batch: "2026–2027",
     role: "General Secretary",
     socials: {},
@@ -188,7 +193,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-zarifah",
     name: "Zarifah Tasnim",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/zarifa.jpg",
+    image: contentImage("adminimages/zarifa.jpg"),
     batch: "2026–2027",
     role: "General Secretary",
     socials: {},
@@ -196,7 +201,7 @@ export const currentMembers: Member[] = [
     {
     id: "current-sakib",
     name: "Sakib Raihan",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/sakib.webp",
+    image: contentImage("adminimages/sakib.webp"),
     batch: "2026–2027",
     role: "Assistant Secretary",
     socials: {},
@@ -212,7 +217,7 @@ export const currentMembers: Member[] = [
       {
     id: "current-shayan",
     name: "M. Shayan Ibn Taufique",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/shayan.webp",
+    image: contentImage("adminimages/shayan.webp"),
     batch: "2026–2027",
     role: "Coordinator",
     socials: {},
@@ -220,7 +225,7 @@ export const currentMembers: Member[] = [
       {
     id: "current-wadud",
     name: "Akil Ibn Wadud",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/wadud.webp",
+    image: contentImage("adminimages/wadud.webp"),
     batch: "2026–2027",
     role: "Coordinator",
     socials: {},
@@ -228,7 +233,7 @@ export const currentMembers: Member[] = [
       {
     id: "current-junayna",
     name: "Junayna Ekrum",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/junayna.webp",
+    image: contentImage("adminimages/junayna.webp"),
     batch: "2026–2027",
     role: "Coordinator",
     socials: {},
@@ -236,7 +241,10 @@ export const currentMembers: Member[] = [
       {
     id: "current-rose",
     name: "Tarannum Rose",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/rose.heif",
+    // Stored bytes are genuine HEIC (`rose.png` is a byte-identical rename), so this
+    // renders only in Safari/iOS. A re-exported JPEG or PNG in the bucket would let
+    // `contentImage` optimise it for every browser.
+    image: bucketOriginal("adminimages/rose.heif"),
     batch: "2026–2027",
     role: "Coordinator",
     socials: {},
@@ -245,7 +253,7 @@ export const currentMembers: Member[] = [
     {
     id: "current-nureen",
     name: "Nureen Rayan",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/nureen.jpg",
+    image: contentImage("adminimages/nureen.jpg"),
     batch: "2026–2027",
     role: "Head of Department — Activity",
     socials: {},
@@ -253,7 +261,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-nusaiba",
     name: "Nusaiba Farha",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/nusaiba.png",
+    image: contentImage("adminimages/nusaiba.png"),
     batch: "2026–2027",
     role: "Head of Department — Activity",
     socials: {},
@@ -261,7 +269,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-omama",
     name: "Omama Salehin",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/Omama.jpeg",
+    image: contentImage("adminimages/Omama.jpeg"),
     batch: "2026–2027",
     role: "Head of Department — Activity",
     socials: {},
@@ -269,7 +277,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-alfe",
     name: "Shafe Islam Alfe",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/shafe.jpg",
+    image: contentImage("adminimages/shafe.jpg"),
     batch: "2026–2027",
     role: "Creative Director",
     socials: {},
@@ -277,7 +285,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-aarina",
     name: "Aarina Moitry",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/aarina.jpg",
+    image: contentImage("adminimages/aarina.jpg"),
     batch: "2026–2027",
     role: "Head of Department — Media",
     socials: {},
@@ -285,7 +293,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-ruhma",
     name: "Ruhma Hossain",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/ruhma.jpg",
+    image: contentImage("adminimages/ruhma.jpg"),
     batch: "2026–2027",
     role: "Head of Department — Academics",
     socials: {},
@@ -293,7 +301,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-safwan",
     name: "Sazid Hasan Safwan",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/safwan.jpg",
+    image: contentImage("adminimages/safwan.jpg"),
     batch: "2026–2027",
     role: "Head of Department — Academics",
     socials: {},
@@ -302,7 +310,7 @@ export const currentMembers: Member[] = [
     {
     id: "current-abrar",
     name: "Abrar Jawad",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/abrar.png",
+    image: contentImage("adminimages/abrar.png"),
     batch: "2026–2027",
     role: "Head of Department — IT",
     socials: {},
@@ -310,7 +318,7 @@ export const currentMembers: Member[] = [
   {
     id: "current-tahiad",
     name: "Mohammad Tahiad Islam",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/tahiad.jpg",
+    image: contentImage("adminimages/tahiad.jpg"),
     batch: "2026–2027",
     role: "Head of Department — Engineering & Innovation",
     socials: {},
@@ -322,7 +330,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-jaif",
     name: "Jaif Bin Morshed",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/jaif.png",
+    image: contentImage("adminimages/jaif.png"),
     batch: "2025–2026",
     role: "President",
     socials: {},
@@ -330,7 +338,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-ajmain",
     name: "Mohammad Ajmain Faieq",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/ajmain.jpg",
+    image: contentImage("adminimages/ajmain.jpg"),
     batch: "2025–2026",
     role: "Vice President",
     socials: {},
@@ -338,7 +346,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-nureen",
     name: "Nureen Rayan",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/nureen.png",
+    image: contentImage("adminimages/nureen.png"),
     batch: "2025–2026",
     role: "Vice President",
     socials: {},
@@ -346,7 +354,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-fariha",
     name: "Fariha Tasnim",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/fariha.png",
+    image: contentImage("adminimages/fariha.png"),
     batch: "2025–2026",
     role: "General Secretary",
     socials: {},
@@ -354,7 +362,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-yasa",
     name: "Yasa Rahman",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/yasa.jpg",
+    image: contentImage("adminimages/yasa.jpg"),
     batch: "2025–2026",
     role: "Assistant Secretary",
     socials: {},
@@ -362,7 +370,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-twaha-senior",
     name: "Samin Yasar Twaha",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/twaha.jpg",
+    image: contentImage("adminimages/twaha.jpg"),
     batch: "2025–2026",
     role: "Senior Executive",
     socials: {},
@@ -370,7 +378,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-farheen-senior",
     name: "Farheen Hasnat",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/farheen.png",
+    image: contentImage("adminimages/farheen.png"),
     batch: "2025–2026",
     role: "Senior Executive",
     socials: {},
@@ -378,7 +386,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-takrim",
     name: "Takrim Areefin",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/takrim.png",
+    image: contentImage("adminimages/takrim.png"),
     batch: "2025–2026",
     role: "Deputy Coordinator",
     socials: {},
@@ -386,7 +394,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-nusaiba",
     name: "Nusaiba Farha",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/nusaiba.png",
+    image: contentImage("adminimages/nusaiba.png"),
     batch: "2025–2026",
     role: "Deputy Coordinator",
     socials: {},
@@ -395,7 +403,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-golam",
     name: "Golam Sami",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/golamsami.jpg",
+    image: contentImage("adminimages/golamsami.jpg"),
     batch: "2025–2026",
     role: "Creativity HOD",
     socials: {},
@@ -403,7 +411,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-kashfee",
     name: "Kashfee Rahman",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/kashfee.png",
+    image: contentImage("adminimages/kashfee.png"),
     batch: "2025–2026",
     role: "Creativity HOD",
     socials: {},
@@ -411,7 +419,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-tamim",
     name: "Tamim Iqbal",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/tamimiqbal.jpg",
+    image: contentImage("adminimages/tamimiqbal.jpg"),
     batch: "2025–2026",
     role: "Media HOD",
     socials: {},
@@ -419,7 +427,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-maisha",
     name: "Maisha Siddiqua",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/maisha.png",
+    image: contentImage("adminimages/maisha.png"),
     batch: "2025–2026",
     role: "Creative Director",
     socials: {},
@@ -427,7 +435,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-nabiha",
     name: "Nabiha Zaman",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/nabiha.png",
+    image: contentImage("adminimages/nabiha.png"),
     batch: "2025–2026",
     role: "Activity HOD",
     socials: {},
@@ -435,7 +443,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-farheen-activity",
     name: "Farheen Hasnat",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/farheen.png",
+    image: contentImage("adminimages/farheen.png"),
     batch: "2025–2026",
     role: "Activity HOD",
     socials: {},
@@ -443,7 +451,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-twaha-events",
     name: "Samin Yasar Twaha",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/twaha.jpg",
+    image: contentImage("adminimages/twaha.jpg"),
     batch: "2025–2026",
     role: "Events HOD",
     socials: {},
@@ -451,7 +459,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-abrar",
     name: "Abrar Jawad",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/abrar.png",
+    image: contentImage("adminimages/abrar.png"),
     batch: "2025–2026",
     role: "IT HOD",
     socials: {},
@@ -459,7 +467,7 @@ export const legacyMembers: Member[] = [
   {
     id: "current-dhrubo",
     name: "Dhrubo Hasan",
-    image: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/adminimages/dhrubo.png",
+    image: contentImage("adminimages/dhrubo.png"),
     batch: "2025–2026",
     role: "Engineering & Innovation HOD",
     socials: {},
@@ -511,9 +519,9 @@ export interface ShowcaseImage {
 
 /** Past STEM Fest event photos. */
 export const competitionShowcase: ShowcaseImage[] = [
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image1.png", alt: "MSC STEM Fest 2025 — photo 1" },
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image2.png", alt: "MSC STEM Fest 2025 — photo 2" },
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image3.png", alt: "MSC STEM Fest 2025 — photo 3" },
-  { src: "https://ipmdyrxfptdsulfhxjkb.supabase.co/storage/v1/object/public/avatars/stemfest/image4.png", alt: "MSC STEM Fest 2025 — photo 4" },
+  { src: contentImage("stemfest/image1.png"), alt: "MSC STEM Fest 2025 — photo 1" },
+  { src: contentImage("stemfest/image2.png"), alt: "MSC STEM Fest 2025 — photo 2" },
+  { src: contentImage("stemfest/image3.png"), alt: "MSC STEM Fest 2025 — photo 3" },
+  { src: contentImage("stemfest/image4.png"), alt: "MSC STEM Fest 2025 — photo 4" },
  
 ];

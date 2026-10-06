@@ -2,6 +2,7 @@ import { GraduationCap } from "lucide-react";
 
 import PageHeader from "@/components/admin/page-header";
 import { searchAmbassadorRegistrations } from "@/lib/actions/registrations";
+import { SECTION_ACCENT, adminAccentStyle } from "@/lib/admin/accents";
 import {
   ambassadorSource,
   describeList,
@@ -39,7 +40,10 @@ export default async function CampusAmbassadorAdminPage({
   }));
 
   return (
-    <div className="flex flex-col gap-8 p-6 md:p-10">
+    <div
+      style={adminAccentStyle(SECTION_ACCENT.campusAmbassador)}
+      className="flex flex-col gap-8 px-6 py-8 md:px-10 md:py-12"
+    >
       <PageHeader
         eyebrow="Form responses"
         title={source.reportTitle}

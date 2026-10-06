@@ -2,7 +2,9 @@
 
 import { useId } from "react";
 import type { AdminSourceConfig } from "@/lib/admin/filters";
+import { cn } from "@/lib/utils";
 import { FilterField } from "./filter-controls";
+import { adminControl, adminLabel, adminTextButton } from "./styles";
 
 /**
  * The "what filters to use" half of the export dialog.
@@ -39,32 +41,23 @@ export default function ExportFilterFields({
 
   return (
     <div>
-      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-body text-xs font-semibold tracking-wider text-ink/45 uppercase">
-          Filters
-        </h3>
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className={adminLabel}>Filters</h3>
         {activeCount > 0 && (
-          <button
-            type="button"
-            onClick={onClearAll}
-            className="font-body text-sm text-ink/60 underline underline-offset-2 transition-colors hover:text-manara-teal"
-          >
+          <button type="button" onClick={onClearAll} className={adminTextButton}>
             Clear all {activeCount} filter{activeCount === 1 ? "" : "s"}
           </button>
         )}
       </div>
 
-      <p className="mb-3 font-body text-xs text-ink/45">
+      <p className="mb-3 font-space-body text-xs leading-relaxed text-admin-muted">
         Starts as what the table is showing. Change anything here and it applies to
         this export only.
       </p>
 
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-40 flex-1 basis-full">
-          <label
-            htmlFor={searchId}
-            className="mb-1 block font-body text-xs font-semibold tracking-wider text-ink/40 uppercase"
-          >
+          <label htmlFor={searchId} className={cn(adminLabel, "mb-1.5 block")}>
             Search
           </label>
           <input
@@ -73,7 +66,7 @@ export default function ExportFilterFields({
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder={source.searchPlaceholder}
-            className="w-full rounded-xl border border-ink/10 bg-cream/40 px-3 py-2 font-body text-sm text-ink outline-none transition-colors placeholder:text-ink/35 focus:border-manara-teal"
+            className={adminControl}
           />
         </div>
 

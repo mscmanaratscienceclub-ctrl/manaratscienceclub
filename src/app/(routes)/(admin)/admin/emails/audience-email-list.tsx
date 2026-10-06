@@ -2,6 +2,7 @@
 
 import { Mail } from "lucide-react";
 import type { BulkEmailRecipient } from "@/lib/admin/bulk-email";
+import { adminLabel } from "@/components/admin/styles";
 
 /**
  * The actual email addresses a blast will reach, shown so an admin can see exactly who
@@ -21,22 +22,22 @@ export default function AudienceEmailList({
   if (recipients.length === 0) return null;
 
   return (
-    <div className="mt-4 rounded-xl border border-ink/10 bg-cream/40">
-      <header className="flex items-center gap-2 border-b border-ink/10 px-3 py-2">
-        <Mail className="h-3.5 w-3.5 text-ink/40" aria-hidden="true" />
-        <p className="font-body text-xs font-semibold uppercase tracking-wider text-ink/40">
+    <div className="mt-4 overflow-hidden rounded-[6px] border border-admin-line">
+      <header className="flex items-center gap-2 border-b border-admin-line bg-admin-sunken px-3 py-2">
+        <Mail className="size-3.5 text-admin-muted" aria-hidden="true" />
+        <p className={adminLabel}>
           Going to {recipients.length}{" "}
           {recipients.length === 1 ? "address" : "addresses"}
         </p>
       </header>
-      <ul className="max-h-56 divide-y divide-ink/5 overflow-y-auto">
+      <ul className="max-h-56 divide-y divide-admin-line overflow-y-auto">
         {recipients.map((recipient) => (
           <li
             key={recipient.id}
-            className="flex flex-wrap items-baseline gap-x-2 px-3 py-1.5 font-body text-sm"
+            className="flex flex-wrap items-baseline gap-x-2 px-3 py-1.5 font-space-body text-sm"
           >
-            <span className="font-medium text-ink/80">{recipient.name}</span>
-            <span className="break-all font-mono text-xs text-ink/55">
+            <span className="font-medium text-admin-ink">{recipient.name}</span>
+            <span className="break-all font-mono text-xs text-admin-muted">
               {recipient.email}
             </span>
           </li>

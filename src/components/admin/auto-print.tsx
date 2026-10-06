@@ -10,10 +10,20 @@ import { useEffect } from "react";
  * file is written by the browser, on the admin's machine — the server never
  * generates one, so there is nothing to store.
  *
- * It waits for `document.fonts.ready` before printing. The report is set in the
- * club's own typefaces, and printing before they arrive is how a print preview
- * ends up in a fallback font — most visible on the `৳` sign and the Bengali SMS
- * bodies, the two things in here that a system font may not even have.
+ * It waits for **two** things, in this order, because each protects a different
+ * half of the page:
+ *
+ * 1. `load` — the *document*. `admin/loading.tsx` puts every admin route inside a
+ *    Suspense boundary, so a report is a continuation of its own response: the
+ *    shell flushes with the skeleton, and the masthead, the scope strip and all
+ *    four hundred-odd rows arrive afterwards on the same still-open document. The
+ *    dialog must not open while that is happening, because a print snapshot of a
+ *    half-written page is a half-written PDF — `load` is the one signal that says
+ *    the document has finished arriving.
+ * 2. `document.fonts.ready` — the *type*. The report is set in the club's own
+ *    faces, and printing before they arrive is how a preview ends up in a
+ *    fallback font — most visible on the `৳` sign and the Bengali SMS bodies, the
+ *    two things here a system font may not even have.
  *
  * The only script on the report page, and it renders nothing.
  */
@@ -22,6 +32,7 @@ export default function AutoPrint() {
     let cancelled = false;
 
     const openPrintDialog = async () => {
+      await documentComplete();
       try {
         await document.fonts.ready;
       } catch {
@@ -40,4 +51,12 @@ export default function AutoPrint() {
   }, []);
 
   return null;
+}
+
+/** Resolves once the browser has finished writing this document. */
+function documentComplete(): Promise<void> {
+  if (document.readyState === "complete") return Promise.resolve();
+  return new Promise((resolve) => {
+    window.addEventListener("load", () => resolve(), { once: true });
+  });
 }

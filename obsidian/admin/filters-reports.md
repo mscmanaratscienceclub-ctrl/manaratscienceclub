@@ -1,6 +1,6 @@
 ---
 tags: [admin, stable]
-updated: 2026-09-14
+updated: 2026-10-06
 ---
 
 # Admin filters & printed reports
@@ -50,7 +50,9 @@ turns into a `404`.
 | `q` | Search box — matched against the columns that source's query searches |
 | `sort` | One of `newest`, `oldest`, `name-asc`, `name-desc`, `amount-asc`, `amount-desc` |
 | `page` | 1-based page of the table |
+| `days` | Dashboard only — the activity chart's span: `7`, `30` or `90` |
 | *(field id)* | One filter, e.g. `?from=2026-09-01&type=campus` |
+| *(field id)*, prefixed | The same filter with an **operator**: `!value` for *not*, `=value` for a text field's *is exactly* |
 
 The names `q`, `sort` and `page` are reserved (`FILTER_QUERY_PARAM`,
 `FILTER_SORT_PARAM`, `FILTER_PAGE_PARAM`) and may not be a field id.
@@ -68,6 +70,16 @@ hrefs as strings.
 erroring: an unknown field id, a value outside a `select`'s whitelist, a
 malformed date. A hand-edited `?page=999` lands on the last real page, not on an
 empty one that would read as "no matches".
+
+`days` is the odd one out: it is the dashboard chart's span, not a filter, so its
+key (`TREND_RANGE_PARAM`) is declared beside the control in
+`src/components/admin/range-segments.tsx` and `parseAdminQuery` never sees it.
+Two guards keep a hand-edited value from breaking the page: `parseTrendRange`
+degrades anything outside `TREND_RANGES` to `DASHBOARD_TREND_DAYS` — an empty
+chart is a worse answer than a default one — and `getRegistrationTrend` clamps to
+`7…90` whatever the caller passes. `pnpm db:verify` §3 then checks every offered
+span against live data, both that the JS axis and the SQL window start on the same
+local day and that every day bucket inside the window has a column on the axis.
 
 ## Filter kinds → SQL
 
@@ -91,6 +103,85 @@ Fields marked `primary: true` render in the always-visible row; the rest sit
 behind **More filters**, which opens itself whenever a hidden filter is active so
 a chip is never the only evidence of a filter that is narrowing the list.
 
+## Operators
+
+A `text` or `select` field compares through an **operator** as well as a value,
+chosen in a small picker in front of the control (`filter-controls.tsx`):
+
+| `kind` | Operators offered (default first) |
+|--------|-----------------------------------|
+| `text` | *Contains* (`similar`) · *Is exactly* (`is`) · *Does not contain* (`not`) |
+| `select` | *Is* (`is`) · *Is not* (`not`) |
+| `date` | none — the two bounds **are** the range |
+| `number` | none — a bound is already the question |
+
+**The operator rides on the value, not on a second parameter.** The URL contract
+is unchanged: a value that is not the field's default is written with a
+one-character prefix — `!` for `not`, `=` for a text field's `is` — so
+`?school=!Manarat` reads "school does not contain Manarat" and
+`?segment=!lfr` "did not enter LFR". Values are therefore stored
+in `AdminQueryState.values` **exactly as the URL spells them**, and
+`readFilterValue` (in `filters.ts`) is the single place that takes one apart:
+only `parseAdminQuery`, the action layer, and the operator picker decode a prefix,
+and only `encodeFilterValue` writes one.
+
+Validation happens **after** the prefix is stripped, so a `select`'s whitelist
+still sees the raw option value — `!verified` validates as `verified`, negated. A
+value that does not decode is dropped rather than passed on: a filter this build
+no longer recognises narrows nothing instead of reaching Postgres as a comparison
+against a value no option offers.
+
+The operator also shapes what a chip, the report's scope strip and the
+spreadsheet's scope sheet say: `activeFilterList` renders the non-default
+operators as a phrase, so a chip reads "School: does not contain Manarat" and the
+printed report's *Active filters* line matches it character for character.
+
+One deliberate asymmetry: a **negative** comparison on a `select` is SQL's plain
+`<>`, so it excludes rows where that column is empty. The only nullable select in
+the catalogue is the ambassador `gender`, where a row filed before the form asked
+has no answer — "is not Female" excluding it is the honest reading, since an
+unrecorded value is not a statement that the answer was something else.
+
+## The event filter (STEM Fest)
+
+`stemfest.segment` is a **select of every event the fest offers** — Mathematics,
+Physics, Bio-Chem, General Science, Computer Science, LFR, Robosoccer, Project
+Display, EA FC 26, Clash Royale, Minecraft — built from `stemfestEvents`, the same
+catalogue the registration form's step 02 picks from, so every option here is
+something somebody could actually have entered. It is a primary filter, and it is
+also in `BULK_EMAIL_FILTER_IDS`, so the bulk-email audience gets the same dropdown.
+
+The list is **grouped, not flattened**: each option carries a `group` naming its
+parent segment, and `FilterField` renders one `<optgroup>` per heading — so an
+admin narrows to "Mathematics" while still seeing which segment it belongs to.
+`group` is presentation only: it never reaches the URL, and validation reads
+`value` alone.
+
+Two names survive from the older shape of this data, and both are deliberate:
+
+- The **field id stays `segment`**, because that is the column these names are
+  stored in and the query key links already use. Its *values* are event ids.
+- The stored column holds the **events** a registration entered (`describeEntry`
+  joins the parts of one entry with ` · ` and the entries with `, `), never a
+  segment name. So `segmentMatch` in `src/lib/actions/registrations.ts` resolves
+  the id through `getStemfestEvent()` and matches **that one name** with
+  `ILIKE '%Event Name%'`; `not` keeps the rows that entered something else.
+
+One substring match is only safe because no catalogue event name contains another,
+and because every event the brief counts is reachable by that predicate — both are
+asserted against the live table by `pnpm db:verify`, whose per-event counts use the
+identical join. The old segment-level expansion helper `stemfestSegmentEventNames()`
+is gone; nothing expands a segment into its events any more.
+
+> [!note] It used to be free text, then four coarse options
+> `segment` was a `text` filter until 2026-10-05, matched as `ILIKE '%value%'`
+> against the same column. It became a select of the four **segments**, and on
+> 2026-10-06 the select of every **event**. A bookmark from either earlier shape
+> (`?segment=Robotics`, `?segment=olympiads`) no longer validates and is dropped
+> by `parseAdminQuery`, leaving the list unfiltered rather than erroring.
+> `?segment=project-display` is the one that survives by coincidence: the event
+> and its segment share an id, and the event name is the same text.
+
 ## Filter catalogue
 
 | Source | Field id | Kind | Notes |
@@ -104,11 +195,12 @@ a chip is never the only evidence of a filter that is narrowing the list.
 | | `from`, `to` | date | Submission range — primary |
 | | `classSection`, `roll`, `studentCode` | text | Behind More filters |
 | | `attendanceWeek`, `parentsComfort`, `campusHesitation` | text | Free-text answers — behind More filters |
-| `stemfest` | `payment` | select | `verified` · `pending` — primary |
+| `stemfest` | `payment` | select | `pending` · `verified` · `rejected` — primary, matched on the **effective** status |
 | | `class` | select | From `stemfestClasses` — primary |
-| | `school` | text | Primary |
+| | `school` | text | Primary, operators |
 | | `from`, `to` | date | Submission range — primary |
-| | `segment`, `transactionId` | text | Behind More filters |
+| | `segment` | select | The fest's **events**, from `stemfestEvents` in `<optgroup>`s by segment — primary, operators. Label reads "Event"; the key stays `segment` |
+| | `transactionId` | text | Behind More filters |
 | `sms` | `status` | select | `matched` · `unmatched` · `ignored` — primary |
 | | `sender` | text | Primary |
 | | `from`, `to` | date | `receivedAt` range — primary |
@@ -157,7 +249,7 @@ in `filters.ts` because a `"use server"` module may only export async functions.
 
 ## Printing
 
-Two surfaces reach paper, and both end at the browser's own print dialog — there
+Three surfaces reach paper, and all end at the browser's own print dialog — there
 is no PDF library in the stack (ADR-0032):
 
 1. **`/admin/reports/[kind]`** — a real server-rendered page. It parses the
@@ -165,11 +257,19 @@ is no PDF library in the stack (ADR-0032):
    `getAdminReportRows`, and prints a masthead (club name, title, generated
    stamp), a scope strip (rows, sort, active filters, and the column subset when
    the export dialog chose one), the sorted table and a closing footer.
-2. **`ReportPrintButton`** calls `window.print()` by hand. **`AutoPrint`** does it
+2. **`/admin/reports/brief`** — the analytics brief reached from the dashboard's
+   **Print a report** and from ⌘K. It is not a source, so it has no filters, no
+   column subset and no scope strip: it prints a short document of five sections
+   instead of one long table. See below.
+3. **`ReportPrintButton`** calls `window.print()` by hand. **`AutoPrint`** does it
    for you when the page arrives with `print=1` — which is what makes the export
-   dialog's "PDF" choice a one-click PDF. It waits for `document.fonts.ready`
-   first, because the `৳` sign and the Bengali SMS bodies are the two things a
-   fallback font shows up on most clearly.
+   dialog's "PDF" choice a one-click PDF, and what the dashboard's
+   **Print a report** link uses. It waits for two things, in this order: `load`,
+   because every admin route renders behind `admin/loading.tsx` and a report's
+   rows therefore arrive in *continuation* chunks — printing a half-written page
+   makes a half-written file; then `document.fonts.ready`, because the `৳` sign and
+   the Bengali SMS bodies are the two things a fallback font shows up on most
+   clearly.
 
 The `@media print` block in `src/app/globals.css` styles that document structure
 into a clean A4 PDF: a tinted band behind the repeating table header, zebra rows
@@ -185,21 +285,91 @@ ADR-0033 — and Chrome does not support `@page` margin boxes, so the running
 the strip has nowhere to draw and the document carries its own 14/18mm padding
 on `[data-print="report"]`. Keep the margin at zero or the strip returns.
 
+> [!warning] What that costs a long report
+> The padding above sits on a box that **fragments**, and a fragmented box's
+> vertical padding applies only to its first and last fragment. So sheets 2…N of a
+> 400-row report carry no top or bottom padding and sit flush to the paper edge —
+> where a printer's own unprintable band (≈5mm) can clip the first row. The
+> horizontal padding *does* repeat, so the sides are never at risk.
+>
+> There is no print-CSS answer: an in-flow box cannot give every fragment room, and
+> the alternative — non-zero `@page` margins — brings the browser's strip back. This
+> is a limit of letting the browser paginate, not of these rules, and only real page
+> geometry on the server removes it.
+
 The report page also exports `generateMetadata`, because the tab title is the
 filename Chrome proposes in "Save as PDF" — through the root template it becomes
 `STEM Fest Registrations | Manarat Science Club.pdf`.
 
-Six hooks — set by the admin layout, the shell, the sidebar and the report page —
-tell the print CSS what it is looking at, so no component has to know how it is
-printed:
+### The registration brief — `/admin/reports/brief`
+
+Not a source: no `AdminSourceConfig`, no `parseAdminQuery`, no column subset. The
+route is a **static sibling** of the dynamic one (ADR-0038) because the brief has
+nothing to parametrise — sharing `[kind]` would have meant a config that says
+"this one is different" and a `kind` union the table pages cannot render. `pnpm
+build` lists `ƒ /admin/reports/brief` beside `ƒ /admin/reports/[kind]`, static
+taking precedence.
+
+One server action, `getRegistrationBrief` in `src/lib/actions/registrations.ts`,
+returns a `RegistrationBrief` (`src/lib/admin/brief.ts`) that the page lays out as
+five sections:
+
+| § | Says | Comes from |
+|---|------|-----------|
+| 1 | The trend, and whether it is rising or falling | 21 local days bucketed in SQL, then `summarizeTrend` for the 7-day window, the prior 7, the delta and the direction |
+| 2 | Which segments are booming and which are down | `toMovementRows` over the four STEM Fest segments, each with its events |
+| 3 | The schools with the most entries | Top 6 by `lower(btrim(school))`, with Manarat's spelling variants folded into one label |
+| 4 | The most effective referrers, batch vs campus ambassador | Top 10 names, each tagged `batch` / `campus` / `both` / `unmatched` by `referrerKindOf` |
+| 5 | An estimate for tomorrow | `estimateNextDay` over section 1's last 7 days |
+
+The action is **one transaction with sequential statements**. `withDbTimeout`
+borrows a single pooled connection, and the Supabase pooler is sized for roughly
+five — six parallel reads from one page would be six connections. Payment status
+comes from `stemfestEffectivePaymentStatus()` so the brief cannot disagree with the
+table it summarises, and a day is a **local** day:
+`(created_at at time zone 'Asia/Dhaka')::date`. Offsets in those expressions need
+an explicit `::int` or `date - $1` silently becomes the date-difference operator.
+
+Section 5 is arithmetic the reader can check, printed as a `Method ·` sentence: a
+least-squares line through the last seven local days read one day past the end,
+clamped at twice the week's busiest day, with a band of `max(1, residual scatter,
+20% of the figure)`. Not a mean — a mean answers "what has a day been lately" and
+predicts the past on a growth week; a line answers "what is a day right now". It
+prints `low – expected – high` plus confidence (`moderate`/`low`), and any notes
+the estimator adds (thin history, the cap biting, wide scatter, direction).
+
+> [!warning] Sections 1 and 2 count different things
+> The trend counts **forms**; the segment table counts **event entries**, and one
+> form that entered two events counts under both. When the entry total exceeds the
+> window's registrations the page prints the difference rather than letting a
+> reader find it as a contradiction.
+
+`pnpm db:verify` mirrors all six statements against the live database (its §6) and
+asserts the arithmetic: payment components summing to the total, buckets matching
+the span, each segment equal to the sum of its own catalogue events, no event name
+a substring of another, every event the brief counts reachable by the event
+filter's own `ILIKE` — one extra all-time count on top of the six — referrer
+tallies matching the referral count, and
+`low ≤ expected ≤ high` with the estimate's date one past the last trend day.
+**Change the brief, change the mirror, run `pnpm db:verify`** — none of this is
+statically checkable.
+
+The hooks below — set by the admin layout, the shell, the sidebar, the palette and
+the report pages — tell the print CSS what it is looking at, so no component has to
+know how it is printed:
 
 | Hook | Element | Effect on paper |
 |------|---------|-----------------|
 | `data-print="shell"` | `(admin)/layout.tsx` root | Unwinds `h-screen` + `overflow-hidden` |
-| `data-print="chrome"` | `admin/sidebar.tsx`, `admin-shell.tsx`'s mobile top bar and drawer, the report's back-link row | `display: none` |
+| `data-print="chrome"` | `admin/sidebar.tsx`, `admin-shell.tsx`'s mobile top bar and drawer, `command-palette.tsx`'s overlay, the report's back-link row | `display: none` |
 | `data-print="content"` | `(admin)/layout.tsx` scroll column | Drops the flex/overflow box |
-| `data-print="report"` | `reports/[kind]/page.tsx` | A4 document — masthead, scope strip, table |
+| `data-print="report"` | `reports/[kind]/page.tsx`, `reports/brief/page.tsx` | A4 document; the brief adds `.brief-document`, which restates the type ladder in pt |
 | `data-print="footer"` | the report's closing line | In-document footer under the table |
+
+Anything whose class contains `admin-wash`, `admin-edge`, `admin-fill` or
+`admin-sheen` also loses its `background-image` under `[data-print]` — the
+section accents and gradient layer are screen chrome, and paper keeps the flat
+treatment (ADR-0036).
 
 > [!warning] A blank second page is the usual symptom
 > The admin shell is a fixed-height, scrollable viewport. Without unwinding it, a
@@ -280,5 +450,6 @@ real zero must not look the same to an admin.
 
 ## Related
 
-[[decisions-log]] (ADR-0029, ADR-0026) · [[design-system]] ·
+[[decisions-log]] (ADR-0029, ADR-0026, ADR-0038 for the brief; ADR-0036 and
+ADR-0037 for the panel's accent and type layer) · [[design-system]] ·
 [[component-conventions]] · [[database-supabase]] · [[sms-forwarder]]

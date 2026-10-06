@@ -32,6 +32,8 @@ if (process.env.NODE_ENV !== "production") {
 export {
   AVATARS_BUCKET,
   bucketImage,
+  bucketOriginal,
+  contentImage,
   renderedImageUrl,
   storagePublicUrl,
   avatarUrl,

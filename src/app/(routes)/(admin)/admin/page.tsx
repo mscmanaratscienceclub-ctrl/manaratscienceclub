@@ -1,14 +1,28 @@
 import Link from "next/link";
 import {
   AlertTriangle,
+  ArrowRight,
   BadgeCheck,
   Banknote,
+  BarChart3,
   CalendarDays,
+  Clock,
   FlaskConical,
+  Inbox,
+  PieChart,
+  Printer,
+  School,
+  Share2,
+  Trophy,
   Users,
 } from "lucide-react";
 
-import { DonutChart, RankedBars, StackedBarChart } from "@/components/admin/charts";
+import { SECTION_ACCENT, adminAccentStyle } from "@/lib/admin/accents";
+
+import ActivityChart from "@/components/admin/activity-chart";
+import DonutChart from "@/components/admin/donut-chart";
+import RangeSegments, { TREND_RANGE_PARAM } from "@/components/admin/range-segments";
+import { RankedBars } from "@/components/admin/charts";
 import PageHeader from "@/components/admin/page-header";
 import RecentRegistrationsTable from "@/components/admin/recent-registrations-table";
 import { Panel, StatCard } from "@/components/admin/stat-card";
@@ -19,11 +33,13 @@ import {
   type StemfestStats,
 } from "@/lib/actions/registrations";
 import {
+  parseTrendRange,
   paymentMixSlices,
   stemfestTrendSeries,
   type ChartTone,
   type PaymentMixId,
 } from "@/lib/admin/dashboard";
+import type { RawSearchParams } from "@/lib/admin/filters";
 import { UNAVAILABLE, formatCount, unwrap } from "@/lib/admin/source-status";
 import {
   formatBdt,
@@ -71,7 +87,13 @@ function collectedNote(stats: StemfestStats | null): string {
   return "Totals from the amounts each verified registration was asked to pay.";
 }
 
-export default async function AdminDashboardPage() {
+export default async function AdminDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>;
+}) {
+  const days = parseTrendRange((await searchParams)[TREND_RANGE_PARAM]);
+
   // Three independent sources — STEM Fest figures, their daily trend and the
   // secondary breakdown. The pool is sized for four, so this is inside its
   // budget (see `src/db/index.ts`). Each action groups in SQL and issues its own
@@ -80,7 +102,7 @@ export default async function AdminDashboardPage() {
   // dashboard whose others are healthy.
   const settled = await Promise.allSettled([
     getStemfestStats(),
-    getRegistrationTrend(),
+    getRegistrationTrend(days),
     getDashboardBreakdown(),
   ]);
 
@@ -167,7 +189,10 @@ export default async function AdminDashboardPage() {
     })) ?? null;
 
   return (
-    <div className="flex flex-col gap-8 p-6 md:p-10">
+    <div
+      style={adminAccentStyle(SECTION_ACCENT.dashboard)}
+      className="flex flex-col gap-8 px-6 py-8 md:px-10 md:py-12"
+    >
       <PageHeader
         eyebrow="Overview"
         title="Grand Admin"
@@ -175,14 +200,25 @@ export default async function AdminDashboardPage() {
         icon={FlaskConical}
         action={
           <>
-            <span className="rounded-lg border border-manara-teal/20 bg-manara-teal/[0.06] px-3 py-1.5 font-body text-xs font-medium text-manara-teal">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-admin-positive-bg px-2.5 py-1 font-space-body text-2xs font-medium tracking-[0.05em] text-admin-positive-ink uppercase">
+              <span
+                aria-hidden="true"
+                className="size-1.5 rounded-full bg-admin-positive-ink"
+              />
               Accepting responses
             </span>
             <Link
-              href="/admin/reports/stemfest"
-              className="rounded-lg border border-ink/10 px-3 py-1.5 font-body text-xs font-medium text-ink/60 transition-colors hover:border-manara-teal/40 hover:text-manara-teal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-manara-teal"
+              href="/admin/reports/brief"
+              className="inline-flex items-center gap-2 rounded-[6px] border border-admin-line bg-admin-surface px-3 py-1.5 font-space-body text-xs font-medium text-admin-ink-soft transition-colors hover:border-admin-ink/35 hover:text-admin-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-admin-ink"
             >
+              <Printer className="size-3.5" aria-hidden="true" />
               Print a report
+            </Link>
+            <Link
+              href="/admin/reports/stemfest"
+              className="font-space-body text-xs text-admin-muted underline underline-offset-[3px] transition-colors hover:text-admin-ink"
+            >
+              Data table
             </Link>
           </>
         }
@@ -191,10 +227,10 @@ export default async function AdminDashboardPage() {
       {degraded && (
         <div
           role="status"
-          className="flex items-start gap-3 rounded-2xl border border-amber-200/60 bg-amber-50 p-4 text-amber-900"
+          className="flex items-start gap-3 rounded-[10px] border border-admin-line bg-admin-warn-bg p-4 text-admin-warn-ink"
         >
-          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" />
-          <p className="font-body text-sm">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <p className="font-space-body text-sm">
             Some figures could not be loaded and show as &ldquo;{UNAVAILABLE}&rdquo;.
             The numbers below are incomplete — reload to retry.
           </p>
@@ -221,13 +257,15 @@ export default async function AdminDashboardPage() {
         <Panel
           className="xl:col-span-2"
           title="Registration activity"
-          description="STEM Fest entries a day over the last 30 days."
+          description={`STEM Fest entries a day over the last ${days} days.`}
+          icon={BarChart3}
+          action={<RangeSegments value={days} basePath="/admin" />}
         >
           {trend ? (
-            <StackedBarChart
+            <ActivityChart
               points={trend}
               series={stemfestTrendSeries}
-              ariaLabel="Bar chart of STEM Fest entries per day over the last 30 days."
+              ariaLabel={`Bar chart of STEM Fest entries per day over the last ${days} days.`}
             />
           ) : (
             <PanelEmpty message="Activity could not be loaded." />
@@ -237,6 +275,7 @@ export default async function AdminDashboardPage() {
         <Panel
           title="Payment progress"
           description="STEM Fest registrations by payment status."
+          icon={PieChart}
         >
           {stemfestStats ? (
             <DonutChart
@@ -259,6 +298,7 @@ export default async function AdminDashboardPage() {
         <Panel
           title="Most-entered events"
           description="STEM Fest events by number of registrations."
+          icon={Trophy}
         >
           {eventRows && eventRows.length > 0 ? (
             <RankedBars
@@ -284,6 +324,7 @@ export default async function AdminDashboardPage() {
 
         <Panel
           title="Schools represented"
+          icon={School}
           description={
             schoolTotal === null
               ? "STEM Fest entries by school."
@@ -315,6 +356,7 @@ export default async function AdminDashboardPage() {
 
         <Panel
           title="Reference leaderboard"
+          icon={Share2}
           description={
             breakdown === null
               ? "Who referred the most STEM Fest entries."
@@ -343,12 +385,14 @@ export default async function AdminDashboardPage() {
       <Panel
         title="Recent registrations"
         description="The latest STEM Fest entries."
+        icon={Clock}
         action={
           <Link
             href="/admin/science-competition"
-            className="font-body text-sm font-medium text-manara-teal transition-colors hover:text-manara-teal/75"
+            className="inline-flex items-center gap-1.5 font-space-body text-sm font-medium text-admin-ink-soft underline underline-offset-[3px] transition-colors hover:text-admin-ink"
           >
             View all
+            <ArrowRight className="size-3.5" aria-hidden="true" />
           </Link>
         }
       >
@@ -356,11 +400,11 @@ export default async function AdminDashboardPage() {
           <PanelEmpty message="Recent registrations could not be loaded." />
         ) : breakdown.recent.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Users className="mb-3 size-9 text-ink/20" />
-            <p className="font-body text-sm text-ink/50">
+            <Users className="size-6 text-admin-muted" aria-hidden="true" />
+            <p className="mt-4 font-space-body text-sm text-admin-ink-soft">
               No STEM Fest registrations yet.
             </p>
-            <p className="mt-1 font-body text-xs text-ink/40">
+            <p className="mt-1 font-space-body text-xs text-admin-muted">
               Entries appear here the moment the first one arrives.
             </p>
           </div>
@@ -375,8 +419,14 @@ export default async function AdminDashboardPage() {
 /** The "we asked and got nothing usable" state inside a panel body. */
 function PanelEmpty({ message }: { message: string }) {
   return (
-    <div className="flex min-h-32 items-center justify-center rounded-xl border border-dashed border-ink/10 px-6 py-10 text-center">
-      <p className="font-body text-sm text-ink/45">{message}</p>
+    <div className="flex min-h-32 flex-col items-center justify-center gap-3 rounded-[6px] border border-dashed border-admin-line px-6 py-10 text-center">
+      <span
+        aria-hidden="true"
+        className="flex size-9 items-center justify-center rounded-[8px] bg-admin-accent-soft text-admin-accent-ink"
+      >
+        <Inbox className="size-4" />
+      </span>
+      <p className="font-space-body text-sm text-admin-muted">{message}</p>
     </div>
   );
 }

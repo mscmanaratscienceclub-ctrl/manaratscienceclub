@@ -7,6 +7,13 @@
 @theme {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* The admin panel's micro step: overlines, table column heads, chart ticks.
+     Registered as a real scale step so those labels read `text-2xs` instead of a
+     size invented at each call site. The panel sets its own value for it in
+     `@layer base`. */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1.45;
 }
 
 :root {
@@ -89,6 +96,139 @@
      `@media print` block at the end of this file. */
   --print-title-size: 16pt;
   --print-rule: color-mix(in srgb, var(--ink) 28%, transparent);
+
+  /* ── Admin panel tokens ────────────────────────────────────────
+     Warm monochrome and four washed-out pastels, for the admin panel only —
+     the public site keeps its own palette above. The panel is a working
+     surface rather than a page: pure white cards on a warm bone canvas,
+     hairline rules, and colour spent only where it carries meaning (a
+     payment status, a warning). No shadow is heavier than a lifted hairline.
+     See ADR-0034 in `obsidian/meta/decisions-log.md`. */
+  --admin-canvas: #f7f6f3;
+  --admin-surface: #ffffff;
+  --admin-sunken: #fbfbfa;
+  --admin-line: #eaeaea;
+  --admin-ink: #111111;
+  --admin-ink-hover: #333333;
+  --admin-ink-soft: #2f3437;
+  /* Secondary text. Darkened from #787774 because that measured 4.48:1 on
+     surface, 4.32:1 on sunken and 4.14:1 on canvas — under the 4.5:1 AA floor
+     for the panel's 12–15px secondary text. #6d6c69 is 5.25 / 5.07 / 4.86 on
+     the same three, still clearly quieter than --admin-ink-soft (12.6:1), and
+     one step lighter than --admin-neutral-ink so the two stay distinct. */
+  --admin-muted: #6d6c69;
+  /* Tags and status pills. Background is the wash, the text is the ink that
+     belongs to it — the pair from the minimalist palette, never mixed. */
+  --admin-positive-bg: #edf3ec;
+  --admin-positive-ink: #346538;
+  --admin-info-bg: #e1f3fe;
+  --admin-info-ink: #1f6c9f;
+  --admin-warn-bg: #fbf3db;
+  --admin-warn-ink: #956400;
+  --admin-danger-bg: #fdebec;
+  --admin-danger-ink: #9f2f2d;
+  --admin-neutral-bg: #f1f0ee;
+  --admin-neutral-ink: #6b6a67;
+
+  /* ── Admin section accents ─────────────────────────────────────
+     The panel's colour identity, one hue per section, so "where am I" is
+     answered by colour before it is answered by reading. Three values per
+     hue, always used as a triple:
+
+     - the plain name is the *solid* — a rule, a marker, a filled chip;
+     - `-soft` is the wash it sits on, card-sized;
+     - `-ink` is the darkened form for text and icons on white.
+
+     Hues are the club's own brand colours (`--manara-*` above), pushed dark
+     enough to read as ink on a warm bone canvas rather than as candy. A hue
+     is never the only carrier of meaning: it names a section, while the
+     pastels above still carry status. */
+  --admin-accent-teal: #0f7c86;
+  --admin-accent-teal-soft: #e2f2f1;
+  --admin-accent-teal-ink: #0b5c64;
+  --admin-accent-violet: #6d3bd1;
+  --admin-accent-violet-soft: #ece7fd;
+  --admin-accent-violet-ink: #5a2fb0;
+  --admin-accent-amber: #d98c00;
+  --admin-accent-amber-soft: #fdf0d5;
+  --admin-accent-amber-ink: #8a5a00;
+  --admin-accent-rose: #d2438a;
+  --admin-accent-rose-soft: #fde7f1;
+  --admin-accent-rose-ink: #a72d6b;
+  --admin-accent-emerald: #18915f;
+  --admin-accent-emerald-soft: #e3f5ea;
+  --admin-accent-emerald-ink: #146c47;
+  --admin-accent-azure: #2f6fd0;
+  --admin-accent-azure-soft: #e6eefc;
+  --admin-accent-azure-ink: #21559f;
+
+  /* The *live* accent. A section scopes its own hue by setting these three on
+     its root (`adminAccentStyle` in `src/lib/admin/accents.ts`); everything
+     inside — panels, chips, table headings, the primary button — is written
+     against `--admin-accent*` and follows along. Teal is the default, so a
+     surface outside any scope (a portalled dialog, a toast) still belongs to
+     the panel instead of painting black. */
+  --admin-accent: var(--admin-accent-teal);
+  --admin-accent-soft: var(--admin-accent-teal-soft);
+  --admin-accent-ink: var(--admin-accent-teal-ink);
+
+  /* ── Admin gradient layer ──────────────────────────────────────
+     Every ramp is mixed out of the *live* accent triple above, so one
+     `adminAccentStyle()` call on a section root re-colours its masthead,
+     its panel heads, its edges and its chart fills together. Gradient is
+     spent on hierarchy, never ornament: the masthead lifts off the
+     canvas, a panel edge names its section, a bar reads as volume, a
+     filled chip gains a lit face. No stop here is a literal — each is a
+     `color-mix()` of tokens already in this file, so a re-themed accent
+     needs no change below this block. */
+  --admin-wash-masthead: linear-gradient(
+    108deg,
+    var(--admin-accent-soft) 0%,
+    color-mix(in srgb, var(--admin-accent-soft) 42%, var(--admin-surface)) 54%,
+    var(--admin-surface) 100%
+  );
+  --admin-glow-masthead: radial-gradient(
+    130% 160% at 6% -10%,
+    color-mix(in srgb, var(--admin-accent) 20%, transparent) 0%,
+    transparent 58%
+  );
+  --admin-wash-head: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--admin-accent) 14%, var(--admin-surface)) 0%,
+    color-mix(in srgb, var(--admin-accent) 4%, var(--admin-surface)) 100%
+  );
+  --admin-edge-accent: linear-gradient(
+    90deg,
+    var(--admin-accent) 0%,
+    color-mix(in srgb, var(--admin-accent) 62%, var(--admin-accent-ink)) 38%,
+    color-mix(in srgb, var(--admin-accent) 12%, transparent) 100%
+  );
+  --admin-fill-accent: linear-gradient(
+    142deg,
+    color-mix(in srgb, var(--admin-accent) 82%, var(--admin-surface)) 0%,
+    var(--admin-accent) 46%,
+    var(--admin-accent-ink) 100%
+  );
+  /* The same ramp one step darker. A filled chip and the primary button carry
+     white ink, and the plain accent is too light for that at small sizes —
+     amber in particular fails 3:1. This ramp keeps the hue and the contrast. */
+  --admin-fill-ink: linear-gradient(
+    142deg,
+    color-mix(in srgb, var(--admin-accent-ink) 84%, var(--admin-surface)) 0%,
+    var(--admin-accent-ink) 58%,
+    color-mix(in srgb, var(--admin-accent-ink) 82%, var(--admin-accent)) 100%
+  );
+  /* A lit face over a coloured surface, so a filled chip or button reads
+     as a raised object rather than a flat swatch. */
+  --admin-sheen: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--admin-surface) 30%, transparent) 0%,
+    transparent 62%
+  );
+
+  /* The one elevation the panel allows: a dialog, and a card's hover lift. */
+  --sh-admin-dialog: 0 2px 16px rgba(0, 0, 0, 0.06);
+  --sh-admin-hover: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 @theme inline {
@@ -189,6 +329,29 @@
   --color-ion-bright: var(--ion-bright);
   --color-ion-deep: var(--ion-deep);
   --color-ion-line: var(--ion-line);
+  --color-admin-canvas: var(--admin-canvas);
+  --color-admin-surface: var(--admin-surface);
+  --color-admin-sunken: var(--admin-sunken);
+  --color-admin-line: var(--admin-line);
+  --color-admin-ink: var(--admin-ink);
+  --color-admin-ink-hover: var(--admin-ink-hover);
+  --color-admin-ink-soft: var(--admin-ink-soft);
+  --color-admin-muted: var(--admin-muted);
+  --color-admin-positive-bg: var(--admin-positive-bg);
+  --color-admin-positive-ink: var(--admin-positive-ink);
+  --color-admin-info-bg: var(--admin-info-bg);
+  --color-admin-info-ink: var(--admin-info-ink);
+  --color-admin-warn-bg: var(--admin-warn-bg);
+  --color-admin-warn-ink: var(--admin-warn-ink);
+  --color-admin-danger-bg: var(--admin-danger-bg);
+  --color-admin-danger-ink: var(--admin-danger-ink);
+  --color-admin-neutral-bg: var(--admin-neutral-bg);
+  --color-admin-neutral-ink: var(--admin-neutral-ink);
+  --shadow-admin-dialog: var(--sh-admin-dialog);
+  --shadow-admin-hover: var(--sh-admin-hover);
+  --color-admin-accent: var(--admin-accent);
+  --color-admin-accent-soft: var(--admin-accent-soft);
+  --color-admin-accent-ink: var(--admin-accent-ink);
   --font-space-display: var(--font-cormorant);
   --font-space-body: var(--font-dm-sans);
   --font-voyage: var(--font-unbounded);
@@ -209,6 +372,65 @@
   }
   ::selection {
     background-color: color-mix(in srgb, var(--color-manara-teal) 25%, transparent);
+  }
+
+  /* The admin panel's own base layer. `data-admin` sits on the shell, so this
+     reaches every admin surface and nothing on the public site.
+
+     The UI face is DM Sans — the same face the public pages set on their own
+     shell (`font-space-body`) — so the panel and the site speak with one voice;
+     headings use the site's display serif through `font-space-display`, and
+     figures use Geist Mono. Lucide's icons ship a 2px stroke, which reads thin
+     at the panel's 16px sizes: a slightly heavier stroke is set here once
+     instead of at four dozen call sites. */
+  [data-admin] {
+    /* No `var(--font-sans)` fallback in this stack: `--font-sans` is declared on
+       `:root` as `var(--font-sans)`, a cycle that makes any declaration
+       referencing it invalid at computed-value time — and an invalid
+       `font-family` inherits, so the rule would silently do nothing. */
+    font-family: var(--font-dm-sans), system-ui, sans-serif;
+
+    /* Geist Mono's own variable is set on `<body>` (`layout.tsx`), while
+       `--font-mono` is declared on `:root` as `var(--font-geist-mono)` — which
+       resolves to nothing up there, so `.font-mono` everywhere falls back to the
+       browser's default serif. Recomposed inside the panel, where both halves are
+       in scope. The public site's own `font-mono` usage is left untouched. */
+    --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+    /* The panel's type ladder. Tailwind's defaults start body text at 14px and
+       its smallest step at 12px, which is the wrong measure for a surface read at
+       arm's length for hours: the panel had grown a scatter of 9.6px and 11px
+       literals under the pressure of packing six tables into one screen.
+
+       So the panel owns one ladder, and it starts a step up — micro 12, metadata
+       13, body 15 — with nothing below 12 anywhere in it. Re-defining the theme
+       variables here rather than editing forty call sites is what keeps it a
+       ladder: every `text-2xs`, `text-xs` and `text-sm` in the panel resolves
+       through these three lines. The public site is untouched because
+       `data-admin` only ever sits on the admin shell. */
+    --text-2xs: 0.75rem;
+    --text-2xs--line-height: 1.35;
+    --text-xs: 0.8125rem;
+    --text-xs--line-height: 1.45;
+    --text-sm: 0.9375rem;
+    --text-sm--line-height: 1.5;
+  }
+
+  [data-admin] .lucide {
+    stroke-width: 2.25;
+  }
+}
+
+/* A full-viewport shell owns the viewport: while an admin surface is mounted the
+   document itself never scrolls, so `#admin-content` is always the only scroller
+   and no page can end in dead space below the last row. Scoped to the shell with
+   `:has()`, and to screen media so a printed report is unaffected — paper has no
+   scrollbar to protect. Older browsers that do not understand `:has()` drop this
+   rule and keep the previous behaviour. */
+@media screen {
+  html:has([data-admin]),
+  body:has([data-admin]) {
+    overflow: hidden;
   }
 }
 
@@ -309,6 +531,38 @@ html {
       radial-gradient(circle at 70% 50%, var(--space-deep) 0 13%, transparent 14%),
       var(--space-deep);
   }
+}
+
+/* ── Admin gradient surfaces ──────────────────────────────────────────────
+   Thin wrappers over the tokens in the admin block: components ask for a
+   `admin-wash-head`, never a `linear-gradient(...)`, so the paint recipe
+   stays in one file and follows whichever hue the section scopes. */
+@utility admin-wash-masthead {
+  background-color: var(--admin-accent-soft);
+  background-image: var(--admin-glow-masthead), var(--admin-wash-masthead);
+}
+@utility admin-wash-head {
+  background-color: color-mix(in srgb, var(--admin-accent) 8%, var(--admin-surface));
+  background-image: var(--admin-wash-head);
+}
+@utility admin-edge-top {
+  background-repeat: no-repeat;
+  background-position: top;
+  background-size: 100% 2px;
+  background-image: var(--admin-edge-accent);
+}
+@utility admin-fill {
+  background-color: var(--admin-accent);
+  background-image: var(--admin-sheen), var(--admin-fill-accent);
+}
+@utility admin-fill-ink {
+  background-color: var(--admin-accent-ink);
+  background-image: var(--admin-sheen), var(--admin-fill-ink);
+}
+/* Lit face only, over a colour set elsewhere. A chart bar takes its tone as an
+   inline `background-color` and gets its volume from this. */
+@utility admin-sheen {
+  background-image: var(--admin-sheen);
 }
 
 /* ── MSC form helpers (registered utilities so ps-9/h-auto etc. can override) ── */
@@ -574,6 +828,16 @@ html {
     background-color: white;
   }
 
+  /* The panel's gradients are screen chrome. Paper keeps the flat treatment it
+     had before the gradient layer existed, so every admin wash, edge and filled
+     chip is unpainted here while its `background-color` fallback carries on. */
+  [data-print] [class*="admin-wash"],
+  [data-print] [class*="admin-edge"],
+  [data-print] [class*="admin-fill"],
+  [data-print] [class*="admin-sheen"] {
+    background-image: none;
+  }
+
   [data-print="shell"] {
     display: block;
     height: auto;
@@ -761,6 +1025,163 @@ html {
     font-size: 8pt;
     color: #5c4800;
     break-inside: avoid;
+  }
+
+  /* ── Registration brief ──────────────────────────────────────
+     The brief is a second document under the same `data-print="report"`
+     contract, so the masthead, scope strip and table rules above already style
+     it. What is left is its own vocabulary: numbered sections, a bar chart,
+     share meters and a forecast box.
+
+     Its type sizes come from the panel's ladder — `--text-2xs`, `-xs` and `-sm`
+     are redefined on `[data-admin]` in the base layer, and the display steps
+     come from `@theme`. Restating those tokens on the brief root is what keeps
+     paper honest: custom properties inherit, so one block here moves every
+     utility in the document, instead of forty rules that each have to outweigh
+     the utility sitting on the element. The same trick darkens the panel greys,
+     which are tuned against a warm bone canvas and read too light on white
+     stock. Nothing outside `.brief-document` is affected. */
+  [data-print="report"].brief-document {
+    --text-2xs: 6.5pt;
+    --text-2xs--line-height: 1.3;
+    --text-xs: 7.5pt;
+    --text-xs--line-height: 1.4;
+    --text-sm: 8.7pt;
+    --text-sm--line-height: 1.45;
+    --text-xl: 10.5pt;
+    --text-2xl: 12.5pt;
+    --text-5xl: 21pt;
+
+    --admin-ink: #14191b;
+    --admin-ink-soft: #26383c;
+    --admin-muted: #6b767a;
+    --admin-line: #d8dedc;
+    --admin-sunken: #f4f6f5;
+    --admin-neutral-bg: #ececeb;
+    --admin-neutral-ink: #4a5457;
+    --admin-positive-bg: #e6f1e6;
+    --admin-positive-ink: #245c2a;
+    --admin-warn-bg: #f8eecd;
+    --admin-warn-ink: #7a5200;
+    --admin-danger-bg: #f8dfe0;
+    --admin-danger-ink: #8a2826;
+    --admin-info-bg: #dbeeff;
+    --admin-info-ink: #1b5f8c;
+  }
+
+  /* The scope strip names four things, and the longest of them is a sentence.
+     Later in the block than the shared rule above, and prefixed with the brief
+     class, so it wins and lets the strip fold to two lines instead of running
+     off the stock. */
+  [data-print="report"].brief-document section[aria-label="Report scope"] dl {
+    flex-wrap: wrap;
+    gap: 3mm 10mm;
+  }
+
+  /* A numbered section: ruled off from the one before it, with its heading
+     glued to the figure or table underneath. Titles alone at the foot of a page
+     are how a printed report ends up with orphaned headings. */
+  [data-print="report"].brief-document .brief-section {
+    margin-top: 6mm;
+    padding-top: 3mm;
+    border-top: 0.2mm solid var(--print-rule);
+  }
+
+  [data-print="report"].brief-document .brief-section-head {
+    gap: 2.5mm;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  [data-print="report"].brief-document .brief-section-head h2 {
+    font-weight: 700;
+    color: var(--admin-ink);
+  }
+
+  [data-print="report"].brief-document .brief-index {
+    letter-spacing: 0.08em;
+    color: var(--admin-muted);
+  }
+
+  /* A printed column of 150mm is the widest measure that stays readable at
+     these sizes; without it a sentence runs the full width of A4 landscape
+     margins and the eye loses the line. */
+  [data-print="report"].brief-document .brief-question,
+  [data-print="report"].brief-document .brief-body {
+    max-width: 150mm;
+  }
+
+  [data-print="report"].brief-document .brief-note {
+    max-width: 150mm;
+    padding-left: 2.5mm;
+    border-left: 0.3mm solid var(--print-rule);
+    color: var(--admin-muted);
+  }
+
+  /* A figure must not wrap away from the label it belongs to. */
+  [data-print="report"].brief-document .brief-figure,
+  [data-print="report"].brief-document .brief-range {
+    white-space: nowrap;
+  }
+
+  /* The trend band. `h-20` is a screen height; on paper the chart gets a
+     measured band and a baseline that reads as an axis. */
+  [data-print="report"].brief-document figure {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  [data-print="report"].brief-document .brief-bars {
+    height: 32mm;
+    gap: 0.6mm;
+    border-bottom: 0.25mm solid var(--admin-ink);
+  }
+
+  [data-print="report"].brief-document .brief-bar {
+    border-radius: 0.4mm 0.4mm 0 0;
+  }
+
+  [data-print="report"].brief-document .brief-caption {
+    margin-top: 1mm;
+    letter-spacing: 0.04em;
+  }
+
+  [data-print="report"].brief-document .brief-meter {
+    height: 1.4mm;
+    background-color: var(--admin-neutral-bg);
+  }
+
+  [data-print="report"].brief-document .brief-rank li,
+  [data-print="report"].brief-document .brief-events li,
+  [data-print="report"].brief-document .brief-notes li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  [data-print="report"].brief-document .brief-events li {
+    border-bottom: 0.15mm dashed var(--print-rule);
+  }
+
+  /* The programme rollup prints as one ruled row of figures, the way a brief
+     states a total rather than a table states a detail. */
+  [data-print="report"].brief-document .brief-tally {
+    display: flex;
+    gap: 8mm;
+    margin-top: 3mm;
+    padding-top: 2.5mm;
+    border-top: 0.2mm solid var(--print-rule);
+  }
+
+  /* Tomorrow is the part an admin photographs for a message: a ruled box with a
+     flat fill — never the panel's gradient, which the rule above already
+     unpaints — kept whole on one sheet. */
+  [data-print="report"].brief-document .brief-forecast {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    padding: 4mm 5mm;
+    border: 0.25mm solid var(--admin-ink);
+    border-radius: 0;
+    background-color: var(--admin-sunken);
   }
 
   /* ── In-document footer ─────────────────────────────────────── */

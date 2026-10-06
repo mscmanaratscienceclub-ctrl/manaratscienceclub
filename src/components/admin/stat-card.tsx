@@ -1,8 +1,11 @@
 import type { ComponentType } from "react";
+import type { LucideIcon } from "lucide-react";
 
 import { Sparkline } from "@/components/admin/charts";
-import { chartToneVar, type ChartTone } from "@/lib/admin/dashboard";
+import { accentForTone, adminAccentStyle } from "@/lib/admin/accents";
+import type { ChartTone } from "@/lib/admin/dashboard";
 import { cn } from "@/lib/utils";
+import { adminChipSoft, adminChipSolid, adminPanel, adminPanelHead } from "./styles";
 
 /**
  * A single figure at the top of the dashboard.
@@ -11,6 +14,14 @@ import { cn } from "@/lib/utils";
  * means something different when the week before it was 40. Where there is no
  * time series behind a figure (a payment tally, a total), the card simply says
  * what the number is a share of instead of inventing a line.
+ *
+ * The card is a white rectangle with one hairline and no shadow until it is
+ * pointed at. Its category is carried by colour: a gradient accent edge along its
+ * top, a filled icon square on the same hue's ink ramp, and a sparkline drawn in
+ * that hue. The edge fades out toward the right, so a row of four cards reads as
+ * one band of colour rather than four separate flags. The hue comes from
+ * the card's `tone` (a chart tone), so the figure, its line and the chart below it
+ * are visibly the same series.
  */
 
 type IconComponent = ComponentType<{ className?: string }>;
@@ -31,42 +42,29 @@ export function StatCard({
   /** Daily values behind the figure, oldest first; omit for a card with no series. */
   spark?: number[] | null;
 }) {
-  const colour = chartToneVar[tone];
-
   return (
-    <div className="group relative overflow-hidden rounded-2xl bg-surface p-5 shadow-subtle transition-shadow duration-300 hover:shadow-academic">
-      {/* A single hairline of the card's own colour, so four cards read as four
-          categories at a glance rather than four identical boxes. */}
-      <span
-        className="absolute inset-x-0 top-0 h-0.5 opacity-70 transition-opacity duration-300 group-hover:opacity-100"
-        style={{ backgroundColor: colour }}
-        aria-hidden="true"
-      />
-
+    <div
+      style={adminAccentStyle(accentForTone(tone))}
+      className="admin-edge-top rounded-[10px] border border-admin-line bg-admin-surface p-6 transition-[box-shadow,transform] duration-200 hover:-translate-y-px hover:shadow-admin-hover"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-body text-xs font-medium tracking-wide text-ink/50 uppercase">
+          <p className="font-space-body text-2xs font-semibold tracking-[0.08em] text-admin-muted uppercase">
             {label}
           </p>
-          <p className="mt-2 font-display text-3xl leading-none font-bold text-ink tabular-nums">
+          <p className="mt-3 font-space-body text-[2rem] leading-none font-medium text-admin-ink tabular-nums">
             {value}
           </p>
         </div>
-        <span
-          className="flex size-10 shrink-0 items-center justify-center rounded-xl"
-          style={{
-            color: colour,
-            backgroundColor: `color-mix(in srgb, ${colour} 12%, transparent)`,
-          }}
-        >
-          <Icon className="size-5" />
+        <span aria-hidden="true" className={cn(adminChipSolid, "size-9")}>
+          <Icon className="size-4" />
         </span>
       </div>
 
-      <p className="mt-3 font-body text-xs leading-relaxed text-ink/45">{note}</p>
+      <p className="mt-4 font-space-body text-xs leading-relaxed text-admin-muted">{note}</p>
 
       {spark && spark.length > 1 && (
-        <div className="mt-3">
+        <div className="mt-4 border-t border-admin-line pt-3">
           <Sparkline values={spark} tone={tone} />
         </div>
       )}
@@ -90,26 +88,38 @@ export function StatCard({
 export function Panel({
   title,
   description,
+  icon: Icon,
   action,
   children,
   className,
 }: {
   title: string;
   description?: string;
+  /** The panel's mark, on the section's wash, beside its title. */
+  icon?: LucideIcon;
   action?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
-    <section
-      className={cn("min-w-0 rounded-2xl bg-surface shadow-subtle", className)}
-    >
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-ink/5 px-6 py-4">
-        <div>
-          <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>
-          {description && (
-            <p className="mt-1 font-body text-sm text-ink/50">{description}</p>
+    <section className={cn(adminPanel, "min-w-0", className)}>
+      <header className={adminPanelHead}>
+        <div className="flex min-w-0 items-start gap-3">
+          {Icon && (
+            <span aria-hidden="true" className={cn(adminChipSoft, "size-9")}>
+              <Icon className="size-4" />
+            </span>
           )}
+          <div className="min-w-0">
+            <h2 className="font-space-display text-xl leading-tight font-medium tracking-tight text-admin-ink">
+              {title}
+            </h2>
+            {description && (
+              <p className="mt-1 font-space-body text-sm leading-relaxed text-admin-muted">
+                {description}
+              </p>
+            )}
+          </div>
         </div>
         {action}
       </header>

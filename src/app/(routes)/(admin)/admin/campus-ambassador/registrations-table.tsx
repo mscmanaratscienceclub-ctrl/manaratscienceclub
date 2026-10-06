@@ -13,6 +13,14 @@ import { cn } from "@/lib/utils";
 import AdminEmptyState from "@/components/admin/admin-empty-state";
 import FilterBar from "@/components/admin/filter-bar";
 import Pagination from "@/components/admin/pagination";
+import {
+  adminDetailValue,
+  adminLabel,
+  adminPanel,
+  adminTableScroller,
+  adminTh,
+} from "@/components/admin/styles";
+import { adminRowDisclosure } from "@/components/admin/row-disclosure";
 import type { CampusAmbassadorRegistration } from "@/db/schema/registrations";
 
 /**
@@ -69,7 +77,7 @@ export default function RegistrationsTable({
   const filtering = activeFilterCount(source, state) > 0;
 
   return (
-    <div className="rounded-2xl bg-surface shadow-subtle">
+    <div className={adminPanel}>
       <FilterBar source={source} state={state} controls={controls} />
 
       <div
@@ -85,13 +93,13 @@ export default function RegistrationsTable({
             onClearAll={filtering ? controls.clearAll : undefined}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className={adminTableScroller}>
             {/* `min-w` is what makes the container above scroll at all: a
                 `w-full` table shrinks to fit instead of overflowing. */}
             <table className="w-full min-w-[52rem]">
               <thead>
-                <tr className="border-b border-ink/5 text-left">
-                  <th className="w-8 px-3 py-3" aria-label="Expand" />
+                <tr className="border-b border-admin-line text-left">
+                  <th className="w-8 bg-admin-accent-soft px-3 py-3" aria-label="Expand" />
                   {[
                     "Type",
                     "Name",
@@ -102,14 +110,14 @@ export default function RegistrationsTable({
                   ].map((label) => (
                     <th
                       key={label}
-                      className="px-4 py-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase"
+                      className={adminTh}
                     >
                       {label}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-ink/5">
+              <tbody className="divide-y divide-admin-line">
                 {registrations.map((row) => {
                   const expanded = expandedId === row.id;
                   return (
@@ -158,56 +166,52 @@ function FragmentRow({
   return (
     <>
       <tr
-        onClick={onToggle}
-        className={cn(
-          "cursor-pointer transition-colors",
-          expanded ? "bg-cream/60" : "hover:bg-cream/40",
-        )}
+        {...adminRowDisclosure({
+          expanded,
+          onToggle,
+          detailId: `${row.id}-detail`,
+        })}
       >
         <td className="px-3 py-4">
           <ChevronDown
             className={cn(
-              "h-4 w-4 text-ink/40 transition-transform",
+              "size-4 text-admin-muted transition-transform",
               expanded && "rotate-180",
             )}
             aria-hidden="true"
           />
         </td>
-        <td className="px-4 py-4 font-body text-sm font-medium text-manara-teal capitalize">
+        <td className="px-4 py-4 font-space-body text-sm font-medium text-admin-ink capitalize">
           {row.type}
         </td>
-        <td className="px-4 py-4 font-body font-medium text-ink">{row.name}</td>
-        <td className="px-4 py-4 font-body text-sm text-ink/60">{row.class}</td>
-        <td className="px-4 py-4 font-body text-sm text-ink/60">
+        <td className="px-4 py-4 font-space-body text-base font-medium text-admin-ink">{row.name}</td>
+        <td className="px-4 py-4 font-space-body text-sm text-admin-ink-soft">{row.class}</td>
+        <td className="px-4 py-4 font-space-body text-sm text-admin-ink-soft">
           {row.school}
         </td>
-        <td className="px-4 py-4 font-body text-sm text-ink/60">
+        <td className="px-4 py-4 font-space-body text-sm text-admin-ink-soft">
           {row.firstTimeCa ? "Yes" : "No"}
         </td>
-        <td className="px-4 py-4 font-body text-sm text-ink/60">
+        <td className="px-4 py-4 font-space-body text-sm text-admin-ink-soft">
           {dateFormatter.format(new Date(row.createdAt))}
         </td>
       </tr>
       {expanded && (
-        <tr className="bg-cream/60">
+        <tr id={`${row.id}-detail`} className="bg-admin-accent-soft/60">
           <td />
           <td colSpan={6} className="px-4 pt-1 pb-5">
             <dl className="mb-5 grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
               {details.map((item) => (
                 <div key={item.label}>
-                  <dt className="font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
-                    {item.label}
-                  </dt>
-                  <dd className="mt-0.5 font-body text-sm break-words text-ink/80 capitalize">
+                  <dt className={adminLabel}>{item.label}</dt>
+                  <dd className={cn(adminDetailValue, "mt-0.5 capitalize")}>
                     {item.value}
                   </dd>
                 </div>
               ))}
             </dl>
-            <p className="mb-1.5 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
-              Experience
-            </p>
-            <p className="max-w-3xl font-body text-sm leading-relaxed whitespace-pre-wrap text-ink/80">
+            <p className={cn(adminLabel, "mb-1.5")}>Experience</p>
+            <p className="max-w-3xl font-space-body text-sm leading-relaxed whitespace-pre-wrap text-admin-ink-soft">
               {row.experience}
             </p>
           </td>

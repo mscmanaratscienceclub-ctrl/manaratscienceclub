@@ -1,24 +1,18 @@
 import { cn } from "@/lib/utils";
-import {
-  chartToneVar,
-  formatDayLabel,
-  type ChartTone,
-  type RegistrationTrendPoint,
-  type TrendSeries,
-} from "@/lib/admin/dashboard";
+import { chartToneVar, type ChartTone } from "@/lib/admin/dashboard";
 
 /**
- * The admin panel's charts.
+ * The admin panel's static charts.
  *
- * Hand-built from SVG and CSS grid rather than pulled from a charting library:
- * there is no chart dependency in this project, the three shapes the panel needs
- * are small, and every one of them can read the design tokens directly instead of
- * carrying a second, parallel palette.
+ * Hand-built from SVG and CSS rather than pulled from a charting library: there is
+ * no chart dependency in this project, the shapes the panel needs are small, and
+ * every one of them can read the design tokens directly instead of carrying a
+ * second, parallel palette.
  *
- * All of them are **server** components — they are pure markup with no state — and
- * all of them are `role="img"` with a summary `aria-label`, because a bar chart is
- * one image to a screen reader and needs to say what it shows rather than exposing
- * two dozen meaningless rectangles.
+ * These two stay **server** components — pure markup, no state. The charts that do
+ * answer a cursor live beside them: `activity-chart.tsx` (volume over time, with a
+ * value axis and a hover readout) and `donut-chart.tsx` (share of total, with a
+ * slice readout).
  */
 
 // ── Sparkline ────────────────────────────────────────────────────────────────
@@ -27,6 +21,11 @@ import {
  * A trend line for a stat card. Decorative by design — the figure it belongs to is
  * always printed beside it, so it is hidden from assistive technology rather than
  * given a label of its own.
+ *
+ * The area under the line is a clip-path painted with a vertical fade from the
+ * tone, which is what makes it read as a body of water rather than a shadow of a
+ * line. The stroke stays a real SVG polyline with `vector-effect` so it keeps its
+ * 1.5px weight when the card stretches it horizontally.
  */
 export function Sparkline({
   values,
@@ -46,280 +45,52 @@ export function Sparkline({
     24 - (value / max) * 20,
   ]);
   const line = points.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
+  const area = `polygon(0% 100%, ${points
+    .map(([x, y]) => `${x.toFixed(2)}% ${((y / 26) * 100).toFixed(2)}%`)
+    .join(", ")}, 100% 100%)`;
   const colour = chartToneVar[tone];
-
-  return (
-    <svg
-      viewBox="0 0 100 26"
-      preserveAspectRatio="none"
-      className={cn("h-8 w-full", className)}
-      aria-hidden="true"
-      focusable="false"
-    >
-      <polygon points={`0,26 ${line} 100,26`} fill={colour} opacity="0.1" />
-      <polyline
-        points={line}
-        fill="none"
-        stroke={colour}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        // Without this the horizontal stretch from `preserveAspectRatio="none"`
-        // would smear the stroke width too.
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
-}
-
-// ── Stacked bars ─────────────────────────────────────────────────────────────
-
-/**
- * Registrations per day, one bar a day, split by form.
- *
- * Columns are flex children rather than SVG rects so the day's own tooltip can be
- * a plain `title` attribute and the empty days keep their width — a chart that
- * dropped zero days would quietly compress the month.
- */
-export function StackedBarChart({
-  points,
-  series,
-  ariaLabel,
-  className,
-}: {
-  points: RegistrationTrendPoint[];
-  series: TrendSeries[];
-  ariaLabel: string;
-  className?: string;
-}) {
-  const totals = points.map((point) =>
-    point.counts.reduce((sum, count) => sum + count, 0),
-  );
-  const peak = Math.max(...totals, 1);
-  // Every bar is scaled against a ceiling a little above the busiest day, so the
-  // tallest one has air above it — a bar that touches the top of the plot reads as
-  // clipped rather than as the maximum.
-  const ceiling = peak * 1.12;
-  // Roughly one label a week, so the axis stays legible at 30 bars.
-  const labelEvery = Math.max(1, Math.ceil(points.length / 5));
-
-  return (
-    <div className={className}>
-      <div className="mb-2 flex items-baseline justify-between">
-        <p className="font-body text-xs text-ink/40">Responses per day</p>
-        <p className="font-body text-xs text-ink/40 tabular-nums">
-          {peak === 1 ? "1 on the busiest day" : `peak ${peak} in a day`}
-        </p>
-      </div>
-
-      {/* The bars and their day labels share one scroller so the axis can never
-          drift from the columns it labels. Thirty columns cannot fit a phone, and
-          squeezing them into it gives each day label a few pixels of cell — which
-          is exactly how they end up piled on top of each other. */}
-      <div className="overflow-x-auto">
-        <div className="min-w-[36rem]">
-          <div
-            className="flex h-44 items-end gap-[3px] border-b border-ink/10"
-            role="img"
-            aria-label={ariaLabel}
-          >
-            {points.map((point, index) => {
-              const total = totals[index] ?? 0;
-
-              return (
-                <div
-                  key={point.day}
-                  className="group flex h-full flex-1 flex-col justify-end gap-px"
-                  title={`${formatDayLabel(point.day)} — ${total} registration${total === 1 ? "" : "s"}`}
-                >
-                  {series.map((entry, seriesIndex) => {
-                    const value = point.counts[seriesIndex] ?? 0;
-                    if (value === 0) return null;
-
-                    return (
-                      <div
-                        key={entry.id}
-                        className="w-full rounded-[2px] transition-opacity duration-200 group-hover:opacity-70"
-                        style={{
-                          // A bar shorter than a pixel would vanish; the floor keeps a
-                          // single registration visible without distorting the rest.
-                          height: `${Math.max((value / ceiling) * 100, 1.5)}%`,
-                          backgroundColor: chartToneVar[entry.tone],
-                        }}
-                      />
-                    );
-                  })}
-                  {/* A day with nothing in it gets a hairline so the column still
-                      reads as a day rather than as a gap in the data. */}
-                  {total === 0 && <div className="h-px w-full bg-ink/15" />}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-2 flex gap-[3px]" aria-hidden="true">
-            {points.map((point, index) => (
-              <span
-                key={point.day}
-                className="flex-1 text-center font-body text-[0.6rem] text-ink/35"
-              >
-                {index % labelEvery === 0 ? formatDayLabel(point.day) : ""}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
-        {series.map((entry) => (
-          <li
-            key={entry.id}
-            className="flex items-center gap-2 font-body text-xs text-ink/60"
-          >
-            <span
-              className="size-2.5 rounded-[2px]"
-              style={{ backgroundColor: chartToneVar[entry.tone] }}
-              aria-hidden="true"
-            />
-            {entry.label}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-// ── Donut ────────────────────────────────────────────────────────────────────
-
-export interface DonutSlice {
-  id: string;
-  label: string;
-  value: number;
-  tone: ChartTone;
-}
-
-/**
- * A share-of-total ring, drawn with `stroke-dasharray` on concentric circles.
- *
- * Slices are laid out cumulatively with a negative offset so each arc starts where
- * the previous one ended; a small gap is subtracted from every dash when the ring
- * is split, which is what stops two adjacent slices of similar colour from reading
- * as one.
- */
-export function DonutChart({
-  slices,
-  ariaLabel,
-  centerValue,
-  centerCaption,
-  className,
-}: {
-  slices: DonutSlice[];
-  ariaLabel: string;
-  centerValue: string;
-  centerCaption: string;
-  className?: string;
-}) {
-  const radius = 40;
-  const circumference = 2 * Math.PI * radius;
-  const total = slices.reduce((sum, slice) => sum + slice.value, 0);
-  const drawn = slices.filter((slice) => slice.value > 0);
-  const gap = drawn.length > 1 ? 2 : 0;
-
-  let offset = 0;
+  const [lastX, lastY] = points[points.length - 1];
 
   return (
     <div
-      className={cn(
-        // A 144px ring and its legend cannot share a phone's width, so they stack
-        // until there is room for the two to sit side by side.
-        "flex flex-col items-center gap-6 sm:flex-row",
-        className,
-      )}
+      aria-hidden="true"
+      className={cn("relative h-8 w-full", className)}
     >
+      <div
+        className="absolute inset-0"
+        style={{
+          clipPath: area,
+          backgroundImage: `linear-gradient(180deg, color-mix(in srgb, ${colour} 32%, transparent) 0%, color-mix(in srgb, ${colour} 5%, transparent) 100%)`,
+        }}
+      />
       <svg
-        viewBox="0 0 100 100"
-        className="size-32 shrink-0 sm:size-36"
-        role="img"
-        aria-label={ariaLabel}
+        viewBox="0 0 100 26"
+        preserveAspectRatio="none"
+        className="absolute inset-0 h-full w-full"
+        focusable="false"
       >
-        <circle
-          cx="50"
-          cy="50"
-          r={radius}
+        <polyline
+          points={line}
           fill="none"
-          stroke="var(--color-ink)"
-          strokeOpacity="0.07"
-          strokeWidth="12"
+          stroke={colour}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          // Without this the horizontal stretch from `preserveAspectRatio="none"`
+          // would smear the stroke width too.
+          vectorEffect="non-scaling-stroke"
         />
-
-        {drawn.map((slice) => {
-          const share = total > 0 ? slice.value / total : 0;
-          const length = share * circumference;
-          const arc = (
-            <circle
-              key={slice.id}
-              cx="50"
-              cy="50"
-              r={radius}
-              fill="none"
-              stroke={chartToneVar[slice.tone]}
-              strokeWidth="12"
-              strokeDasharray={`${Math.max(length - gap, 0.5)} ${circumference - Math.max(length - gap, 0.5)}`}
-              strokeDashoffset={-offset}
-              transform="rotate(-90 50 50)"
-            >
-              <title>{`${slice.label}: ${slice.value}`}</title>
-            </circle>
-          );
-
-          offset += length;
-          return arc;
-        })}
-
-        <text
-          x="50"
-          y="49"
-          textAnchor="middle"
-          fontSize="19"
-          fontWeight="700"
-          fill="var(--color-ink)"
-        >
-          {centerValue}
-        </text>
-        <text
-          x="50"
-          y="61"
-          textAnchor="middle"
-          fontSize="6"
-          fill="var(--color-ink)"
-          fillOpacity="0.5"
-        >
-          {centerCaption}
-        </text>
       </svg>
-
-      <ul className="w-full min-w-0 space-y-3 sm:w-auto">
-        {slices.map((slice) => (
-          <li key={slice.id} className="flex items-baseline gap-2.5">
-            <span
-              className="size-2.5 shrink-0 translate-y-px rounded-[2px]"
-              style={{ backgroundColor: chartToneVar[slice.tone] }}
-              aria-hidden="true"
-            />
-            <div className="min-w-0">
-              <p className="font-body text-sm text-ink/80">{slice.label}</p>
-              <p className="font-body text-xs text-ink/45 tabular-nums">
-                {slice.value}
-                {total > 0 && (
-                  <span className="ml-1.5 text-ink/35">
-                    {Math.round((slice.value / total) * 100)}%
-                  </span>
-                )}
-              </p>
-            </div>
-          </li>
-        ))}
-      </ul>
+      {/* The current day, held: a sparkline without an end point reads as a
+          waveform rather than as a series that has a *today*. */}
+      <span
+        className="absolute size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-admin-surface"
+        style={{
+          left: `${lastX}%`,
+          top: `${(lastY / 26) * 100}%`,
+          backgroundColor: colour,
+        }}
+      />
     </div>
   );
 }
@@ -339,7 +110,8 @@ export interface RankedBarItem {
  * ("LFR (Line Following Robot)") that a column chart would have to abbreviate.
  *
  * The bar is decorative: each row prints its own number, so the markup stays a
- * list of labelled figures rather than a picture of one.
+ * list of labelled figures rather than a picture of one. Hovering a row lifts both
+ * the label and its bar, which is what tells an admin the two belong together.
  */
 export function RankedBars({
   items,
@@ -356,18 +128,20 @@ export function RankedBars({
   const peak = Math.max(...items.map((item) => item.value), 1);
 
   return (
-    <ul className={className} aria-label={ariaLabel}>
+    <ul className={cn("space-y-4", className)} aria-label={ariaLabel}>
       {items.map((item) => (
         <li key={item.id} className="group">
           <div className="flex items-baseline justify-between gap-4">
-            <p className="truncate font-body text-sm text-ink/80">{item.label}</p>
-            <p className="shrink-0 font-display text-sm font-semibold text-ink tabular-nums">
+            <p className="truncate font-space-body text-sm text-admin-ink-soft motion-safe:transition-colors group-hover:text-admin-ink">
+              {item.label}
+            </p>
+            <p className="shrink-0 font-space-display text-sm font-medium text-admin-ink tabular-nums">
               {item.value}
             </p>
           </div>
-          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-ink/[0.06]">
+          <div className="mt-1.5 h-1.5 overflow-hidden rounded-[2px] bg-admin-neutral-bg">
             <div
-              className="h-full rounded-full transition-[width] duration-500 ease-out"
+              className="admin-sheen h-full rounded-[2px] motion-safe:transition-[filter] motion-safe:duration-200 group-hover:brightness-110"
               style={{
                 width: `${Math.max((item.value / peak) * 100, item.value > 0 ? 3 : 0)}%`,
                 backgroundColor: chartToneVar[item.tone ?? tone],
@@ -375,7 +149,7 @@ export function RankedBars({
             />
           </div>
           {item.sublabel && (
-            <p className="mt-1 font-body text-xs text-ink/40">{item.sublabel}</p>
+            <p className="mt-1 font-space-body text-xs text-admin-muted">{item.sublabel}</p>
           )}
         </li>
       ))}

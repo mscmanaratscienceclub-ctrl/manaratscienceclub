@@ -45,7 +45,13 @@ const force = args.has("--force");
 
 function loadEnv(file) {
   const env = {};
-  for (const line of readFileSync(file, "utf8").split(/\r?\n/)) {
+  let raw;
+  try {
+    raw = readFileSync(new URL(file, import.meta.url), "utf8");
+  } catch {
+    return env; // file absent — this project keeps its secrets in `.env`.
+  }
+  for (const line of raw.split(/\r?\n/)) {
     const match = /^\s*([A-Z0-9_]+)\s*=\s*(.*)$/.exec(line);
     if (!match) continue;
     env[match[1]] = match[2].trim().replace(/^["']|["']$/g, "");
@@ -53,11 +59,15 @@ function loadEnv(file) {
   return env;
 }
 
-const env = { ...loadEnv(new URL("../.env.local", import.meta.url)), ...process.env };
+const env = {
+  ...loadEnv("../.env"),
+  ...loadEnv("../.env.local"),
+  ...process.env,
+};
 const url = env.NEXT_PUBLIC_SUPABASE_URL;
 const key = env.SUPABASE_SERVICE_ROLE_KEY || env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 if (!url || !key) {
-  console.error("Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY in .env.local");
+  console.error("Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY in .env or .env.local");
   process.exit(1);
 }
 
@@ -66,9 +76,17 @@ const supabase = createClient(url, key, {
 });
 
 const source = readFileSync(DATA_FILE, "utf8");
-const paths = [...source.matchAll(/object\/public\/avatars\/([^"'\s)]+)/g)]
-  .map((m) => m[1])
-  .filter((p) => !p.startsWith(TARGET_PREFIX));
+// `src/lib/data` names images through `contentImage("…")`; the absolute-URL pattern is
+// kept so any legacy call site is still picked up.
+const paths = [
+  ...source.matchAll(/contentImage\("([^"]+)"\)/g),
+  ...source.matchAll(/object\/public\/avatars\/([^"'\s)]+)/g),
+]
+  .map((m) => decodeURIComponent(m[1]))
+  .filter((p) => !p.startsWith(TARGET_PREFIX))
+  // Already-small uploads are served verbatim by contentImage — encoding a
+  // `x.webp.webp` copy would only add unused objects to the bucket.
+  .filter((p) => !/\.(webp|avif)$/i.test(p));
 const uniquePaths = [...new Set(paths)].sort();
 
 console.log(`\n${uniquePaths.length} source objects referenced in src/lib/data/index.ts\n`);

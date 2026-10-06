@@ -1,6 +1,6 @@
 ---
 tags: [frontend, design-system, stable]
-updated: 2026-07-17
+updated: 2026-10-06
 ---
 
 # Design System — Tailwind v4
@@ -196,10 +196,53 @@ Loaded in `src/app/layout.tsx` and exposed on `<body>` as `--font-onest`.
   components` class. See *Where a style goes* above (ADR-0012).
 - Mobile-first responsive: `sm:` / `md:` / `lg:` / `xl:` prefixes.
 - Dark mode: `dark:` prefix or token overrides in a `prefers-color-scheme` block.
-- No inline `style` except for dynamic values (e.g. spring-animated values).
+- No inline `style` except for dynamic values (e.g. spring-animated values, and
+  `adminAccentStyle()` — which sets three custom properties to *token references* so a
+  section can scope its hue without threading an `accent` prop; ADR-0036).
 - Motion is spring-based; CSS `transition-*` only for the narrow hover/focus case
   above — never `@keyframes`.
 
+## Admin tokens (scoped, ADR-0034 / 0036 / 0037)
+
+The admin panel carries its **own** palette rather than the public site's brand
+colours: a warm monochrome canvas with five muted status pastels, declared as
+`--admin-*` in `:root` and mapped in `@theme inline` as `--color-admin-*`, so the
+usual `bg-admin-*` / `text-admin-*` / `border-admin-*` utilities work.
+
+They are **scoped by use, not by cascade**: nothing outside
+`src/components/admin/` and `src/app/(routes)/(admin)/` is expected to reach for
+them, and no admin token is referenced by a public page. The two shadow tokens
+(`--sh-admin-hover`, `--sh-admin-dialog`) are the only elevations the panel
+tolerates — a card lifts to `0 2px 8px rgba(0,0,0,0.04)` on hover and a dialog
+sits at `0 2px 16px rgba(0,0,0,0.06)`; everything else is a 1px `#eaeaea` line.
+
+**Accents (ADR-0036)** — six hues as `--admin-accent-{teal,violet,amber,rose,emerald,azure}`,
+each a triple (`-soft` wash, `-ink` for text on white), chosen in the same hue family as
+the club's own `--manara-*` brand colours and pushed dark enough to read as ink on bone. Three
+cascading aliases — `--admin-accent`, `-soft`, `-ink` — default to teal on
+`[data-admin]`, and a section re-points them by spreading `adminAccentStyle()` on
+its root. Components below read only the aliases, so a hue is never passed as a prop.
+
+**Gradients** — seven tokens (`--admin-wash-masthead`, `--admin-glow-masthead`,
+`--admin-wash-head`, `--admin-edge-accent`, `--admin-fill-accent`,
+`--admin-fill-ink`, `--admin-sheen`), every stop a `color-mix()` of the live accent
+triple, reached through the `@utility` wrappers `admin-wash-masthead`,
+`admin-wash-head`, `admin-edge-top`, `admin-fill`, `admin-fill-ink` and
+`admin-sheen`. A component never writes a `linear-gradient(...)` and never
+references the variable directly, so one section-level call re-colours its
+masthead, panel heads, edges and chart fills together — and the whole layer can be
+unpainted on paper by attribute selector.
+
+**Type ladder (ADR-0037)** — the panel redefines Tailwind's three smallest steps on
+`[data-admin]`: `--text-2xs` 12px, `--text-xs` 13px, `--text-sm` 15px, each with its
+own `--*-line-height`. Nothing in the panel renders below 12px and `text-[Npx]`
+literals are banned there. The same three names are restated in **pt** on
+`[data-print="report"].brief-document` inside the unlayered `@media print` block, so
+one block re-types a printed report for paper's fixed physical measure.
+
+The full token table, the role each face plays and the shape rules live in
+[[components/admin#Admin visual language]].
+
 ## Related
 
-[[component-conventions]] · [[animation-system]] · [[new-page]]
+[[component-conventions]] · [[animation-system]] · [[new-page]] · [[components/admin]]

@@ -18,6 +18,27 @@ import { campusAmbassadorRegistrations } from "../src/db/schema/registrations";
 import { volunteerRegistrations } from "../src/db/schema/volunteer-registrations";
 import { stemfestRegistrations } from "../src/db/schema/stemfest-registrations";
 import { stemfestPaymentSms } from "../src/db/schema/stemfest-payment-sms";
+import { stemfestEffectivePaymentStatus } from "../src/db/queries/stemfest-payment";
+import { ADMIN_TIME_ZONE } from "../src/lib/admin/filters";
+import {
+  BRIEF_TREND_DAYS,
+  BRIEF_WINDOW_DAYS,
+  estimateNextDay,
+  referrerKindOf,
+  summarizeTrend,
+  toMovementRows,
+  type MovementInput,
+  type ReferrerKind,
+  type RegistrationBrief,
+} from "../src/lib/admin/brief";
+import { recentDayKeys, TREND_RANGES, type RegistrationTrendPoint } from "../src/lib/admin/dashboard";
+import {
+  getStemfestSegment,
+  manaratSchoolLabel,
+  manaratSchoolLikePattern,
+  stemfestEvents,
+  stemfestSegments,
+} from "../src/lib/data/stemfest-registration";
 
 const PAGE_SIZE = 25;
 let failures = 0;
@@ -342,6 +363,74 @@ check(
   typeof trend?.buckets === "number",
   `${trend?.days} days, ${trend?.buckets} day buckets`,
 );
+
+/**
+ * Every span the dashboard's segmented control offers, not just the default.
+ *
+ * `/admin-preview` renders the chart from fixtures, so it can prove the axis is
+ * drawn but never that the SQL window agrees with it. The two are built from
+ * different sides of the same number — `recentDayKeys(days)` in JS and
+ * `(now() at time zone …)::date - (days - 1)::int` in SQL — and if the cast ever
+ * regresses to the date-difference operator (which hands back a day *number*, not
+ * a date) or the zones drift apart, the chart silently drops the oldest columns
+ * while still labelling them. So both are computed here and compared.
+ *
+ * Two statements, whatever the span count: one resolves each window start, one
+ * buckets days over the widest window, and the narrower windows are read out of
+ * the same rows.
+ */
+const spans = await withDbTimeout("trend spans", async (tx) => {
+  const starts = rowsOf<{ days: number; since: string }>(
+    await tx.execute(sql`
+      select
+        s.days,
+        to_char(((now() at time zone ${ADMIN_TIME_ZONE})::date - (s.days - 1)::int)::date, 'YYYY-MM-DD') as since
+      from (values ${sql.join(
+        TREND_RANGES.map((days) => sql`(${days}::int)`),
+        sql`, `,
+      )}) as s(days)
+    `),
+  );
+
+  const buckets = rowsOf<{ day: string; count: number }>(
+    await tx.execute(sql`
+      select to_char(day, 'YYYY-MM-DD') as day, count(*)::int as count
+      from (
+        select (${stemfestRegistrations.createdAt} at time zone ${ADMIN_TIME_ZONE})::date as day
+        from ${stemfestRegistrations}
+        where (${stemfestRegistrations.createdAt} at time zone ${ADMIN_TIME_ZONE})::date >= (
+          (now() at time zone ${ADMIN_TIME_ZONE})::date - ${Math.max(...TREND_RANGES) - 1}::int
+        )
+      ) as buckets
+      group by day
+    `),
+  );
+
+  return { starts, buckets };
+});
+
+for (const days of TREND_RANGES) {
+  const keys = recentDayKeys(days);
+  const since = spans.starts.find((row) => row.days === days)?.since ?? "";
+
+  check(
+    `trend span ${days}: axis and SQL window start on the same local day`,
+    keys.length === days && keys[0] === since && /^\d{4}-\d{2}-\d{2}$/.test(since),
+    `axis ${keys.length} columns from ${keys[0]}, SQL window from ${since}`,
+  );
+
+  // The same rows must survive either filter: `>= the SQL window start`, or
+  // `one of the axis keys`. A mismatch is a day the chart labels but never plots.
+  const sqlSide = spans.buckets.filter((row) => row.day >= since);
+  const axisSide = spans.buckets.filter((row) => keys.includes(row.day));
+  check(
+    `trend span ${days}: every day bucket the window returns is on the axis`,
+    sqlSide.length === axisSide.length &&
+      sqlSide.reduce((s, r) => s + r.count, 0) ===
+        axisSide.reduce((s, r) => s + r.count, 0),
+    `${sqlSide.length} buckets / ${sqlSide.reduce((s, r) => s + r.count, 0)} entries in the ${days}-day window`,
+  );
+}
 const breakdown = settled[1].status === "fulfilled" ? settled[1].value : null;
 check(
   "dashboard breakdown returned all four reads",
@@ -450,6 +539,469 @@ const retryCases: Array<[string, unknown, boolean]> = [
 ];
 for (const [label, error, expected] of retryCases) {
   check(label, isRetryableDbError(error) === expected, `expected=${expected}`);
+}
+
+// ── 6. The printable registration brief ──────────────────────────────────────
+console.log("\n6. Printable brief: six sequential statements on one connection");
+
+function rowsOf<T>(result: unknown): T[] {
+  return Array.isArray(result) ? (result as T[]) : [];
+}
+
+/** Mirrors the private `dayAfter` in `src/lib/admin/brief.ts`. */
+function dayKeyAfter(day: string): string {
+  const next = new Date(`${day}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString().slice(0, 10);
+}
+
+/**
+ * Mirrors `getRegistrationBrief`, whose own body cannot be called here because it
+ * requires an admin session. The statements are the action's, in the same order,
+ * on the same transaction — only two extra aggregates ride along in the totals
+ * read (`spanTotal`, `windowTotal`), which exist so the JS-side gap-filled window
+ * can be compared against what Postgres counts for the same bounds.
+ *
+ * What this section is really checking is that the brief's five printed sections
+ * cannot contradict each other: same seven local days everywhere, the referrer
+ * tally covering exactly the referred rows, and the forecast inside its own band.
+ */
+async function registrationBrief(): Promise<
+  RegistrationBrief & { spanTotal: number; windowTotal: number }
+> {
+  const s = stemfestRegistrations;
+  const ca = campusAmbassadorRegistrations;
+
+  const stemfestDay = sql`(${s.createdAt} at time zone ${ADMIN_TIME_ZONE})::date`;
+  const windowStart = sql`(now() at time zone ${ADMIN_TIME_ZONE})::date - ${BRIEF_WINDOW_DAYS - 1}::int`;
+  const priorStart = sql`(now() at time zone ${ADMIN_TIME_ZONE})::date - ${BRIEF_WINDOW_DAYS * 2 - 1}::int`;
+  const spanStart = sql`(now() at time zone ${ADMIN_TIME_ZONE})::date - ${BRIEF_TREND_DAYS - 1}::int`;
+
+  return withDbTimeout("getRegistrationBrief (mirror)", async (tx) => {
+    const [totals] = await tx
+      .select({
+        allTime: sql<number>`count(*)::int`,
+        verified: sql<number>`count(*) filter (where ${stemfestEffectivePaymentStatus()} = 'verified')::int`,
+        pending: sql<number>`count(*) filter (where ${stemfestEffectivePaymentStatus()} = 'pending')::int`,
+        rejected: sql<number>`count(*) filter (where ${stemfestEffectivePaymentStatus()} = 'rejected')::int`,
+        referred: sql<number>`count(*) filter (where ${s.reference} is not null)::int`,
+        spanTotal: sql<number>`count(*) filter (where ${stemfestDay} >= ${spanStart})::int`,
+        windowTotal: sql<number>`count(*) filter (where ${stemfestDay} >= ${windowStart})::int`,
+      })
+      .from(s);
+
+    // 1. Trend — the daily read `dailyCounts` wraps, inlined because it is not exported.
+    const dayKeys = recentDayKeys(BRIEF_TREND_DAYS);
+    const dailyRows = rowsOf<{ day: string; count: number }>(
+      await tx.execute(sql`
+        select to_char(day, 'YYYY-MM-DD') as day, count(*)::int as count
+        from (
+          select (${s.createdAt} at time zone ${ADMIN_TIME_ZONE})::date as day
+          from ${s}
+          where (${s.createdAt} at time zone ${ADMIN_TIME_ZONE})::date >= ${spanStart}
+        ) as buckets
+        group by day
+      `),
+    );
+    const daily = new Map(dailyRows.map((row) => [row.day, row.count]));
+    const points: RegistrationTrendPoint[] = dayKeys.map((day) => ({
+      day,
+      counts: [daily.get(day) ?? 0],
+    }));
+
+    // 2. Segments and their events, one statement for both windows.
+    const eventCatalogue = sql.join(
+      stemfestEvents.map((event) => sql`(${event.id}::text, ${event.name}::text)`),
+      sql`, `,
+    );
+
+    const eventRows = rowsOf<{ event_id: string; recent: number; prior: number }>(
+      await tx.execute(sql`
+        select
+          e.event_id,
+          count(*) filter (where ${stemfestDay} >= ${windowStart})::int as recent,
+          count(*) filter (
+            where ${stemfestDay} < ${windowStart} and ${stemfestDay} >= ${priorStart}
+          )::int as prior
+        from (values ${eventCatalogue}) as e(event_id, event_name)
+        join ${s} on ${s.segments} ilike '%' || e.event_name || '%'
+        where ${stemfestDay} >= ${priorStart}
+        group by e.event_id
+      `),
+    );
+
+    const windowById = new Map(
+      eventRows.map((row) => [row.event_id, { current: row.recent, previous: row.prior }]),
+    );
+    const eventById = new Map(stemfestEvents.map((event) => [event.id, event]));
+
+    const eventInputs: MovementInput[] = eventRows.flatMap((row) => {
+      const event = eventById.get(row.event_id);
+      if (!event) return [];
+      return [
+        {
+          id: event.id,
+          label: event.name,
+          sublabel: getStemfestSegment(event.segmentId)?.name ?? event.segmentId,
+          current: row.recent,
+          previous: row.prior,
+        },
+      ];
+    });
+
+    const segments = toMovementRows(
+      stemfestSegments.map((segment) => {
+        let current = 0;
+        let previous = 0;
+        for (const event of stemfestEvents) {
+          if (event.segmentId !== segment.id) continue;
+          const counted = windowById.get(event.id);
+          if (counted) {
+            current += counted.current;
+            previous += counted.previous;
+          }
+        }
+        return { id: segment.id, label: segment.name, sublabel: segment.blurb, current, previous };
+      }),
+    );
+
+    // 3. Schools.
+    const schoolRows = rowsOf<{
+      label: string | null;
+      total: number;
+      recent: number;
+      groups: number;
+    }>(
+      await tx.execute(sql`
+        select label, cnt as total, recent, total_groups as groups
+        from (
+          select
+            min(label) as label,
+            count(*)::int as cnt,
+            count(*) filter (where day >= ${windowStart})::int as recent,
+            (count(*) over ())::int as total_groups
+          from (
+            select
+              case
+                when ${s.school} ilike ${manaratSchoolLikePattern} then ${manaratSchoolLabel}
+                else btrim(${s.school})
+              end as label,
+              ${stemfestDay} as day
+            from ${s}
+          ) as entry
+          group by lower(label)
+        ) as ranked
+        order by total desc, label asc
+        limit 6
+      `),
+    );
+
+    // 4. Referrers, and the kind of register each one signed up on.
+    const referrerRows = rowsOf<{
+      name: string | null;
+      total: number;
+      recent: number;
+      is_campus: boolean;
+      is_batch: boolean;
+    }>(
+      await tx.execute(sql`
+        with referred as (
+          select
+            lower(btrim(${s.reference})) as key,
+            min(${s.reference}) as name,
+            count(*)::int as total,
+            count(*) filter (where ${stemfestDay} >= ${windowStart})::int as recent
+          from ${s}
+          where ${s.reference} is not null
+          group by 1
+        ), ambassadors as (
+          select
+            lower(btrim(${ca.name})) as key,
+            bool_or(${ca.type} = 'campus') as is_campus,
+            bool_or(${ca.type} = 'batch') as is_batch
+          from ${ca}
+          group by 1
+        )
+        select
+          r.name,
+          r.total,
+          r.recent,
+          coalesce(a.is_campus, false) as is_campus,
+          coalesce(a.is_batch, false) as is_batch
+        from referred as r
+        left join ambassadors as a on a.key = r.key
+        order by r.total desc, r.name asc
+        limit 10
+      `),
+    );
+
+    const referrerTallies = rowsOf<{ kind: ReferrerKind; referrals: number }>(
+      await tx.execute(sql`
+        select kind, count(*)::int as referrals
+        from (
+          select
+            case
+              when a.is_campus and a.is_batch then 'both'
+              when a.is_campus then 'campus'
+              when a.is_batch then 'batch'
+              else 'unmatched'
+            end as kind
+          from (
+            select lower(btrim(${s.reference})) as key
+            from ${s}
+            where ${s.reference} is not null
+          ) as r
+          left join (
+            select
+              lower(btrim(${ca.name})) as key,
+              bool_or(${ca.type} = 'campus') as is_campus,
+              bool_or(${ca.type} = 'batch') as is_batch
+            from ${ca}
+            group by 1
+          ) as a on a.key = r.key
+        ) as kinds
+        group by kind
+        order by referrals desc, kind asc
+      `),
+    );
+
+    return {
+      spanDays: dayKeys.length,
+      windowDays: BRIEF_WINDOW_DAYS,
+      totals: {
+        allTime: totals?.allTime ?? 0,
+        verified: totals?.verified ?? 0,
+        pending: totals?.pending ?? 0,
+        rejected: totals?.rejected ?? 0,
+      },
+      spanTotal: totals?.spanTotal ?? 0,
+      windowTotal: totals?.windowTotal ?? 0,
+      trend: summarizeTrend(points),
+      segments,
+      events: toMovementRows(eventInputs),
+      schools: schoolRows.map((row) => ({
+        id: (row.label ?? "unknown").trim().toLowerCase(),
+        school: row.label?.trim() ? row.label : "School not given",
+        total: row.total,
+        recent: row.recent,
+      })),
+      uniqueSchools: schoolRows[0]?.groups ?? 0,
+      referrers: referrerRows.map((row, index) => ({
+        id: row.name?.trim().toLowerCase() ?? `referrer-${index}`,
+        name: row.name?.trim() ? row.name : "Name not given",
+        total: row.total,
+        recent: row.recent,
+        kind: referrerKindOf({ isCampus: row.is_campus, isBatch: row.is_batch }),
+      })),
+      referrerTallies,
+      referredTotal: totals?.referred ?? 0,
+      estimate: estimateNextDay(points),
+    };
+  });
+}
+
+/**
+ * How many stored rows the admin's Event filter can reach per catalogue event.
+ *
+ * Mirrors `segmentMatch` in `src/lib/actions/registrations.ts`: the option is an
+ * event id, the predicate is that event's name as one `ILIKE` over the `segments`
+ * text. Counted here against the whole table so the brief's windowed per-event
+ * counts below have an all-time ceiling to be checked against.
+ */
+async function eventReachability(): Promise<Map<string, number>> {
+  const t = stemfestRegistrations;
+  const catalogue = sql.join(
+    stemfestEvents.map((event) => sql`(${event.id}::text, ${event.name}::text)`),
+    sql`, `,
+  );
+
+  return withDbTimeout("eventReachability", async (tx) => {
+    const rows = rowsOf<{ event_id: string; total: number }>(
+      await tx.execute(sql`
+        select e.event_id, count(*)::int as total
+        from (values ${catalogue}) as e(event_id, event_name)
+        join ${t} on ${t.segments} ilike '%' || e.event_name || '%'
+        group by e.event_id
+      `),
+    );
+    return new Map(rows.map((row) => [row.event_id, row.total]));
+  });
+}
+
+let brief: (RegistrationBrief & { spanTotal: number; windowTotal: number }) | null = null;
+try {
+  brief = await registrationBrief();
+  check("brief read completes on one pooled connection", true, "6 statements, sequential");
+} catch (error) {
+  check("brief read completes on one pooled connection", false, (error as Error).message);
+}
+
+if (brief) {
+  const statusSum = brief.totals.verified + brief.totals.pending + brief.totals.rejected;
+  check(
+    "every registration has exactly one effective payment status",
+    statusSum === brief.totals.allTime,
+    `verified+pending+rejected=${statusSum} allTime=${brief.totals.allTime}`,
+  );
+  check(
+    "trend covers the whole advertised span",
+    brief.trend.days.length === BRIEF_TREND_DAYS && brief.spanDays === BRIEF_TREND_DAYS,
+    `${brief.trend.days.length} of ${BRIEF_TREND_DAYS} days, ${brief.trend.spanTotal} entries`,
+  );
+
+  // The JS gap-fill and the SQL window bound have to name the same rows.
+  const spanSum = brief.trend.days.reduce((sum, day) => sum + day.count, 0);
+  const windowSum = brief.trend.days
+    .slice(-BRIEF_WINDOW_DAYS)
+    .reduce((sum, day) => sum + day.count, 0);
+  check(
+    "daily buckets sum to the SQL span count",
+    spanSum === brief.spanTotal,
+    `js=${spanSum} sql=${brief.spanTotal}`,
+  );
+  check(
+    "brief window matches the SQL window count",
+    brief.trend.current === windowSum && windowSum === brief.windowTotal,
+    `trend.current=${brief.trend.current} last-${BRIEF_WINDOW_DAYS}=${windowSum} sql=${brief.windowTotal}`,
+  );
+
+  const segmentIds = brief.segments.map((row) => row.id).sort().join(",");
+  const catalogueIds = stemfestSegments.map((segment) => segment.id).sort().join(",");
+  check(
+    "every segment gets a row, even a quiet one",
+    segmentIds === catalogueIds,
+    `brief=[${segmentIds}] catalogue=[${catalogueIds}]`,
+  );
+  check(
+    "movement rows carry a direction the brief can print",
+    [...brief.segments, ...brief.events].every(
+      (row) =>
+        (row.direction === "rising" || row.direction === "falling" || row.direction === "flat") &&
+        row.delta === row.current - row.previous &&
+        row.current >= 0 &&
+        row.previous >= 0,
+    ),
+    `${brief.segments.length} segments / ${brief.events.length} events, ` +
+      `${brief.segments.filter((r) => r.direction === "rising").length} rising`,
+  );
+  const eventOverruns = brief.events.filter(
+    (row) => row.current > brief.trend.current || row.previous > brief.trend.previous,
+  );
+  check(
+    "no single event claims more entries than its window has registrations",
+    eventOverruns.length === 0,
+    eventOverruns.length
+      ? `over: ${eventOverruns.map((r) => `${r.id}=${r.current}/${brief.trend.current}`).join(",")}`
+      : `${brief.events.length} events, window holds ${brief.trend.current} registrations`,
+  );
+  // A segment sums its events, so it may legitimately exceed the registration count —
+  // what must not happen is the roll-up disagreeing with the rows it rolls up.
+  const eventById = new Map(brief.events.map((row) => [row.id, row]));
+  const segmentMismatch = brief.segments.filter((segment) => {
+    const expected = stemfestEvents
+      .filter((event) => event.segmentId === segment.id)
+      .reduce(
+        (sum, event) => ({
+          current: sum.current + (eventById.get(event.id)?.current ?? 0),
+          previous: sum.previous + (eventById.get(event.id)?.previous ?? 0),
+        }),
+        { current: 0, previous: 0 },
+      );
+    return segment.current !== expected.current || segment.previous !== expected.previous;
+  });
+  check(
+    "each segment row equals the sum of its own events",
+    segmentMismatch.length === 0,
+    segmentMismatch.length
+      ? `off: ${segmentMismatch.map((r) => r.id).join(",")}`
+      : `entries across segments=${brief.segments.reduce(
+          (sum, r) => sum + r.current,
+          0,
+        )} vs ${brief.trend.current} registrations — a form entering two events is counted in both`,
+  );
+  // The join matches `segments ilike '%'||event_name||'%'`, so two catalogue names that
+  // contain each other would count one registration under both events.
+  const ambiguous = stemfestEvents.flatMap((a) =>
+    stemfestEvents.filter(
+      (b) =>
+        a.id !== b.id &&
+        (a.name === b.name ||
+          a.name.toLowerCase().includes(b.name.toLowerCase()) ||
+          b.name.toLowerCase().includes(a.name.toLowerCase())),
+    ),
+  );
+  check(
+    "event names stay distinguishable inside the stored segments text",
+    ambiguous.length === 0,
+    ambiguous.length
+      ? `overlapping: ${ambiguous.map((e) => e.id).join(",")}`
+      : `${stemfestEvents.length} names, none a substring of another`,
+  );
+
+  // The Event filter reaches a row by its event *name*; the brief counts the same
+  // rows. If a windowed count exceeds what the filter reaches all-time, the id the
+  // URL carries no longer resolves to the text the row stores — and a filtered
+  // table would print fewer registrations than the brief claims.
+  const reachable = await eventReachability();
+  const unreachable = brief.events.filter(
+    (row) => row.current > (reachable.get(row.id) ?? 0),
+  );
+  check(
+    "every event the brief counts is reachable by the Event filter",
+    unreachable.length === 0,
+    unreachable.length
+      ? `filter reaches ${unreachable
+          .map((r) => `${r.id}=${reachable.get(r.id) ?? 0}/${r.current}`)
+          .join(",")}`
+      : `${reachable.size} of ${stemfestEvents.length} events have rows`,
+  );
+
+  check(
+    "school table is capped and every window count fits its all-time count",
+    brief.schools.length <= 6 &&
+      brief.schools.every((row) => row.total >= row.recent) &&
+      brief.uniqueSchools >= brief.schools.length,
+    `${brief.schools.length} rows of ${brief.uniqueSchools} distinct schools`,
+  );
+
+  const tallySum = brief.referrerTallies.reduce((sum, row) => sum + row.referrals, 0);
+  check(
+    "referrer tallies account for every referred registration",
+    tallySum === brief.referredTotal &&
+      brief.referrerTallies.every(
+        (row) =>
+          row.referrals > 0 &&
+          ["campus", "batch", "both", "unmatched"].includes(row.kind),
+      ),
+    `tally=${tallySum} referred=${brief.referredTotal} (${brief.referrerTallies
+      .map((row) => `${row.kind}:${row.referrals}`)
+      .join(" ")})`,
+  );
+  check(
+    "top referrers are ranked, capped, and never claim a window wider than the register",
+    brief.referrers.length <= 10 &&
+      brief.referrers.every((row) => row.total >= row.recent) &&
+      brief.referrers.every(
+        (row, index) => index === 0 || row.total <= brief.referrers[index - 1].total,
+      ),
+    `${brief.referrers.length} rows, top: ${
+      brief.referrers[0] ? `${brief.referrers[0].name} (${brief.referrers[0].kind})` : "—"
+    }`,
+  );
+
+  const e = brief.estimate;
+  check(
+    "next-day estimate is inside its own band and states its method",
+    e.low <= e.expected &&
+      e.expected <= e.high &&
+      e.low >= 0 &&
+      (e.confidence === "moderate" || e.confidence === "low") &&
+      e.basis.trim().length > 0 &&
+      e.day === dayKeyAfter(brief.trend.days[brief.trend.days.length - 1]?.day ?? ""),
+    `${e.label}: ${e.low}–${e.high}, expected ${e.expected}, ${e.confidence}`,
+  );
+  console.log(`        basis: ${e.basis}`);
+  for (const note of e.notes) console.log(`        note:  ${note}`);
 }
 
 console.log(`\n${failures === 0 ? "ALL CHECKS PASSED" : `${failures} CHECK(S) FAILED`}`);

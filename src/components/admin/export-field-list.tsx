@@ -2,6 +2,8 @@
 
 import { useId } from "react";
 import type { AdminReportColumn } from "@/lib/admin/filters";
+import { cn } from "@/lib/utils";
+import { adminLabel, adminTextButton } from "./styles";
 
 /**
  * The "what fields to choose" half of the export dialog: the source's report
@@ -33,7 +35,7 @@ export default function ExportFieldList({
       <legend className="sr-only">Columns to export</legend>
 
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="font-body text-xs font-semibold tracking-wider text-ink/45 uppercase">
+        <p className={adminLabel}>
           {selected.size} of {columns.length} columns
         </p>
         <div className="flex items-center gap-2">
@@ -41,18 +43,18 @@ export default function ExportFieldList({
             type="button"
             onClick={() => onSelectAll(true)}
             disabled={allSelected}
-            className="font-body text-sm text-ink/60 underline underline-offset-2 transition-colors hover:text-manara-teal disabled:pointer-events-none disabled:text-ink/25 disabled:no-underline"
+            className={adminTextButton}
           >
             All fields
           </button>
-          <span aria-hidden="true" className="text-ink/20">
+          <span aria-hidden="true" className="text-admin-line">
             ·
           </span>
           <button
             type="button"
             onClick={() => onSelectAll(false)}
             disabled={selected.size === 0}
-            className="font-body text-sm text-ink/60 underline underline-offset-2 transition-colors hover:text-manara-teal disabled:pointer-events-none disabled:text-ink/25 disabled:no-underline"
+            className={adminTextButton}
           >
             None
           </button>
@@ -67,16 +69,19 @@ export default function ExportFieldList({
             <li key={column.id}>
               <label
                 htmlFor={inputId}
-                className="flex cursor-pointer items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors hover:bg-manara-teal/5"
+                className={cn(
+                  "flex cursor-pointer items-center gap-2.5 rounded-[6px] px-2 py-1.5 transition-colors hover:bg-admin-sunken",
+                  checked && "bg-admin-sunken",
+                )}
               >
                 <input
                   id={inputId}
                   type="checkbox"
                   checked={checked}
                   onChange={(event) => onToggle(column.id, event.target.checked)}
-                  className="h-4 w-4 shrink-0 accent-manara-teal"
+                  className="size-4 shrink-0 accent-admin-ink"
                 />
-                <span className="truncate font-body text-sm text-ink/75">
+                <span className="truncate font-space-body text-sm text-admin-ink-soft">
                   {column.label}
                 </span>
               </label>

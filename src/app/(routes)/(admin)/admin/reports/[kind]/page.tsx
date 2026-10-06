@@ -21,6 +21,7 @@ import {
 } from "@/lib/admin/exports";
 import AutoPrint from "@/components/admin/auto-print";
 import ReportPrintButton from "@/components/admin/report-print-button";
+import { adminLabel, adminTh } from "@/components/admin/styles";
 
 /** Fixed timezone so the stamp matches the day filters above it. */
 const generatedFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -97,8 +98,8 @@ export default async function AdminReportPage({
 
   const cellClass = (column: AdminReportColumn) =>
     column.align === "right"
-      ? "px-2 py-2 text-right font-body text-sm text-ink/70"
-      : "px-2 py-2 font-body text-sm break-words text-ink/70";
+      ? "px-2 py-2 text-right font-space-body text-sm text-admin-ink-soft"
+      : "px-2 py-2 font-space-body text-sm break-words text-admin-ink-soft";
 
   return (
     <div
@@ -111,7 +112,7 @@ export default async function AdminReportPage({
       >
         <Link
           href={source.path}
-          className="inline-flex items-center gap-2 font-body text-sm text-ink/60 transition-colors hover:text-manara-teal"
+          className="inline-flex items-center gap-2 font-space-body text-sm text-admin-muted transition-colors hover:text-admin-ink"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Back to {source.label}
@@ -120,26 +121,27 @@ export default async function AdminReportPage({
       </div>
 
       {/* ── Masthead ─────────────────────────────────────────────────────────────── */}
+      {/*
+        The masthead keeps the club's teal rule and eyebrow on screen as well as
+        on paper: the `@media print` block styles this same header for A4, and a
+        report that changes colour when it is saved is two documents, not one.
+      */}
       <header className="border-b-4 border-manara-teal pb-5">
         <div className="flex items-start justify-between gap-6">
           <div>
-            <p className="font-body text-xs font-semibold tracking-[0.18em] text-manara-teal uppercase">
+            <p className="font-space-body text-2xs font-semibold tracking-[0.16em] text-manara-teal uppercase">
               {siteConfig.name} · Admin export
             </p>
-            <h1 className="mt-1 font-display text-3xl font-bold text-ink">
+            <h1 className="mt-2 font-space-display text-4xl leading-tight font-medium tracking-[-0.02em] text-admin-ink">
               {source.reportTitle}
             </h1>
-            <p className="mt-1 max-w-xl font-body text-sm text-ink/60">
+            <p className="mt-2 max-w-xl font-space-body text-sm leading-relaxed text-admin-muted">
               {source.reportNote}
             </p>
           </div>
-          <div className="shrink-0 border-l border-ink/10 pl-5 text-right">
-            <p className="font-body text-[11px] font-semibold tracking-wider text-ink/40 uppercase">
-              Generated
-            </p>
-            <p className="mt-0.5 font-body text-sm font-medium text-ink">
-              {generated}
-            </p>
+          <div className="shrink-0 border-l border-admin-line pl-5 text-right">
+            <p className={adminLabel}>Generated</p>
+            <p className="mt-1 font-mono text-sm text-admin-ink">{generated}</p>
           </div>
         </div>
       </header>
@@ -148,26 +150,20 @@ export default async function AdminReportPage({
       <section aria-label="Report scope" className="my-5">
         <dl className="grid gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <dt className="font-body text-[11px] font-semibold tracking-wider text-ink/40 uppercase">
-              Rows
-            </dt>
-            <dd className="font-body text-sm font-medium text-ink">
+            <dt className={adminLabel}>Rows</dt>
+            <dd className="font-space-body text-sm font-medium text-admin-ink tabular-nums">
               {report.rows.length} of {report.total}
             </dd>
           </div>
           <div>
-            <dt className="font-body text-[11px] font-semibold tracking-wider text-ink/40 uppercase">
-              Sort
-            </dt>
-            <dd className="font-body text-sm font-medium text-ink">
+            <dt className={adminLabel}>Sort</dt>
+            <dd className="font-space-body text-sm font-medium text-admin-ink">
               {adminSortLabel(source, state.sort)}
             </dd>
           </div>
           <div>
-            <dt className="font-body text-[11px] font-semibold tracking-wider text-ink/40 uppercase">
-              Active filters
-            </dt>
-            <dd className="font-body text-sm font-medium text-ink">
+            <dt className={adminLabel}>Active filters</dt>
+            <dd className="font-space-body text-sm font-medium text-admin-ink">
               {filters.length === 0
                 ? "None — every row"
                 : filters
@@ -179,10 +175,8 @@ export default async function AdminReportPage({
               no line telling the reader so. */}
           {subset && (
             <div>
-              <dt className="font-body text-[11px] font-semibold tracking-wider text-ink/40 uppercase">
-                Columns
-              </dt>
-              <dd className="font-body text-sm font-medium text-ink">
+              <dt className={adminLabel}>Columns</dt>
+              <dd className="font-space-body text-sm font-medium text-admin-ink">
                 {columns.length} of {source.reportColumns.length} —{" "}
                 {columns.map((column) => column.label).join(", ")}
               </dd>
@@ -194,12 +188,9 @@ export default async function AdminReportPage({
       {report.truncated && (
         <p
           role="status"
-          className="mb-6 flex items-start gap-3 rounded-2xl bg-amber-50 p-4 font-body text-sm text-amber-900"
+          className="mb-6 flex items-start gap-3 rounded-[10px] border border-admin-line bg-admin-warn-bg p-4 font-space-body text-sm text-admin-warn-ink"
         >
-          <AlertTriangle
-            className="mt-0.5 h-4 w-4 shrink-0 text-amber-600"
-            aria-hidden="true"
-          />
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           This export hit its {REPORT_ROW_LIMIT}-row ceiling, so it is not the
           whole result. Narrow the filters and export again for the rest.
         </p>
@@ -210,12 +201,12 @@ export default async function AdminReportPage({
           {source.reportTitle} matching the filters listed above.
         </caption>
         <thead>
-          <tr className="border-b border-ink/20">
+          <tr className="border-b border-admin-line">
             {columns.map((column) => (
               <th
                 key={column.id}
                 scope="col"
-                className={`px-2 py-2 font-body text-xs font-semibold tracking-wider text-ink/50 uppercase ${alignClass(column)}`}
+                className={`${adminTh} px-2 ${alignClass(column)}`}
               >
                 {column.label}
               </th>
@@ -224,7 +215,7 @@ export default async function AdminReportPage({
         </thead>
         <tbody>
           {report.rows.map((row, index) => (
-            <tr key={index} className="border-b border-ink/5 align-top">
+            <tr key={index} className="border-b border-admin-line align-top">
               {columns.map((column) => (
                 <td key={column.id} className={cellClass(column)}>
                   {row[column.id] ?? ""}
@@ -236,14 +227,14 @@ export default async function AdminReportPage({
       </table>
 
       {report.rows.length === 0 && (
-        <p className="py-10 text-center font-body text-ink/50">
+        <p className="py-10 text-center font-space-body text-admin-muted">
           {source.empty.filtered}
         </p>
       )}
 
       <p
         data-print="footer"
-        className="mt-6 border-t border-ink/10 pt-3 text-center font-body text-xs text-ink/45"
+        className="mt-6 border-t border-admin-line pt-3 text-center font-space-body text-xs text-admin-muted"
       >
         {siteConfig.name} — {source.reportTitle} · Generated {generated}
       </p>

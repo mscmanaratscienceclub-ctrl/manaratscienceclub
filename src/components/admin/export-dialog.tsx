@@ -18,6 +18,12 @@ import {
   type AdminExportFormat,
 } from "@/lib/admin/exports";
 import { cn } from "@/lib/utils";
+import {
+  adminButton,
+  adminButtonPrimary,
+  adminChipSoft,
+  adminLabel,
+} from "./styles";
 import ExportFieldList from "./export-field-list";
 import ExportFilterFields from "./export-filter-fields";
 import ExportFormatChoice from "./export-format-choice";
@@ -179,7 +185,7 @@ export default function ExportDialog({
         type="button"
         onClick={startExport}
         aria-haspopup="dialog"
-        className="inline-flex items-center gap-2 rounded-xl border border-ink/10 px-3 py-2 font-body text-sm font-medium text-ink/70 transition-colors hover:border-manara-teal hover:text-manara-teal"
+        className={adminButton}
       >
         <FileDown className="h-4 w-4 shrink-0" aria-hidden="true" />
         Export
@@ -204,33 +210,39 @@ export default function ExportDialog({
           // containing block excludes the scrollbar — `100vw` counts it and eats
           // the gutter on exactly the screens with the least room for one.
           "m-auto w-[min(44rem,calc(100%-1.5rem))] max-w-none max-h-[calc(100dvh-1.5rem)] overflow-hidden",
-          "rounded-2xl border border-ink/10 bg-surface p-0 text-ink shadow-xl",
+          "rounded-[10px] border border-admin-line border-t-2 border-t-admin-accent bg-admin-surface p-0 text-admin-ink shadow-admin-dialog",
           // Display is only flex while open: a plain `flex` here would beat the
           // sheet's `dialog:not([open]) { display: none }` and the dialog would
           // stand open on the page from the first render.
-          "open:flex open:flex-col open:backdrop:bg-ink/45",
+          "open:flex open:flex-col open:backdrop:bg-admin-ink/40",
         )}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-ink/5 px-5 py-4">
-          <div>
-            <p className="font-body text-xs font-semibold tracking-[0.18em] text-manara-teal uppercase">
-              Export
-            </p>
-            <h2 id={titleId} className="mt-1 font-display text-xl font-bold text-ink">
-              {source.reportTitle}
-            </h2>
+        <div className="flex items-start justify-between gap-4 border-b border-admin-line bg-admin-accent-soft/60 px-6 py-5">
+          <div className="flex items-start gap-3">
+            <span aria-hidden="true" className={cn(adminChipSoft, "size-9")}>
+              <FileDown className="size-4" />
+            </span>
+            <div>
+              <p className={adminLabel}>Export</p>
+              <h2
+                id={titleId}
+                className="mt-1.5 font-space-display text-2xl leading-tight font-medium tracking-tight text-admin-ink"
+              >
+                {source.reportTitle}
+              </h2>
+            </div>
           </div>
           <button
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Close export options"
-            className="rounded-xl p-2.5 text-ink/40 transition-colors hover:bg-ink/5 hover:text-ink"
+            className="rounded-[6px] p-2 text-admin-muted transition-colors hover:bg-admin-sunken hover:text-admin-ink"
           >
-            <X className="h-5 w-5" aria-hidden="true" />
+            <X className="size-4" aria-hidden="true" />
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 py-5">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-5">
           <ExportFormatChoice
             value={format}
             onChange={setFormat}
@@ -238,9 +250,7 @@ export default function ExportDialog({
           />
 
           <div>
-            <h3 className="mb-2 font-body text-xs font-semibold tracking-wider text-ink/45 uppercase">
-              Fields
-            </h3>
+            <h3 className={cn(adminLabel, "mb-3")}>Fields</h3>
             <ExportFieldList
               columns={source.reportColumns}
               selected={selected}
@@ -283,18 +293,18 @@ export default function ExportDialog({
           />
         </div>
 
-        <div className="border-t border-ink/5 px-5 py-4">
+        <div className="border-t border-admin-line px-6 py-4">
           {error && (
             <p
               role="alert"
-              className="mb-3 rounded-xl bg-rose-50 px-3 py-2 font-body text-sm text-rose-800"
+              className="mb-3 rounded-[6px] bg-admin-danger-bg px-3 py-2 font-space-body text-sm text-admin-danger-ink"
             >
               {error}
             </p>
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="font-body text-xs text-ink/50">
+            <p className="font-space-body text-xs text-admin-muted">
               {allSelected
                 ? "Every field"
                 : `${selected.size} of ${source.reportColumns.length} fields`}
@@ -308,7 +318,7 @@ export default function ExportDialog({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-xl px-3 py-2.5 font-body text-sm text-ink/60 transition-colors hover:text-ink"
+                className="rounded-[6px] px-3 py-2.5 font-space-body text-sm text-admin-muted transition-colors hover:text-admin-ink"
               >
                 Cancel
               </button>
@@ -316,7 +326,7 @@ export default function ExportDialog({
                 type="button"
                 onClick={runExport}
                 disabled={busy || selected.size === 0}
-                className="inline-flex items-center gap-2 rounded-xl bg-manara-teal px-4 py-2.5 font-body text-sm font-semibold text-white transition-colors hover:bg-manara-teal/90 disabled:pointer-events-none disabled:opacity-50"
+                className={adminButtonPrimary}
               >
                 {format === "pdf" ? "Save as PDF" : "Download Excel"}
               </button>

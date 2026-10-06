@@ -1,6 +1,7 @@
 import { AlertTriangle, BadgeCheck, Clock, MessageSquareText, Radio, Trash2 } from "lucide-react";
 import PageHeader from "@/components/admin/page-header";
 import { getSmsLogs } from "@/lib/actions/registrations";
+import { SECTION_ACCENT, adminAccentStyle } from "@/lib/admin/accents";
 import { smsLogStatusOptions, statusValue } from "@/lib/admin/statuses";
 import { formatCount, unwrap } from "@/lib/admin/source-status";
 import {
@@ -29,22 +30,16 @@ export default async function SmsLogsAdminPage({
       label: "Matched",
       value: formatCount(logs?.matchedCount),
       icon: BadgeCheck,
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
     },
     {
       label: "Unmatched",
       value: formatCount(logs?.unmatchedCount),
       icon: Clock,
-      color: "text-manara-yellow",
-      bg: "bg-manara-yellow/15",
     },
     {
       label: "Ignored",
       value: formatCount(logs?.ignoredCount),
       icon: Trash2,
-      color: "text-ink/60",
-      bg: "bg-ink/5",
     },
     {
       label: "Total messages",
@@ -54,13 +49,14 @@ export default async function SmsLogsAdminPage({
           : undefined,
       ),
       icon: MessageSquareText,
-      color: "text-manara-teal",
-      bg: "bg-manara-teal/10",
     },
   ];
 
   return (
-    <div className="flex flex-col gap-8 p-6 md:p-10">
+    <div
+      style={adminAccentStyle(SECTION_ACCENT.smsLogs)}
+      className="flex flex-col gap-8 px-6 py-8 md:px-10 md:py-12"
+    >
       <PageHeader
         eyebrow="Payment reconciliation"
         title={source.reportTitle}
@@ -72,24 +68,19 @@ export default async function SmsLogsAdminPage({
         icon={Radio}
       />
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-admin-line border-t-2 border-t-admin-accent bg-admin-line lg:grid-cols-4">
         {statCards.map((stat) => (
-          <div
-            key={stat.label}
-            className="flex items-center gap-4 rounded-2xl bg-surface p-6 shadow-subtle"
-          >
-            <div className={`rounded-xl ${stat.bg} p-3`}>
-              <stat.icon className={`h-6 w-6 ${stat.color}`} aria-hidden="true" />
-            </div>
-            <div>
-              <p className="font-display text-3xl font-bold text-ink">
-                {stat.value}
-              </p>
-              <p className="font-body text-sm text-ink/60">{stat.label}</p>
-            </div>
+          <div key={stat.label} className="bg-admin-surface p-5">
+            <dt className="flex items-center gap-2 font-space-body text-2xs font-semibold tracking-[0.08em] text-admin-accent-ink uppercase">
+              <stat.icon className="size-3.5 shrink-0" aria-hidden="true" />
+              {stat.label}
+            </dt>
+            <dd className="mt-2.5 font-space-body text-2xl leading-none font-medium text-admin-ink tabular-nums">
+              {stat.value}
+            </dd>
           </div>
         ))}
-      </div>
+      </dl>
 
       {logs ? (
         <SmsLogTable
@@ -117,12 +108,9 @@ export default async function SmsLogsAdminPage({
       ) : (
         <p
           role="alert"
-          className="flex items-start gap-3 rounded-2xl bg-amber-50 p-4 font-body text-sm text-amber-900"
+          className="flex items-start gap-3 rounded-[10px] border border-admin-line bg-admin-warn-bg p-4 font-space-body text-sm text-admin-warn-ink"
         >
-          <AlertTriangle
-            className="mt-0.5 h-4 w-4 shrink-0 text-amber-600"
-            aria-hidden="true"
-          />
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           The SMS log could not be read just now. The figures above are missing
           rather than zero, and the failure has been reported.
         </p>

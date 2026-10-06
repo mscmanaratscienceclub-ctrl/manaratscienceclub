@@ -2,6 +2,7 @@ import { Mail } from "lucide-react";
 
 import PageHeader from "@/components/admin/page-header";
 import { getBulkEmailAudience } from "@/lib/actions/registrations";
+import { SECTION_ACCENT, adminAccentStyle } from "@/lib/admin/accents";
 import {
   parseAdminQuery,
   stemfestSource,
@@ -35,7 +36,10 @@ export default async function BulkEmailPage({
   );
 
   return (
-    <div className="flex flex-col gap-8 p-6 md:p-10">
+    <div
+      style={adminAccentStyle(SECTION_ACCENT.emails)}
+      className="flex flex-col gap-8 px-6 py-8 md:px-10 md:py-12"
+    >
       <PageHeader
         eyebrow="Outreach"
         title="Bulk Emails"

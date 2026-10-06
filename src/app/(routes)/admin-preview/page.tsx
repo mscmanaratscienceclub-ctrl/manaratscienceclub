@@ -1,10 +1,27 @@
 import { notFound } from "next/navigation";
-import { BadgeCheck, Banknote, CalendarDays, Users } from "lucide-react";
+import {
+  BadgeCheck,
+  Banknote,
+  BarChart3,
+  CalendarDays,
+  Clock,
+  FlaskConical,
+  ListFilter,
+  PieChart,
+  School,
+  Share2,
+  Trophy,
+  Users,
+} from "lucide-react";
 
 import AdminShell from "@/components/admin/admin-shell";
-import { DonutChart, RankedBars, StackedBarChart } from "@/components/admin/charts";
+import PageHeader from "@/components/admin/page-header";
+import ActivityChart from "@/components/admin/activity-chart";
+import DonutChart from "@/components/admin/donut-chart";
+import { RankedBars } from "@/components/admin/charts";
 import RecentRegistrationsTable from "@/components/admin/recent-registrations-table";
 import { Panel, StatCard } from "@/components/admin/stat-card";
+import RangeSegments, { TREND_RANGE_PARAM } from "@/components/admin/range-segments";
 import RegistrationsTable, {
   type RegistrationRow,
 } from "@/app/(routes)/(admin)/admin/campus-ambassador/registrations-table";
@@ -17,13 +34,22 @@ import SmsLogTable, {
 import VolunteerRegistrationsTable, {
   type VolunteerRow,
 } from "@/app/(routes)/(admin)/admin/volunteer/volunteer-registrations-table";
+import { SECTION_ACCENT, adminAccentStyle } from "@/lib/admin/accents";
 import {
   ambassadorSource,
+  buildAdminHref,
+  describeFilters,
+  filterOperatorLabel,
+  filterOperatorOptions,
+  parseAdminQuery,
   smsSource,
   stemfestSource,
   volunteerSource,
+  type RawSearchParams,
 } from "@/lib/admin/filters";
 import {
+  TREND_RANGES,
+  parseTrendRange,
   paymentMixSlices,
   stemfestTrendSeries,
   type PaymentMixId,
@@ -45,9 +71,9 @@ import { stemfestNoReferenceLabel } from "@/lib/data/stemfest-registration";
  */
 export const dynamic = "force-dynamic";
 
-// Thirty days so the trend chart is drawn at its real width — the tick density
-// only collides at the full 30 columns.
-const TREND = Array.from({ length: 30 }, (_, index) => {
+// The longest span the chart offers, so `?days=` can be checked at every value —
+// tick density and the plot's own width only collide at 90 columns.
+const TREND = Array.from({ length: Math.max(...TREND_RANGES) }, (_, index) => {
   const day = new Date(Date.UTC(2026, 8, 1) + index * 86_400_000)
     .toISOString()
     .slice(0, 10);
@@ -90,7 +116,8 @@ const STEMFEST_ROWS: StemfestRow[] = [
   name: "Ayesha Rahman",
   classLabel: "Class 9",
   school: "Manarat Dhaka International School & College",
-  segments: 'Robotics Sprint · Team of 3 · Team "Circuit Breakers"',
+  segments:
+    'LFR (Line Following Robot) · Team of 4 · Team “Circuit Breakers”, Mathematics · Category D',
   reference: index === 0 ? "Abrar Jawad" : null,
   totalFee: 1450,
   transactionId: "DIL9QJMSOF",
@@ -140,10 +167,53 @@ const SMS_ROWS: SmsLogRow[] = ["DIL9QJMSOF", "DIM6QL9MSU"].map(
   }),
 );
 
-export default function AdminPreviewPage() {
+/**
+ * A filter state spelled the way a URL spells one, including the two operator
+ * prefixes — `!` for a negation, `=` for an exact match on a text field.
+ *
+ * `/admin` cannot be opened without an admin session and the only reachable
+ * database is production, so this is where the filter contract itself is checked:
+ * the panel below reads this through `parseAdminQuery` and shows what the chips,
+ * the report's scope strip and the export's scope sheet would say.
+ */
+const FILTER_FIXTURE: RawSearchParams = {
+  q: "ayesha",
+  segment: "!lfr",
+  school: "=Manarat Dhaka International School & College",
+  class: "class-9",
+  payment: "verified",
+  from: "2026-09-14",
+  to: "2026-09-20",
+  transactionId: "8N7A2B1C2D",
+};
+
+const fixtureState = parseAdminQuery(stemfestSource, FILTER_FIXTURE);
+const fixtureFilters = describeFilters(stemfestSource, fixtureState);
+const fixtureHref = buildAdminHref(stemfestSource.path, fixtureState);
+
+/** Every operator each source's fields offer, as the menus render them. */
+const operatorMenus = stemfestSource.filters.map((field) => ({
+  id: field.id,
+  label: field.label,
+  kind: field.kind,
+  operators: filterOperatorOptions(field).map(
+    (operator) => filterOperatorLabel(field, operator).menu,
+  ),
+}));
+
+export default async function AdminPreviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>;
+}) {
   if (process.env.NODE_ENV === "production") notFound();
 
   const emptyState = { query: "", values: {}, page: 1 };
+
+  // The same read `/admin` performs, so the control's selected state and the
+  // plot's long-span geometry are checked against the real code path.
+  const days = parseTrendRange((await searchParams)[TREND_RANGE_PARAM]);
+  const trend = TREND.slice(-days);
 
   return (
     <AdminShell
@@ -153,19 +223,16 @@ export default function AdminPreviewPage() {
         role: "admin",
       }}
     >
-      <div className="flex flex-col gap-8 p-6 md:p-10">
-        <header>
-          <p className="font-body text-xs font-semibold tracking-[0.18em] text-manara-teal uppercase">
-            Overview
-          </p>
-          <h1 className="mt-2 font-display text-3xl font-bold text-ink">
-            Admin shell preview
-          </h1>
-          <p className="mt-1 max-w-2xl font-body text-ink/60">
-            Fixture data, real components. Check the rail, the tables and the
-            charts at 375px and on a desktop.
-          </p>
-        </header>
+      <div
+        style={adminAccentStyle(SECTION_ACCENT.dashboard)}
+        className="flex flex-col gap-8 px-6 py-8 md:px-10 md:py-12"
+      >
+        <PageHeader
+          eyebrow="Overview"
+          title="Admin shell preview"
+          description="Fixture data, real components. Check the rail, the tables and the charts at 375px and on a desktop."
+          icon={FlaskConical}
+        />
 
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
@@ -174,7 +241,7 @@ export default function AdminPreviewPage() {
             note="Every entry from the STEM Fest event form, all time."
             icon={Users}
             tone="purple"
-            spark={TREND.map((point) => point.counts[0])}
+            spark={trend.map((point) => point.counts[0])}
           />
           <StatCard
             label="Verified payments"
@@ -196,7 +263,7 @@ export default function AdminPreviewPage() {
             note="New STEM Fest entries since this time last week."
             icon={CalendarDays}
             tone="yellow"
-            spark={TREND.slice(-7).map((point) => point.counts[0])}
+            spark={trend.slice(-7).map((point) => point.counts[0])}
           />
         </div>
 
@@ -204,17 +271,20 @@ export default function AdminPreviewPage() {
           <Panel
             className="xl:col-span-2"
             title="Registration activity"
-            description="STEM Fest entries a day over the last 30 days."
+            description={`STEM Fest entries a day over the last ${days} days.`}
+            icon={BarChart3}
+            action={<RangeSegments value={days} basePath="/admin-preview" />}
           >
-            <StackedBarChart
-              points={TREND}
+            <ActivityChart
+              points={trend}
               series={stemfestTrendSeries}
-              ariaLabel="Bar chart of STEM Fest entries per day over the last 30 days."
+              ariaLabel={`Bar chart of STEM Fest entries per day over the last ${days} days.`}
             />
           </Panel>
 
           <Panel
             title="Payment progress"
+            icon={PieChart}
             description="STEM Fest registrations by payment status."
           >
             <DonutChart
@@ -232,21 +302,28 @@ export default function AdminPreviewPage() {
         <div className="grid gap-5 xl:grid-cols-3">
           <Panel
             title="Most-entered events"
+            icon={Trophy}
             description="STEM Fest events by number of registrations."
           >
             <RankedBars
               tone="purple"
               ariaLabel="Bar list of STEM Fest events by registration count."
               items={[
-                { id: "robotics", label: "Robotics Sprint", value: 24, sublabel: "Robotics" },
-                { id: "olympiad", label: "Science Olympiad", value: 19, sublabel: "Olympiad" },
-                { id: "display", label: "Project Display", value: 11, sublabel: "Display" },
+                { id: "mathematics", label: "Mathematics", value: 24, sublabel: "Olympiads" },
+                { id: "lfr", label: "LFR (Line Following Robot)", value: 19, sublabel: "Robotics" },
+                {
+                  id: "project-display",
+                  label: "Project Display",
+                  value: 11,
+                  sublabel: "Project Display",
+                },
               ]}
             />
           </Panel>
 
           <Panel
             title="Schools represented"
+            icon={School}
             description="14 distinct schools across STEM Fest entries; every Manarat spelling counts as one."
           >
             <RankedBars
@@ -262,6 +339,7 @@ export default function AdminPreviewPage() {
 
           <Panel
             title="Reference leaderboard"
+            icon={Share2}
             description="9 referrers, including entries nobody referred."
           >
             <RankedBars
@@ -280,6 +358,7 @@ export default function AdminPreviewPage() {
         <Panel
           title="Recent registrations"
           description="The latest STEM Fest entries."
+          icon={Clock}
         >
           <RecentRegistrationsTable
             rows={STEMFEST_ROWS.map((row) => ({
@@ -293,8 +372,52 @@ export default function AdminPreviewPage() {
           />
         </Panel>
 
+        <Panel
+          title="Filter contract"
+          icon={ListFilter}
+          description="One query string, read back through src/lib/admin/filters.ts. Nothing here touches the database — it is the contract, not a query."
+        >
+          <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <dt className="font-space-body text-2xs font-semibold tracking-[0.08em] text-admin-muted uppercase">
+                In the URL
+              </dt>
+              <dd className="mt-1 font-mono text-xs break-all text-admin-ink-soft">
+                {fixtureHref}
+              </dd>
+            </div>
+
+            {fixtureFilters.map((filter) => (
+              <div key={filter.label}>
+                <dt className="font-space-body text-2xs font-semibold tracking-[0.08em] text-admin-muted uppercase">
+                  {filter.label}
+                </dt>
+                <dd className="mt-1 font-space-body text-sm text-admin-ink">
+                  {filter.display}
+                </dd>
+              </div>
+            ))}
+
+            <div className="sm:col-span-2">
+              <dt className="font-space-body text-2xs font-semibold tracking-[0.08em] text-admin-muted uppercase">
+                Comparisons offered
+              </dt>
+              <dd className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-space-body text-xs text-admin-ink-soft">
+                {operatorMenus.map((field) => (
+                  <span key={field.id}>
+                    {field.label}:{" "}
+                    {field.operators.length > 0
+                      ? field.operators.join(" / ")
+                      : `${field.kind} — no comparison`}
+                  </span>
+                ))}
+              </dd>
+            </div>
+          </dl>
+        </Panel>
+
         <section className="flex flex-col gap-5">
-          <h2 className="font-display text-xl font-semibold text-ink">
+          <h2 className="font-space-display text-2xl leading-tight font-medium tracking-tight text-admin-ink">
             The five data tables
           </h2>
 

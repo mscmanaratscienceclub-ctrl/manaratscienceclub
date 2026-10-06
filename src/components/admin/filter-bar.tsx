@@ -11,6 +11,11 @@ import type { AdminFilterControls } from "@/lib/hooks/use-admin-filters";
 import { cn } from "@/lib/utils";
 import { FilterField } from "./filter-controls";
 import ExportDialog from "./export-dialog";
+import {
+  adminButton,
+  adminLabel,
+  adminTextButton,
+} from "./styles";
 
 /**
  * Search, filters, sort and export for one admin table.
@@ -45,7 +50,7 @@ export default function FilterBar({
   const active = activeFilterList(source, state);
 
   return (
-    <div className="border-b border-ink/5 px-6 py-4">
+    <div className="border-b border-admin-line px-6 py-4">
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-56 flex-1">
           <label htmlFor="admin-search" className="sr-only">
@@ -53,7 +58,7 @@ export default function FilterBar({
           </label>
           <div className="relative">
             <Search
-              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-ink/35"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-admin-accent-ink"
               aria-hidden="true"
             />
             <input
@@ -62,7 +67,7 @@ export default function FilterBar({
               value={controls.search}
               onChange={(event) => controls.setSearch(event.target.value)}
               placeholder={source.searchPlaceholder}
-              className="w-full rounded-xl border border-ink/10 bg-cream/40 py-2 pr-3 pl-9 font-body text-sm text-ink outline-none transition-colors placeholder:text-ink/35 focus:border-manara-teal"
+              className="w-full rounded-[6px] border border-admin-line bg-admin-surface py-2 pr-3 pl-9 font-space-body text-sm text-admin-ink outline-none transition-colors placeholder:text-admin-muted focus:border-admin-ink"
             />
           </div>
         </div>
@@ -77,10 +82,7 @@ export default function FilterBar({
         ))}
 
         <div className="min-w-40 flex-1">
-          <label
-            htmlFor="admin-sort"
-            className="mb-1 block font-body text-xs font-semibold tracking-wider text-ink/40 uppercase"
-          >
+          <label htmlFor="admin-sort" className={cn(adminLabel, "mb-1.5 block")}>
             Sort
           </label>
           <select
@@ -89,7 +91,7 @@ export default function FilterBar({
             onChange={(event) =>
               controls.setSort(event.target.value as AdminQueryState["sort"])
             }
-            className="w-full rounded-xl border border-ink/10 bg-cream/40 px-3 py-2 font-body text-sm text-ink outline-none transition-colors focus:border-manara-teal"
+            className="w-full rounded-[6px] border border-admin-line bg-admin-surface px-3 py-2 font-space-body text-sm text-admin-ink outline-none transition-colors focus:border-admin-ink"
           >
             {source.sort.map((option) => (
               <option key={option.value} value={option.value}>
@@ -103,7 +105,7 @@ export default function FilterBar({
       </div>
 
       {showSecondary && (
-        <div className="mt-3 flex flex-wrap items-end gap-3">
+        <div className="mt-3 flex flex-wrap items-end gap-3 border-t border-admin-line pt-4">
           {secondary.map((field) => (
             <FilterField
               key={field.id}
@@ -115,18 +117,15 @@ export default function FilterBar({
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         {secondary.length > 0 && (
           <button
             type="button"
             onClick={() => setMoreOpen((open) => !open)}
             aria-expanded={showSecondary}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-xl border border-ink/10 px-3 py-1.5",
-              "font-body text-sm text-ink/60 transition-colors hover:border-manara-teal hover:text-manara-teal",
-            )}
+            className={cn(adminButton, "py-1.5 text-xs")}
           >
-            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+            <SlidersHorizontal className="size-3.5" aria-hidden="true" />
             {showSecondary ? "Fewer filters" : `More filters (${secondary.length})`}
           </button>
         )}
@@ -137,20 +136,16 @@ export default function FilterBar({
             type="button"
             onClick={() => controls.clearFilter(filter.id)}
             aria-label={`Remove filter: ${filter.label} ${filter.display}`}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-manara-teal/10 px-3 py-1.5 font-body text-sm text-manara-teal transition-colors hover:bg-manara-teal/20"
+            className="inline-flex items-center gap-1.5 rounded-full border border-admin-accent-soft bg-admin-accent-soft py-1.5 pr-2.5 pl-3 font-space-body text-xs text-admin-accent-ink transition-colors hover:border-admin-accent"
           >
-            <span className="text-manara-teal/60">{filter.label}:</span>
-            <span className="max-w-40 truncate">{filter.display}</span>
-            <X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="opacity-70">{filter.label}</span>
+            <span className="max-w-48 truncate">{filter.display}</span>
+            <X className="size-3.5 shrink-0 opacity-70" aria-hidden="true" />
           </button>
         ))}
 
         {active.length > 1 && (
-          <button
-            type="button"
-            onClick={controls.clearAll}
-            className="font-body text-sm text-ink/45 underline underline-offset-2 transition-colors hover:text-ink"
-          >
+          <button type="button" onClick={controls.clearAll} className={adminTextButton}>
             Clear all
           </button>
         )}

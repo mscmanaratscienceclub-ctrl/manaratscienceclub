@@ -20,6 +20,7 @@ import {
   desc,
   eq,
   ilike,
+  not,
   or,
   sql,
   type AnyColumn,
@@ -28,8 +29,15 @@ import {
 import {
   ADMIN_TIME_ZONE,
   REPORT_ROW_LIMIT,
+  ambassadorSource,
+  readFilterValue,
+  smsSource,
+  stemfestSource,
+  volunteerSource,
+  type AdminFilterOperator,
   type AdminQueryState,
   type AdminSortId,
+  type AdminSourceConfig,
   type AdminSourceId,
 } from "@/lib/admin/filters";
 import {
@@ -66,11 +74,26 @@ import {
 import {
   formatBdt,
   getStemfestClassLabel,
+  getStemfestEvent,
   getStemfestSegment,
   manaratSchoolLabel,
   manaratSchoolLikePattern,
   stemfestEvents,
+  stemfestSegments,
 } from "@/lib/data/stemfest-registration";
+import {
+  BRIEF_TREND_DAYS,
+  BRIEF_WINDOW_DAYS,
+  estimateNextDay,
+  referrerKindOf,
+  summarizeTrend,
+  toMovementRows,
+  type BriefSchoolRow,
+  type MovementInput,
+  type ReferrerKind,
+  type ReferrerRow,
+  type RegistrationBrief,
+} from "@/lib/admin/brief";
 import {
   DASHBOARD_TREND_DAYS,
   recentDayKeys,
@@ -183,21 +206,79 @@ function term(value: string | undefined): string | undefined {
 }
 
 /**
- * `ILIKE '%value%'` with wildcards escaped — the `kind: "text"` comparison in
- * `src/lib/admin/filters.ts`. Case-insensitive because these columns hold typed
- * free text: "Manarat" and "manarat" are the same school.
+ * One filter's value, with the operator the admin chose taken off it.
+ *
+ * The operator rides on the stored value itself (`src/lib/admin/filters.ts`), so
+ * every comparison below reads its match through `filterMatches` rather than
+ * touching `state.values` directly — there is then exactly one place that decides
+ * what a `!` or `=` prefix means.
  */
-function contains(column: AnyColumn, value: string | undefined): SQL | undefined {
-  const needle = term(value);
-  if (!needle) return undefined;
-  return ilike(column, `%${escapeLike(needle)}%`);
+interface FilterMatch {
+  operator: AdminFilterOperator;
+  value: string;
 }
 
-/** The `kind: "select"` comparison — case-insensitive equality. */
-function equalsLoose(column: AnyColumn, value: string | undefined): SQL | undefined {
-  const needle = term(value);
-  if (!needle) return undefined;
-  return sql`lower(${column}) = ${needle.toLowerCase()}`;
+/**
+ * Every active filter of a source, decoded once per query build.
+ *
+ * Unknown values are dropped rather than passed on: a filter whose value this
+ * build no longer recognises — a field that used to take free text, a hand-edited
+ * URL — narrows nothing instead of reaching Postgres as a comparison against a
+ * value no option offers.
+ */
+function filterMatches(
+  source: AdminSourceConfig,
+  state: AdminQueryState,
+): Record<string, FilterMatch> {
+  const matches: Record<string, FilterMatch> = {};
+
+  for (const field of source.filters) {
+    const raw = state.values[field.id];
+    if (!raw) continue;
+    const reading = readFilterValue(field, raw);
+    if (reading) {
+      matches[field.id] = { operator: reading.operator, value: reading.value };
+    }
+  }
+
+  return matches;
+}
+
+/**
+ * The `kind: "text"` comparisons — contains (`similar`), exactly (`is`) and the
+ * negation of the field's default (`not`).
+ *
+ * Wildcards are escaped on every branch, so a literal `%`, `_` or `\` typed into a
+ * filter matches itself. `is` passes the value with no wildcards at all, which is
+ * `ILIKE`'s case-insensitive equality — the same comparison a `select` makes.
+ */
+function textMatch(
+  column: AnyColumn,
+  match: FilterMatch | undefined,
+): SQL | undefined {
+  if (!match) return undefined;
+  const needle = escapeLike(match.value);
+
+  switch (match.operator) {
+    case "similar":
+      return ilike(column, `%${needle}%`);
+    case "is":
+      return ilike(column, needle);
+    case "not":
+      return sql`${column} not ilike ${`%${needle}%`}`;
+  }
+}
+
+/** The `kind: "select"` comparisons — case-insensitive equality, or its negation. */
+function selectMatch(
+  column: AnyColumn,
+  match: FilterMatch | undefined,
+): SQL | undefined {
+  if (!match) return undefined;
+  const needle = match.value.toLowerCase();
+  return match.operator === "not"
+    ? sql`lower(${column}) <> ${needle}`
+    : sql`lower(${column}) = ${needle}`;
 }
 
 /** The search box: one `OR` across every column that form's search should reach. */
@@ -255,14 +336,37 @@ function amountBound(
 }
 
 /** A boolean column selected by a named choice rather than by `true`/`false`. */
-function booleanChoice(
+function booleanMatch(
   column: AnyColumn,
-  value: string | undefined,
+  match: FilterMatch | undefined,
   trueValue: string,
 ): SQL | undefined {
-  const choice = term(value);
-  if (!choice) return undefined;
-  return eq(column, choice === trueValue);
+  if (!match) return undefined;
+  const chosen = match.value === trueValue;
+  // "Is not first-time CA" is "returning", not a missing answer — the column is
+  // `not null`, so the negated choice is the other option.
+  return eq(column, match.operator === "not" ? !chosen : chosen);
+}
+
+/**
+ * The `segment` filter: one event of the fest.
+ *
+ * A registration's `segments` column holds the event names its entries describe
+ * (`describeEntry`), never a segment name, so the option — an event id — is
+ * resolved to its name and the row text is searched for it. `not` keeps the rows
+ * that entered something else. No two catalogue event names are a substring of
+ * another, which `pnpm db:verify` asserts, so matching one name cannot pick up
+ * another event's rows.
+ */
+function segmentMatch(
+  column: AnyColumn,
+  match: FilterMatch | undefined,
+): SQL | undefined {
+  if (!match) return undefined;
+  const name = getStemfestEvent(match.value)?.name;
+  if (!name) return undefined;
+  const entered = ilike(column, `%${escapeLike(name)}%`);
+  return match.operator === "not" ? not(entered) : entered;
 }
 
 /**
@@ -307,25 +411,25 @@ function orderFor(sort: AdminSortId, columns: SortColumns): SQL[] {
 
 function ambassadorWhere(state: AdminQueryState): SQL | undefined {
   const t = campusAmbassadorRegistrations;
-  const v = state.values;
+  const m = filterMatches(ambassadorSource, state);
 
   return and(
     containsAny(
       [t.name, t.school, t.class, t.phone, t.email, t.type, t.experience],
       state.query,
     ),
-    equalsLoose(t.type, v.type),
-    equalsLoose(t.gender, v.gender),
-    booleanChoice(t.firstTimeCa, v.firstTime, "first-time"),
-    ...dayRange(t.createdAt, v.from, v.to),
-    contains(t.class, v.class),
-    contains(t.school, v.school),
+    selectMatch(t.type, m.type),
+    selectMatch(t.gender, m.gender),
+    booleanMatch(t.firstTimeCa, m.firstTime, "first-time"),
+    ...dayRange(t.createdAt, m.from?.value, m.to?.value),
+    textMatch(t.class, m.class),
+    textMatch(t.school, m.school),
   );
 }
 
 function volunteerWhere(state: AdminQueryState): SQL | undefined {
   const t = volunteerRegistrations;
-  const v = state.values;
+  const m = filterMatches(volunteerSource, state);
 
   return and(
     containsAny(
@@ -340,14 +444,14 @@ function volunteerWhere(state: AdminQueryState): SQL | undefined {
       ],
       state.query,
     ),
-    equalsLoose(t.shift, v.shift),
-    ...dayRange(t.createdAt, v.from, v.to),
-    contains(t.classSection, v.classSection),
-    contains(t.roll, v.roll),
-    contains(t.studentCode, v.studentCode),
-    contains(t.attendanceWeek, v.attendanceWeek),
-    contains(t.parentsComfort, v.parentsComfort),
-    contains(t.campusHesitation, v.campusHesitation),
+    selectMatch(t.shift, m.shift),
+    ...dayRange(t.createdAt, m.from?.value, m.to?.value),
+    textMatch(t.classSection, m.classSection),
+    textMatch(t.roll, m.roll),
+    textMatch(t.studentCode, m.studentCode),
+    textMatch(t.attendanceWeek, m.attendanceWeek),
+    textMatch(t.parentsComfort, m.parentsComfort),
+    textMatch(t.campusHesitation, m.campusHesitation),
   );
 }
 
@@ -362,15 +466,19 @@ function volunteerWhere(state: AdminQueryState): SQL | undefined {
  */
 function stemfestWhere(state: AdminQueryState): SQL | undefined {
   const t = stemfestRegistrations;
-  const v = state.values;
+  const m = filterMatches(stemfestSource, state);
 
   // Narrowed before it reaches SQL, so a hand-edited `?payment=` cannot reach the
   // database as a comparison against a value no option offers.
-  const paymentValue = term(v.payment);
-  const payment =
+  const paymentValue = m.payment?.value;
+  const paymentFilter =
     paymentValue && isStemfestPaymentStatus(paymentValue)
       ? stemfestPaymentFilter(paymentValue)
       : undefined;
+  const payment =
+    paymentFilter && m.payment?.operator === "not"
+      ? not(paymentFilter)
+      : paymentFilter;
 
   return and(
     containsAny(
@@ -378,29 +486,29 @@ function stemfestWhere(state: AdminQueryState): SQL | undefined {
       state.query,
     ),
     payment,
-    equalsLoose(t.class, v.class),
-    contains(t.school, v.school),
-    ...dayRange(t.createdAt, v.from, v.to),
-    contains(t.segments, v.segment),
-    contains(t.transactionId, v.transactionId),
+    selectMatch(t.class, m.class),
+    textMatch(t.school, m.school),
+    ...dayRange(t.createdAt, m.from?.value, m.to?.value),
+    segmentMatch(t.segments, m.segment),
+    textMatch(t.transactionId, m.transactionId),
   );
 }
 
 function smsWhere(state: AdminQueryState): SQL | undefined {
   const t = stemfestPaymentSms;
-  const v = state.values;
+  const m = filterMatches(smsSource, state);
 
   return and(
     containsAny(
       [t.sender, t.rawMessage, t.transactionId, t.senderNumber, t.status],
       state.query,
     ),
-    equalsLoose(t.status, v.status),
-    contains(t.sender, v.sender),
-    ...dayRange(t.receivedAt, v.from, v.to),
-    contains(t.senderNumber, v.senderNumber),
-    amountBound(t.amount, v.minAmount, "min"),
-    amountBound(t.amount, v.maxAmount, "max"),
+    selectMatch(t.status, m.status),
+    textMatch(t.sender, m.sender),
+    ...dayRange(t.receivedAt, m.from?.value, m.to?.value),
+    textMatch(t.senderNumber, m.senderNumber),
+    amountBound(t.amount, m.minAmount?.value, "min"),
+    amountBound(t.amount, m.maxAmount?.value, "max"),
   );
 }
 
@@ -1019,6 +1127,281 @@ export async function getSmsLogs(state: AdminQueryState): Promise<SmsLogsResult>
       matchedCount: statusCounts?.matched ?? 0,
       unmatchedCount: statusCounts?.unmatched ?? 0,
       ignoredCount: statusCounts?.ignored ?? 0,
+    };
+  });
+}
+
+// ── Registration brief ───────────────────────────────────────────────────────
+//
+// The five figures the printable brief states, read as one document. Unlike the
+// dashboard — which fans out across three actions because three sources render at
+// three priorities — the brief has to be internally consistent: its trend total,
+// its segment rows and its projection all describe the *same* seven days, so they
+// are read in one transaction, sequentially, inside the pool's one-connection
+// budget (`src/db/index.ts`).
+
+/** Rows the brief's school league table and referrer leaderboard print. */
+const BRIEF_SCHOOL_LIMIT = 6;
+const BRIEF_REFERRER_LIMIT = 10;
+
+/**
+ * Everything the printed brief says, as one read.
+ *
+ * Every "last 7 days" here means the same seven **local** days the panel's chart
+ * bars name, which is why the window bounds are `(now() at time zone …)::date - n`
+ * rather than `now() - interval`: an interval window would cut the day at a UTC
+ * boundary and let the brief report a week the admin cannot see on the screen
+ * beside it.
+ */
+export async function getRegistrationBrief(): Promise<RegistrationBrief> {
+  await requireAdmin();
+  const s = stemfestRegistrations;
+  const ca = campusAmbassadorRegistrations;
+
+  /** A registration's calendar day in the admin's timezone. */
+  const stemfestDay = sql`(${s.createdAt} at time zone ${ADMIN_TIME_ZONE})::date`;
+  // `::int` on each offset is load-bearing for the same reason `getRegistrationTrend`
+  // documents: `date - $1` otherwise resolves to the date-difference operator and
+  // hands back a day *number*, which then gets compared against a date.
+  const windowStart = sql`(now() at time zone ${ADMIN_TIME_ZONE})::date - ${BRIEF_WINDOW_DAYS - 1}::int`;
+  const priorStart = sql`(now() at time zone ${ADMIN_TIME_ZONE})::date - ${BRIEF_WINDOW_DAYS * 2 - 1}::int`;
+  const spanStart = sql`(now() at time zone ${ADMIN_TIME_ZONE})::date - ${BRIEF_TREND_DAYS - 1}::int`;
+
+  return withDbTimeout("getRegistrationBrief", async (tx) => {
+    const [totals] = await tx
+      .select({
+        allTime: sql<number>`count(*)::int`,
+        verified: sql<number>`count(*) filter (where ${stemfestEffectivePaymentStatus()} = 'verified')::int`,
+        pending: sql<number>`count(*) filter (where ${stemfestEffectivePaymentStatus()} = 'pending')::int`,
+        rejected: sql<number>`count(*) filter (where ${stemfestEffectivePaymentStatus()} = 'rejected')::int`,
+        referred: sql<number>`count(*) filter (where ${s.reference} is not null)::int`,
+      })
+      .from(s);
+
+    // ── 1. Trend ─────────────────────────────────────────────────────────────
+    const dayKeys = recentDayKeys(BRIEF_TREND_DAYS);
+    const daily = await dailyCounts(tx, s, s.createdAt, spanStart);
+    const points: RegistrationTrendPoint[] = dayKeys.map((day) => ({
+      day,
+      counts: [daily.get(day) ?? 0],
+    }));
+
+    // ── 2. Segments, booming and down ────────────────────────────────────────
+    //
+    // Counted from the stored `segments` prose the way `stemfestEventCounts` is —
+    // the catalogue supplies both ids and names, so a new event appears the moment
+    // it is added to registration — but once per event *per window*, in one
+    // statement. A segment with no entries at all still gets a row: "nothing
+    // happened here either" is part of the answer.
+    const eventCatalogue = sql.join(
+      stemfestEvents.map((event) => sql`(${event.id}::text, ${event.name}::text)`),
+      sql`, `,
+    );
+
+    const eventRows = asRows<{ event_id: string; recent: number; prior: number }>(
+      await tx.execute(sql`
+        select
+          e.event_id,
+          count(*) filter (where ${stemfestDay} >= ${windowStart})::int as recent,
+          count(*) filter (
+            where ${stemfestDay} < ${windowStart} and ${stemfestDay} >= ${priorStart}
+          )::int as prior
+        from (values ${eventCatalogue}) as e(event_id, event_name)
+        join ${s} on ${s.segments} ilike '%' || e.event_name || '%'
+        where ${stemfestDay} >= ${priorStart}
+        group by e.event_id
+      `),
+    );
+
+    const windowById = new Map(
+      eventRows.map((row) => [row.event_id, { current: row.recent, previous: row.prior }]),
+    );
+    const eventById = new Map(stemfestEvents.map((event) => [event.id, event]));
+
+    const eventInputs: MovementInput[] = eventRows.flatMap((row) => {
+      const event = eventById.get(row.event_id);
+      if (!event) return [];
+      return [
+        {
+          id: event.id,
+          label: event.name,
+          sublabel: getStemfestSegment(event.segmentId)?.name ?? event.segmentId,
+          current: row.recent,
+          previous: row.prior,
+        },
+      ];
+    });
+
+    const events = toMovementRows(eventInputs);
+
+    const segments = toMovementRows(
+      stemfestSegments.map((segment) => {
+        let current = 0;
+        let previous = 0;
+        for (const event of stemfestEvents) {
+          if (event.segmentId !== segment.id) continue;
+          const counted = windowById.get(event.id);
+          if (counted) {
+            current += counted.current;
+            previous += counted.previous;
+          }
+        }
+        return {
+          id: segment.id,
+          label: segment.name,
+          sublabel: segment.blurb,
+          current,
+          previous,
+        } satisfies MovementInput;
+      }),
+    );
+
+    // ── 3. Schools ───────────────────────────────────────────────────────────
+    //
+    // The same grouping the dashboard's league table uses — every Manarat spelling
+    // collapsed to one name before counting — with the window's count alongside
+    // the all-time one, so "who registers the most" and "who is registering right
+    // now" are not confused for each other.
+    const schoolRows = asRows<{
+      label: string | null;
+      total: number;
+      recent: number;
+      groups: number;
+    }>(
+      await tx.execute(sql`
+        select label, cnt as total, recent, total_groups as groups
+        from (
+          select
+            min(label) as label,
+            count(*)::int as cnt,
+            count(*) filter (where day >= ${windowStart})::int as recent,
+            (count(*) over ())::int as total_groups
+          from (
+            select
+              case
+                when ${s.school} ilike ${manaratSchoolLikePattern} then ${manaratSchoolLabel}
+                else btrim(${s.school})
+              end as label,
+              ${stemfestDay} as day
+            from ${s}
+          ) as entry
+          group by lower(label)
+        ) as ranked
+        order by total desc, label asc
+        limit ${BRIEF_SCHOOL_LIMIT}
+      `),
+    );
+
+    const schools: BriefSchoolRow[] = schoolRows.map((row) => ({
+      id: (row.label ?? "unknown").trim().toLowerCase(),
+      school: row.label?.trim() ? row.label : "School not given",
+      total: row.total,
+      recent: row.recent,
+    }));
+
+    // ── 4. Who refers, and what they are ─────────────────────────────────────
+    //
+    // `reference` is a name, so its kind comes from the ambassador register rather
+    // than from the roster the form offered: a name matches a register row on
+    // lower-cased, trimmed text, and a referrer signed up under both kinds is
+    // reported as `both` instead of silently choosing one.
+    const referrerRows = asRows<{
+      name: string | null;
+      total: number;
+      recent: number;
+      is_campus: boolean;
+      is_batch: boolean;
+    }>(
+      await tx.execute(sql`
+        with referred as (
+          select
+            lower(btrim(${s.reference})) as key,
+            min(${s.reference}) as name,
+            count(*)::int as total,
+            count(*) filter (where ${stemfestDay} >= ${windowStart})::int as recent
+          from ${s}
+          where ${s.reference} is not null
+          group by 1
+        ), ambassadors as (
+          select
+            lower(btrim(${ca.name})) as key,
+            bool_or(${ca.type} = 'campus') as is_campus,
+            bool_or(${ca.type} = 'batch') as is_batch
+          from ${ca}
+          group by 1
+        )
+        select
+          r.name,
+          r.total,
+          r.recent,
+          coalesce(a.is_campus, false) as is_campus,
+          coalesce(a.is_batch, false) as is_batch
+        from referred as r
+        left join ambassadors as a on a.key = r.key
+        order by r.total desc, r.name asc
+        limit ${BRIEF_REFERRER_LIMIT}
+      `),
+    );
+
+    const referrers: ReferrerRow[] = referrerRows.map((row, index) => ({
+      id: row.name?.trim().toLowerCase() ?? `referrer-${index}`,
+      name: row.name?.trim() ? row.name : "Name not given",
+      total: row.total,
+      recent: row.recent,
+      kind: referrerKindOf({ isCampus: row.is_campus, isBatch: row.is_batch }),
+    }));
+
+    const referrerTallies = asRows<{
+      kind: ReferrerKind;
+      referrals: number;
+    }>(
+      await tx.execute(sql`
+        select kind, count(*)::int as referrals
+        from (
+          select
+            case
+              when a.is_campus and a.is_batch then 'both'
+              when a.is_campus then 'campus'
+              when a.is_batch then 'batch'
+              else 'unmatched'
+            end as kind
+          from (
+            select lower(btrim(${s.reference})) as key
+            from ${s}
+            where ${s.reference} is not null
+          ) as r
+          left join (
+            select
+              lower(btrim(${ca.name})) as key,
+              bool_or(${ca.type} = 'campus') as is_campus,
+              bool_or(${ca.type} = 'batch') as is_batch
+            from ${ca}
+            group by 1
+          ) as a on a.key = r.key
+        ) as kinds
+        group by kind
+        order by referrals desc, kind asc
+      `),
+    );
+
+    return {
+      spanDays: dayKeys.length,
+      windowDays: BRIEF_WINDOW_DAYS,
+      totals: {
+        allTime: totals?.allTime ?? 0,
+        verified: totals?.verified ?? 0,
+        pending: totals?.pending ?? 0,
+        rejected: totals?.rejected ?? 0,
+      },
+      trend: summarizeTrend(points),
+      segments,
+      events,
+      schools,
+      uniqueSchools: schoolRows[0]?.groups ?? 0,
+      referrers,
+      referrerTallies,
+      referredTotal: totals?.referred ?? 0,
+      estimate: estimateNextDay(points),
     };
   });
 }

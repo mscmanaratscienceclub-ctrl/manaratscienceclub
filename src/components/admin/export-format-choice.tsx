@@ -5,6 +5,7 @@ import { FileSpreadsheet, FileText } from "lucide-react";
 
 import { adminExportFormats, type AdminExportFormat } from "@/lib/admin/exports";
 import { cn } from "@/lib/utils";
+import { adminLabel } from "./styles";
 
 /**
  * The "PDF or Excel" half of the export dialog.
@@ -29,9 +30,7 @@ export default function ExportFormatChoice({
 
   return (
     <fieldset>
-      <legend className="mb-2 font-body text-xs font-semibold tracking-wider text-ink/45 uppercase">
-        Format
-      </legend>
+      <legend className={cn(adminLabel, "mb-3")}>Format</legend>
 
       <div className="grid gap-2 sm:grid-cols-2">
         {adminExportFormats.map((option, index) => {
@@ -42,10 +41,10 @@ export default function ExportFormatChoice({
               key={option.id}
               htmlFor={inputId}
               className={cn(
-                "flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition-colors",
+                "flex cursor-pointer items-start gap-3 rounded-[6px] border p-3.5 transition-colors",
                 active
-                  ? "border-manara-teal bg-manara-teal/5"
-                  : "border-ink/10 hover:border-manara-teal/40",
+                  ? "border-admin-ink bg-admin-sunken"
+                  : "border-admin-line hover:border-admin-ink/35",
               )}
             >
               <input
@@ -56,10 +55,10 @@ export default function ExportFormatChoice({
                 checked={active}
                 onChange={() => onChange(option.id)}
                 ref={index === 0 ? firstOptionRef : undefined}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-manara-teal"
+                className="mt-0.5 size-4 shrink-0 accent-admin-ink"
               />
               <span className="min-w-0">
-                <span className="flex items-center gap-2 font-body text-sm font-semibold text-ink">
+                <span className="flex items-center gap-2 font-space-body text-sm font-medium text-admin-ink">
                   {option.id === "pdf" ? (
                     <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />
                   ) : (
@@ -67,7 +66,7 @@ export default function ExportFormatChoice({
                   )}
                   {option.label}
                 </span>
-                <span className="mt-1 block font-body text-xs leading-relaxed text-ink/55">
+                <span className="mt-1 block font-space-body text-xs leading-relaxed text-admin-muted">
                   {option.note}
                 </span>
               </span>

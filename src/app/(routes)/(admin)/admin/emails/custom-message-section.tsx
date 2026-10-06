@@ -14,6 +14,15 @@ import {
 import { previewBulkEmail } from "@/lib/actions/registrations";
 import { useBulkEmailSend } from "@/lib/hooks/use-bulk-email-send";
 import { cn } from "@/lib/utils";
+import {
+  adminButton,
+  adminButtonPrimary,
+  adminChipSoft,
+  adminControl,
+  adminLabel,
+  adminPanel,
+  adminTextButton,
+} from "@/components/admin/styles";
 import AudienceEmailList from "./audience-email-list";
 import SendProgress from "./send-progress";
 import EmailPreviewModal from "./preview-email";
@@ -24,7 +33,7 @@ function AudienceNote({ audience }: { audience: BulkEmailAudience }) {
 
   if (audience.truncated) {
     return (
-      <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2 font-body text-sm text-amber-700">
+      <p className="mt-4 rounded-[6px] bg-admin-warn-bg px-3 py-2 font-space-body text-sm text-admin-warn-ink">
         More than {BULK_EMAIL_MAX_RECIPIENTS} registrations match these filters.
         Narrow them above — nothing will be sent until you do.
       </p>
@@ -33,7 +42,7 @@ function AudienceNote({ audience }: { audience: BulkEmailAudience }) {
 
   if (count === 0) {
     return (
-      <p className="mt-4 rounded-xl bg-cream/60 px-3 py-2 font-body text-sm text-ink/60">
+      <p className="mt-4 rounded-[6px] bg-admin-sunken px-3 py-2 font-space-body text-sm text-admin-muted">
         No registration in this audience has an email address on file. Widen the
         filters above, or add addresses from the Science Competition table.
       </p>
@@ -41,8 +50,8 @@ function AudienceNote({ audience }: { audience: BulkEmailAudience }) {
   }
 
   return (
-    <p className="mt-4 font-body text-sm text-ink/60">
-      This will go to <span className="font-semibold text-ink">{count}</span>{" "}
+    <p className="mt-4 font-space-body text-sm text-admin-muted">
+      This will go to <span className="font-medium text-admin-ink">{count}</span>{" "}
       {count === 1 ? "address" : "addresses"} — one message each, so siblings who
       share an inbox are not written to twice.
     </p>
@@ -106,16 +115,16 @@ export default function CustomMessageSection({
   }
 
   return (
-    <section className="rounded-2xl bg-surface p-5 shadow-subtle sm:p-6">
+    <section className={cn(adminPanel, "p-5 sm:p-6")}>
       <header className="flex items-start gap-3">
-        <div className="rounded-xl bg-manara-teal/10 p-2.5">
-          <Mail className="h-5 w-5 text-manara-teal" aria-hidden="true" />
-        </div>
+        <span aria-hidden="true" className={cn(adminChipSoft, "size-9")}>
+          <Mail className="size-4" />
+        </span>
         <div>
-          <h2 className="font-display text-lg font-bold text-ink">
+          <h2 className="font-space-display text-2xl leading-tight font-medium tracking-tight text-admin-ink">
             Custom message
           </h2>
-          <p className="mt-1 font-body text-sm text-ink/60">
+          <p className="mt-1.5 font-space-body text-sm leading-relaxed text-admin-muted">
             One subject and body, written to every registration in the audience
             above. Put {BULK_EMAIL_NAME_TOKEN} anywhere to greet each recipient by
             name.
@@ -127,7 +136,7 @@ export default function CustomMessageSection({
         <div>
           <label
             htmlFor="bulk-email-subject"
-            className="mb-1 block font-body text-xs font-semibold tracking-wider text-ink/40 uppercase"
+            className={cn(adminLabel, "mb-1.5 block")}
           >
             Subject
           </label>
@@ -138,7 +147,7 @@ export default function CustomMessageSection({
             maxLength={BULK_EMAIL_SUBJECT_MAX}
             onChange={(event) => setSubject(event.target.value)}
             placeholder="e.g. STEM Fest — your event schedule is up"
-            className="w-full rounded-xl border border-ink/10 bg-cream/40 px-3 py-2 font-body text-sm text-ink outline-none placeholder:text-ink/35 focus:border-manara-teal"
+            className={adminControl}
           />
         </div>
 
@@ -150,12 +159,12 @@ export default function CustomMessageSection({
               type="checkbox"
               checked={allowHtml}
               onChange={(event) => setAllowHtml(event.target.checked)}
-              className="size-4 shrink-0 rounded border-ink/20 accent-manara-teal"
+              className="size-4 shrink-0 rounded border-admin-line accent-admin-ink"
             />
-            <span className="font-body text-sm text-ink">
+            <span className="font-space-body text-sm text-admin-ink">
               Write in HTML
             </span>
-            <span className="font-body text-xs text-ink/45">
+            <span className="font-space-body text-xs text-admin-muted">
               Use formatting like links, bold text or a layout. Unsafe tags are
               removed automatically.
             </span>
@@ -165,7 +174,7 @@ export default function CustomMessageSection({
         <div>
           <label
             htmlFor="bulk-email-body"
-            className="mb-1 block font-body text-xs font-semibold tracking-wider text-ink/40 uppercase"
+            className={cn(adminLabel, "mb-1.5 block")}
           >
             Message
           </label>
@@ -180,9 +189,9 @@ export default function CustomMessageSection({
                 ? "<p>Hello {{name}},</p>\n<p>Your event schedule is ready.</p>\n<a href=\"https://...\">View it here</a>"
                 : `Hello ${BULK_EMAIL_NAME_TOKEN},\n\n`
             }
-            className="w-full resize-y rounded-xl border border-ink/10 bg-cream/40 px-3 py-2 font-body text-sm leading-relaxed text-ink outline-none placeholder:text-ink/35 focus:border-manara-teal"
+            className={cn(adminControl, "resize-y leading-relaxed")}
           />
-          <p className="mt-1 font-body text-xs text-ink/45">
+          <p className="mt-2 font-space-body text-xs leading-relaxed text-admin-muted">
             {allowHtml ? (
               <>
                 HTML is sanitised before sending. {BULK_EMAIL_NAME_TOKEN} becomes
@@ -209,15 +218,15 @@ export default function CustomMessageSection({
             <button
               type="button"
               onClick={handleSend}
-              className="inline-flex items-center gap-2 rounded-xl bg-manara-teal px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-manara-teal/90 focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none"
+              className={adminButtonPrimary}
             >
-              <Send className="h-4 w-4" aria-hidden="true" />
+              <Send className="size-4" aria-hidden="true" />
               Yes, send to {count}
             </button>
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="font-body text-sm text-ink/50 underline underline-offset-2 transition-colors hover:text-ink"
+              className={adminTextButton}
             >
               Cancel
             </button>
@@ -229,40 +238,33 @@ export default function CustomMessageSection({
               onClick={handlePreview}
               disabled={!canPreview || previewing}
               className={cn(
-                "inline-flex items-center gap-2 rounded-xl border border-ink/15 bg-surface px-4 py-2 font-body text-sm font-semibold text-ink transition-colors hover:bg-cream focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none",
+                adminButton,
                 (!canPreview || previewing) && "cursor-not-allowed opacity-50",
               )}
             >
-              <Eye className="h-4 w-4" aria-hidden="true" />
+              <Eye className="size-4" aria-hidden="true" />
               {previewing ? "Rendering…" : "Preview"}
             </button>
             <button
               type="button"
               onClick={() => setConfirming(true)}
               disabled={!ready}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-xl bg-manara-teal px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-manara-teal/90 focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none",
-                !ready && "cursor-not-allowed opacity-50",
-              )}
+              className={cn(adminButtonPrimary, !ready && "cursor-not-allowed opacity-50")}
             >
-              <Send className="h-4 w-4" aria-hidden="true" />
+              <Send className="size-4" aria-hidden="true" />
               Send message
             </button>
           </>
         )}
 
         {!filled && !progress.running && (
-          <span className="font-body text-sm text-ink/45">
+          <span className="font-space-body text-sm text-admin-muted">
             Write a subject and a message to send.
           </span>
         )}
 
         {progress.finished && (
-          <button
-            type="button"
-            onClick={reset}
-            className="font-body text-sm text-ink/50 underline underline-offset-2 transition-colors hover:text-ink"
-          >
+          <button type="button" onClick={reset} className={adminTextButton}>
             Clear
           </button>
         )}

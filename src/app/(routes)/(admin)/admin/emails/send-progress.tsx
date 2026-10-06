@@ -32,18 +32,18 @@ export default function SendProgress({
       }${progress.failed ? `, ${progress.failed} not sent` : ""}`;
 
   return (
-    <div className="mt-4 rounded-xl border border-ink/10 bg-cream/40 p-4">
+    <div className="mt-4 rounded-[6px] border border-admin-line bg-admin-sunken p-4">
       <div className="flex items-center gap-2">
         {progress.running ? (
-          <TriangleAlert className="h-4 w-4 text-amber-600" aria-hidden="true" />
+          <TriangleAlert className="size-4 text-admin-warn-ink" aria-hidden="true" />
         ) : (
-          <CheckCircle2 className="h-4 w-4 text-manara-teal" aria-hidden="true" />
+          <CheckCircle2 className="size-4 text-admin-positive-ink" aria-hidden="true" />
         )}
-        <p className="font-body text-sm font-semibold text-ink">{headline}</p>
+        <p className="font-space-body text-sm font-medium text-admin-ink">{headline}</p>
       </div>
 
       <div
-        className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ink/10"
+        className="mt-2 h-1.5 w-full overflow-hidden rounded-[2px] bg-admin-line"
         role="progressbar"
         aria-label="Send progress"
         aria-valuemin={0}
@@ -51,13 +51,13 @@ export default function SendProgress({
         aria-valuenow={percent}
       >
         <div
-          className="h-full rounded-full bg-manara-teal"
+          className="h-full bg-admin-ink"
           style={{ width: `${percent}%` }}
         />
       </div>
 
       {progress.message && (
-        <p className="mt-2 font-body text-sm text-ink/70">{progress.message}</p>
+        <p className="mt-2 font-space-body text-sm text-admin-ink-soft">{progress.message}</p>
       )}
 
       {progress.failures.length > 0 && (
@@ -65,14 +65,14 @@ export default function SendProgress({
           {progress.failures.slice(0, 12).map((failure, index) => (
             <li
               key={`${failure.email}-${index}`}
-              className="font-body text-xs text-rose-700"
+              className="font-space-body text-xs text-admin-danger-ink"
             >
-              <span className="font-semibold">{failure.name}</span> (
+              <span className="font-medium">{failure.name}</span> (
               {failure.email}) — {failure.message}
             </li>
           ))}
           {progress.failures.length > 12 && (
-            <li className="font-body text-xs text-ink/50">
+            <li className="font-space-body text-xs text-admin-muted">
               …and {progress.failures.length - 12} more.
             </li>
           )}

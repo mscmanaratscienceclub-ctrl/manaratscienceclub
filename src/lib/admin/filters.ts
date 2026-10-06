@@ -22,12 +22,35 @@
  * | `date`    | inclusive day range — a `to` date covers that day    |
  * | `number`  | numeric bound — `min` is `>=`, `max` is `<=`         |
  *
+ * ## Operators
+ *
+ * A `text` or `select` field also offers an **operator** — which comparison the
+ * value is put through. `similar` (contains) is a text field's default; `is`
+ * (equality) is a select's. `not` inverts either one.
+ *
+ * The operator rides on the value rather than on a second parameter, so the URL
+ * contract is unchanged: a value that is not the field's default is written with a
+ * one-character prefix (`!` for `not`, `=` for a text field's `is`). Values are
+ * therefore stored in the query state exactly as the URL spells them, and
+ * `readFilterValue` is the single place that takes one apart again.
+ *
+ * | field kind | operators offered (default first)          |
+ * |------------|--------------------------------------------|
+ * | `text`     | `similar` · `is` · `not`                    |
+ * | `select`   | `is` · `not`                                |
+ * | `date`     | none — the two bounds are the range         |
+ * | `number`   | none — a bound is already the question      |
+ *
  * `q`, `sort` and `page` are reserved parameter names and may not be a field id —
  * as are `cols` and `print`, which the export contract in
  * `src/lib/admin/exports.ts` owns.
  */
 
-import { stemfestClasses } from "@/lib/data/stemfest-registration";
+import {
+  getStemfestSegment,
+  stemfestClasses,
+  stemfestEvents,
+} from "@/lib/data/stemfest-registration";
 import { stemfestPaymentStatusOptions } from "@/lib/admin/statuses";
 
 // ── Sources ──────────────────────────────────────────────────────────────────
@@ -36,9 +59,22 @@ export type AdminSourceId = "ambassador" | "volunteer" | "stemfest" | "sms";
 
 export type AdminFilterKind = "select" | "text" | "date" | "number";
 
+/**
+ * How one filter's value is compared. `similar` is the `ILIKE '%value%'` match, `is`
+ * is equality, `not` inverts whichever of the two the field would otherwise do.
+ * Only `text` and `select` fields offer a choice (see the module header).
+ */
+export type AdminFilterOperator = "is" | "similar" | "not";
+
 export interface AdminFilterOption {
   value: string;
   label: string;
+  /**
+   * Presentation only: options sharing a `group` render under one heading in a
+   * `select`. It never reaches the URL and plays no part in validation, which
+   * reads `value` alone.
+   */
+  group?: string;
 }
 
 export interface AdminFilterField {
@@ -352,9 +388,20 @@ export const stemfestSource: AdminSourceConfig = {
     ...dateRangeFields.map((field) => ({ ...field, primary: true })),
     {
       id: "segment",
-      label: "Event / segment",
-      kind: "text",
-      placeholder: "e.g. Robotics, Olympiad",
+      label: "Event",
+      kind: "select",
+      primary: true,
+      // Every event the registration form offers, from the same catalogue — so
+      // each option here is something somebody could actually have entered, and
+      // `group` puts it under the segment it belongs to. The field id stays
+      // `segment` because that is the column these names are stored in and the
+      // query key links already use; the *value* is an event id, which the
+      // action layer resolves to the event name the row text carries.
+      options: stemfestEvents.map((event) => ({
+        value: event.id,
+        label: event.name,
+        group: getStemfestSegment(event.segmentId)?.name,
+      })),
     },
     {
       id: "transactionId",
@@ -514,6 +561,121 @@ export function validateFilterValue(field: AdminFilterField, raw: string): strin
   }
 }
 
+// ── Operators ────────────────────────────────────────────────────────────────
+
+/** `not`: the comparison the field would otherwise make, inverted. */
+export const FILTER_NEGATE_PREFIX = "!";
+/** `is` on a text field, whose default is `similar`. */
+export const FILTER_EXACT_PREFIX = "=";
+
+/** The operator a value is compared with when the URL does not ask for one. */
+export function defaultFilterOperator(
+  field: AdminFilterField,
+): AdminFilterOperator {
+  return field.kind === "text" ? "similar" : "is";
+}
+
+/** The operators a field offers, in menu order. Empty means no picker is shown. */
+export function filterOperatorOptions(
+  field: AdminFilterField,
+): AdminFilterOperator[] {
+  switch (field.kind) {
+    case "text":
+      return ["similar", "is", "not"];
+    case "select":
+      return ["is", "not"];
+    case "date":
+    case "number":
+      return [];
+  }
+}
+
+/**
+ * How an operator reads in a menu, a chip or a report's scope strip. Kept here
+ * rather than in the filter bar because the same words have to come out of the
+ * printed report and the spreadsheet's scope sheet.
+ *
+ * `menu` is the option's own label; `inline` continues a field's label —
+ * "School does not contain Dhaka".
+ */
+export function filterOperatorLabel(
+  field: AdminFilterField,
+  operator: AdminFilterOperator,
+): { menu: string; inline: string } {
+  switch (operator) {
+    case "similar":
+      return { menu: "Contains", inline: "contains" };
+    case "is":
+      return field.kind === "text"
+        ? { menu: "Is exactly", inline: "is exactly" }
+        : { menu: "Is", inline: "is" };
+    case "not":
+      return field.kind === "text"
+        ? { menu: "Does not contain", inline: "does not contain" }
+        : { menu: "Is not", inline: "is not" };
+  }
+}
+
+/**
+ * Writes an operator and a value the way the URL carries them: bare when the
+ * operator is the field's default, prefixed otherwise. The one encoder — nothing
+ * else composes a filter value.
+ */
+export function encodeFilterValue(
+  field: AdminFilterField,
+  operator: AdminFilterOperator,
+  value: string,
+): string {
+  const clean = value.trim();
+  if (!clean) return "";
+  if (operator === defaultFilterOperator(field)) return clean;
+  const prefix =
+    operator === "not" ? FILTER_NEGATE_PREFIX : FILTER_EXACT_PREFIX;
+  return `${prefix}${clean}`;
+}
+
+/** A stored filter value, taken apart. */
+export interface AdminFilterReading {
+  operator: AdminFilterOperator;
+  /** The value itself, with any operator prefix removed. */
+  value: string;
+  /** How the URL carries it back — `encodeFilterValue(operator, value)`. */
+  encoded: string;
+}
+
+/**
+ * Reads one stored filter value, or `null` when it is not usable for this field.
+ *
+ * The prefix decides the operator and is stripped *before* validation, so the
+ * whitelist that guards a `select` still sees the raw option value: `!verified`
+ * validates as `verified`, negated. An unrecognised value — a field that used to
+ * take free text, a hand-edited URL — reads as `null` rather than as a filter
+ * nobody can describe.
+ */
+export function readFilterValue(
+  field: AdminFilterField,
+  raw: string,
+): AdminFilterReading | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  let operator = defaultFilterOperator(field);
+  let body = trimmed;
+
+  if (trimmed.startsWith(FILTER_NEGATE_PREFIX)) {
+    operator = "not";
+    body = trimmed.slice(FILTER_NEGATE_PREFIX.length);
+  } else if (trimmed.startsWith(FILTER_EXACT_PREFIX)) {
+    operator = field.kind === "text" ? "is" : defaultFilterOperator(field);
+    body = trimmed.slice(FILTER_EXACT_PREFIX.length);
+  }
+
+  const value = validateFilterValue(field, body);
+  if (!value) return null;
+
+  return { operator, value, encoded: encodeFilterValue(field, operator, value) };
+}
+
 /**
  * Turns Next's `searchParams` into validated state. Anything malformed is
  * dropped rather than rejected: an admin following a stale bookmark should land
@@ -527,8 +689,10 @@ export function parseAdminQuery(
 
   const values: AdminFilterValues = {};
   for (const field of source.filters) {
-    const value = validateFilterValue(field, firstValue(raw[field.id]));
-    if (value) values[field.id] = value;
+    const reading = readFilterValue(field, firstValue(raw[field.id]));
+    // Stored as the URL spells it — operator prefix and all — so a state parsed
+    // from a link and a state built by the hook serialise identically.
+    if (reading) values[field.id] = reading.encoded;
   }
 
   const rawSort = firstValue(raw[FILTER_SORT_PARAM]);
@@ -596,7 +760,11 @@ export interface ActiveFilter {
   /** Field id, or `FILTER_QUERY_PARAM` for the search box. */
   id: string;
   label: string;
-  /** Human-readable value — the option label for a select. */
+  /**
+   * Human-readable value — the option label for a select, and the operator spelled
+   * out ahead of it whenever the field is not comparing the default way
+   * ("does not contain Dhaka").
+   */
   display: string;
 }
 
@@ -621,6 +789,30 @@ function displayValue(field: AdminFilterField | null, value: string): string {
   return option?.label ?? value;
 }
 
+/**
+ * One stored value as a sentence fragment: the option's own label, with the
+ * operator in front of it when the admin asked for something other than the
+ * field's default comparison.
+ */
+function describeReading(
+  field: AdminFilterField,
+  raw: string,
+): { value: string; display: string } {
+  const reading = readFilterValue(field, raw);
+  // Values only ever arrive through `parseAdminQuery`, so an unreadable one means
+  // a caller hand-built a state — show it rather than dropping the filter.
+  if (!reading) return { value: raw, display: raw };
+
+  const display = displayValue(field, reading.value);
+  if (reading.operator === defaultFilterOperator(field)) {
+    return { value: reading.value, display };
+  }
+  return {
+    value: reading.value,
+    display: `${filterOperatorLabel(field, reading.operator).inline} ${display}`,
+  };
+}
+
 /** Every filter currently narrowing the list, in catalogue order. */
 export function activeFilterList(
   source: AdminSourceConfig,
@@ -633,12 +825,12 @@ export function activeFilterList(
   }
 
   for (const field of source.filters) {
-    const value = state.values[field.id];
-    if (!value) continue;
+    const raw = state.values[field.id];
+    if (!raw) continue;
     active.push({
       id: field.id,
       label: field.label,
-      display: displayValue(field, value),
+      display: describeReading(field, raw).display,
     });
   }
 

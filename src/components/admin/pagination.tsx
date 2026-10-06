@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { adminButton } from "./styles";
 
 interface PaginationProps {
   page: number;
@@ -17,9 +18,10 @@ export default function Pagination({ page, totalPages, onPage }: PaginationProps
   const nextDisabled = page >= totalPages;
 
   return (
-    <div className="flex items-center justify-between border-t border-ink/5 px-6 py-4">
-      <p className="font-body text-sm text-ink/50">
-        Page {page} of {totalPages}
+    <div className="flex items-center justify-between border-t border-admin-line bg-admin-accent-soft/40 px-6 py-4">
+      <p className="font-space-body text-sm text-admin-muted">
+        Page <span className="font-medium text-admin-accent-ink tabular-nums">{page}</span> of{" "}
+        <span className="tabular-nums">{totalPages}</span>
       </p>
       <div className="flex items-center gap-2">
         <PaginationButton
@@ -27,7 +29,7 @@ export default function Pagination({ page, totalPages, onPage }: PaginationProps
           disabled={prevDisabled}
           onClick={() => onPage(page - 1)}
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="size-4" aria-hidden="true" />
           Prev
         </PaginationButton>
         <PaginationButton
@@ -36,7 +38,7 @@ export default function Pagination({ page, totalPages, onPage }: PaginationProps
           onClick={() => onPage(page + 1)}
         >
           Next
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="size-4" aria-hidden="true" />
         </PaginationButton>
       </div>
     </div>
@@ -60,12 +62,7 @@ function PaginationButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className={cn(
-        "inline-flex items-center gap-1 rounded-xl border border-ink/10 px-3 py-1.5",
-        "font-body text-sm text-ink/70 transition-colors",
-        "hover:border-manara-teal hover:text-manara-teal",
-        "disabled:pointer-events-none disabled:opacity-40",
-      )}
+      className={cn(adminButton, "px-3 py-1.5 text-xs")}
     >
       {children}
     </button>

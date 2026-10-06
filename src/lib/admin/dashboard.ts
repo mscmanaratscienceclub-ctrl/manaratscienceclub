@@ -1,3 +1,4 @@
+import { CHART_TONE_ACCENT } from "./accents";
 import { ADMIN_TIME_ZONE } from "@/lib/admin/filters";
 
 /**
@@ -28,15 +29,28 @@ export type ChartTone =
   | "green"
   | "red";
 
-/** Tone name → the design token it renders as. */
+/**
+ * Tone name → the design token it renders as.
+ *
+ * Two families, and the split is the point:
+ *
+ * - `teal`, `blue`, `purple`, `pink` are *identity*. They resolve through
+ *   `CHART_TONE_ACCENT` to the section accents, so a series is drawn in the
+ *   colour of the section that owns it and the chart belongs to its page.
+ * - `green`, `yellow`, `red` are *status* — verified, pending, rejected. They
+ *   resolve to the status inks, the same ones the pills in the tables wear, so
+ *   the ring and the pills can never disagree about what "pending" looks like.
+ *
+ * Every value stays a token reference: no component carries a raw hex.
+ */
 export const chartToneVar: Record<ChartTone, string> = {
-  teal: "var(--manara-teal)",
-  purple: "var(--manara-purple)",
-  yellow: "var(--manara-yellow)",
-  pink: "var(--manara-pink)",
-  blue: "var(--manara-blue)",
-  green: "var(--manara-green)",
-  red: "var(--manara-red)",
+  teal: `var(--admin-accent-${CHART_TONE_ACCENT.teal})`,
+  blue: `var(--admin-accent-${CHART_TONE_ACCENT.blue})`,
+  purple: `var(--admin-accent-${CHART_TONE_ACCENT.purple})`,
+  pink: `var(--admin-accent-${CHART_TONE_ACCENT.pink})`,
+  green: "var(--admin-positive-ink)",
+  yellow: "var(--admin-warn-ink)",
+  red: "var(--admin-danger-ink)",
 };
 
 // ── Registration activity ────────────────────────────────────────────────────
@@ -77,6 +91,31 @@ export interface RegistrationTrendPoint {
  * `src/lib/admin/filters.ts`.
  */
 export const DASHBOARD_TREND_DAYS = 30;
+
+/**
+ * The spans the activity chart offers.
+ *
+ * A week answers "is this week louder than the last?"; a quarter answers "is the
+ * fest growing at all?" The middle one is the default because it is the only span
+ * that fits the panel's plot without scrolling.
+ */
+export const TREND_RANGES = [7, DASHBOARD_TREND_DAYS, 90] as const;
+
+export type TrendRange = (typeof TREND_RANGES)[number];
+
+/**
+ * Reads a `?days=` value into one of the offered spans.
+ *
+ * Anything else — absent, duplicated, `days=abc`, `days=999` — resolves to the
+ * default, so a hand-edited URL degrades to the chart the page would have shown
+ * rather than to an empty one.
+ */
+export function parseTrendRange(raw: string | string[] | undefined): TrendRange {
+  const days = Number(Array.isArray(raw) ? raw[0] : raw);
+  return (TREND_RANGES as readonly number[]).includes(days)
+    ? (days as TrendRange)
+    : DASHBOARD_TREND_DAYS;
+}
 
 // ── Breakdown rows ───────────────────────────────────────────────────────────
 

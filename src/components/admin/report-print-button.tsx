@@ -1,6 +1,7 @@
 "use client";
 
 import { Printer } from "lucide-react";
+import { adminButtonPrimary } from "./styles";
 
 /**
  * Hands the report to the browser's print dialog, where "Save as PDF" produces
@@ -13,7 +14,7 @@ export default function ReportPrintButton() {
     <button
       type="button"
       onClick={() => window.print()}
-      className="inline-flex items-center gap-2 rounded-xl bg-manara-teal px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-manara-teal/90"
+      className={adminButtonPrimary}
     >
       <Printer className="h-4 w-4" aria-hidden="true" />
       Print / Save as PDF

@@ -1,6 +1,6 @@
 ---
 tags: [frontend, stable]
-updated: 2026-10-03
+updated: 2026-10-06
 ---
 
 # Catalog — Utilities
@@ -20,6 +20,8 @@ client) re-exports all of it.
 | `AVATARS_BUCKET` | the `avatars` bucket name |
 | `storagePublicUrl(bucket, path)` | public CDN URL for any object |
 | `bucketImage(path)` | URL for a **pre-optimised** WebP under `optimized/` — see [[decisions-log\|ADR-0025]] |
+| `bucketOriginal(path)` | URL for an `avatars` object served exactly as uploaded — the verbatim fallback for a photo with no optimised WebP |
+| `contentImage(path)` | **Egress switch for `src/lib/data`.** Names a content image by its *original* bucket path (`"adminimages/abrar.png"`) and returns the WebP the bucket script encoded for it (`optimized/adminimages/abrar.png.webp`, one-year cache — 9.4 MB → 28 KB). Already-small uploads (`.webp`/`.avif`) are served verbatim. The `<original>.<ext>.webp` suffix mirrors the optimizer's target convention; keep the two in step or the card 404s |
 | `renderedImageUrl(url, { width, height?, quality? })` | rewrite a public object URL to Supabase's `/render/image/` endpoint so Supabase resizes it, not Vercel; returns non-storage URLs untouched. **Egress guard:** already-optimised (`optimized/*`) URLs are returned untouched. |
 | `isOptimizedObjectUrl(url)` | `true` when a URL points at a pre-optimised WebP under `optimized/` |
 | `avatarUrl(url, width)` | resolve a stored avatar to the cheapest correct URL — serve already-optimised/small uploads verbatim, only `render/image`-transform genuine legacy originals |

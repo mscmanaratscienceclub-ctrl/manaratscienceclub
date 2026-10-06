@@ -47,10 +47,11 @@ export interface AdminStatusOption<TValue extends string> {
   /** Sentence for the expanded row, the tooltip and the toast. */
   description: string;
   /**
-   * Pill classes for this value. Literal Tailwind utilities rather than a token:
-   * the value is a class *name* in a data module, exactly as `src/lib/tag-styles.ts`
-   * passes colours as strings, and a `var(--token)` cannot be composed into a
-   * `bg-*`/`text-*` pair at build time.
+   * Pill classes for this value: a muted pastel wash and the ink that belongs to
+   * it, from the admin palette in `globals.css`. Literal Tailwind utilities rather
+   * than a token, because the value is a class *name* in a data module — exactly as
+   * `src/lib/tag-styles.ts` passes colours as strings — and a `var(--token)` cannot
+   * be composed into a `bg-*`/`text-*` pair at build time.
    */
   tone: string;
 }
@@ -62,21 +63,21 @@ export const stemfestPaymentStatusOptions: AdminStatusOption<StemfestPaymentStat
       label: "Pending",
       description:
         "No admin decision yet, and no forwarded SMS carrying this TrxID.",
-      tone: "bg-amber-50 text-amber-700",
+      tone: "bg-admin-warn-bg text-admin-warn-ink",
     },
     {
       value: "verified",
       label: "Verified",
       description:
         "Payment confirmed. Press Send confirmation to email the participant their receipt.",
-      tone: "bg-emerald-50 text-emerald-700",
+      tone: "bg-admin-positive-bg text-admin-positive-ink",
     },
     {
       value: "rejected",
       label: "Rejected",
       description:
         "The payment was not accepted — for example a reused or unreadable TrxID.",
-      tone: "bg-rose-50 text-rose-700",
+      tone: "bg-admin-danger-bg text-admin-danger-ink",
     },
   ];
 
@@ -85,20 +86,20 @@ export const smsLogStatusOptions: AdminStatusOption<SmsLogStatus>[] = [
     value: "matched",
     label: "Matched",
     description: "The TrxID on this message belongs to a registration.",
-    tone: "bg-emerald-50 text-emerald-700",
+    tone: "bg-admin-positive-bg text-admin-positive-ink",
   },
   {
     value: "unmatched",
     label: "Unmatched",
     description: "No registration carries this TrxID yet.",
-    tone: "bg-amber-50 text-amber-700",
+    tone: "bg-admin-warn-bg text-admin-warn-ink",
   },
   {
     value: "ignored",
     label: "Ignored",
     description:
       "Not a payment notification — a promotion, OTP or balance message.",
-    tone: "bg-slate-100 text-slate-600",
+    tone: "bg-admin-neutral-bg text-admin-neutral-ink",
   },
 ];
 

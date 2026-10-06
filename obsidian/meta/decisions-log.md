@@ -1,6 +1,6 @@
 ---
 tags: [meta, decision]
-updated: 2026-09-30
+updated: 2026-10-06
 ---
 
 # Decisions Log (ADRs)
@@ -14,6 +14,294 @@ decisions on top, continuing the numbering. Amending an inherited decision is
 fine; write a new ADR that says so rather than editing the old one.
 
 Template: [[templates/adr-note]].
+
+---
+
+## ADR-0036 — The panel wears one accent per section, and gradients are mixed from live tokens
+
+**Status:** Accepted · 2026-10-06 · amends ADR-0034
+
+**Decision.** Each admin section owns a hue — dashboard teal, campus ambassador violet,
+volunteer emerald, science competition azure, SMS logs amber, bulk emails rose — declared
+in `src/lib/admin/accents.ts` as `SECTION_ACCENT` and applied by spreading
+`adminAccentStyle(accent)` on the section's root element. That sets three custom
+properties (`--admin-accent`, `--admin-accent-soft`, `--admin-accent-ink`); everything
+inside reads those, never a named colour. Gradient lives in one block of
+`globals.css` tokens (`--admin-wash-masthead`, `--admin-glow-masthead`,
+`--admin-wash-head`, `--admin-edge-accent`, `--admin-fill-accent`, `--admin-fill-ink`,
+`--admin-sheen`), and every stop in them is a `color-mix()` of the live triple.
+Chart tones that name a *series* resolve to an accent through `CHART_TONE_ACCENT`; the
+three tones that name a *payment status* do not.
+
+**Why.** ADR-0034's rule was "colour only where it means something", and it was applied so
+faithfully that the panel became one ink: six tables, all charcoal, with nothing answering
+"which section am I in" before you read the heading. Position and hue are the cheapest
+way to say that, and a dashboard read for hours a day is exactly where it pays.
+
+Scoping the hue with custom properties rather than an `accent` prop is what keeps this
+usable. The alternative threads a new prop through five table pages, six panels, the stat
+cards, both dialogs and the shared class strings in `styles.ts` — and once `adminPanelHead`
+carries a colour, it is no longer section-agnostic and cannot be reused. With a CSS scope,
+a section root sets three variables and the components below it never learn the word
+"accent". Setting them to `var(--admin-accent-teal)` rather than a literal keeps the
+palette in `globals.css`, where the rest of it lives.
+
+Same reasoning for the gradient tokens. `color-mix()` against the live accent means one
+`adminAccentStyle()` call re-colours a masthead, its panel heads, its edges and its chart
+fills together, and re-theming the panel is still a one-file change. It also keeps the
+gradients honest: the goal was a panel that reads as *designed*, not one with colour
+poured on, so gradient is spent only where it carries hierarchy — the masthead lifts off
+the canvas (`admin-wash-masthead`), a panel's 2px top edge names its section
+(`admin-edge-top`), a bar's ramp reads as volume (`admin-sheen`), a filled chip gains a lit
+face (`admin-fill`, `admin-fill-ink`). The canvas itself stays flat, and no body text sits
+on a gradient.
+
+`--admin-fill-ink` exists because a plain accent cannot hold white ink: a violet chip is
+fine, an amber one fails WCAG 3:1. The darker ramp keeps the hue and buys the contrast, and
+`admin-fill-ink` is the treatment wherever a chip or button puts white text on the accent.
+
+**Consequences.**
+
+- A new section picks a hue in `SECTION_ACCENT` and wraps its page root in
+  `adminAccentStyle()` — that single call is the whole integration. Do not pass an accent
+  through props, and do not write `bg-admin-accent-violet` inside a shared component;
+  a shared component does not know what section it is in.
+- `--admin-accent*` defaults to teal on `[data-admin]`, so a surface outside any scope
+  (a portalled dialog, a toast) belongs to the panel instead of painting black.
+- Status colours stay status colours. `green`/`yellow`/`red` chart tones resolve to the
+  status inks in `src/lib/admin/dashboard.ts`, not to accents, because a payment-status
+  ring and the pills next to it must not disagree about what "pending" looks like.
+- Gradients are only ever referenced as tokens (`admin-wash-masthead` and friends are
+  utility classes over those variables). No literal `linear-gradient(...)` in a component,
+  and no hex inside a `color-mix()` — that is what makes the block re-themeable.
+- Six hues, each used in exactly one section, is the limit. A seventh is allowed only by
+  amending this ADR; more and the hue stops encoding location.
+
+---
+
+## ADR-0037 — The panel owns its type ladder; paper restates it
+
+**Status:** Accepted · 2026-10-06
+
+**Decision.** `globals.css` redefines three Tailwind theme variables on `[data-admin]`:
+`--text-2xs` 0.75rem (12px), `--text-xs` 0.8125rem (13px), `--text-sm` 0.9375rem (15px),
+each with its own line-height. Nothing in the panel renders below 12px. The same three
+sizes are restated in `pt` on `[data-print="report"].brief-document` inside the unlayered
+`@media print` block (6.5 / 7.5 / 8.7pt, with `xl` and `2xl` and `5xl` following), so the
+brief is typed for paper without a single call site knowing about it.
+
+**Why.** The user asked for the panel to go "big", and the honest diagnosis was not that
+the sizes were wrong but that there were no sizes: Tailwind's ladder starts body text at
+14px and stops at 12px, and a surface packing six tables into one viewport had grown a
+scatter of `text-[9.6px]` and `text-[11px]` literals to make things fit. Editing forty
+call sites would have produced a new scatter within a month. Redefining the theme variables
+in one scoped block makes every `text-2xs`, `text-xs` and `text-sm` in the panel resolve
+through three lines, and the literals were deletable because the steps they were reaching
+for now exist.
+
+The block is scoped to `[data-admin]`, which only the admin shell ever sets, so the public
+site's typography does not move.
+
+Print needs the second copy because a browser's print engine lays paper out at a fixed
+physical measure: a 12px on-screen label is roughly 9pt on A4, which is a caption you were
+not meant to read. Restating the same three names in `pt` on the document root lets one
+block re-type the entire brief. It lives in the unlayered `@media print` block so it
+outweighs the utilities Tailwind puts in layers.
+
+**Consequences.**
+
+- Panel components use `text-2xs` / `text-xs` / `text-sm` / `text-base` and never an
+  arbitrary `text-[Npx]`. If a size is missing, the ladder gets a step — in the `[data-admin]`
+  block — not a literal at the call site.
+- Line-heights are set alongside the sizes (`--text-xs--line-height: 1.45`), because a 13px
+  label in a table cell wants tighter leading than a 13px paragraph.
+- Adding a step means checking it against the print restatement, or the brief will render
+  that step in screen units on paper.
+- Statistics stay on `font-mono` with `tabular-nums` (`adminTdFigures`, `StatCard`), so a
+  column of figures aligns on the decimal rather than on the left edge.
+
+---
+
+## ADR-0038 — The registration brief is a printed document at a static route, with an arithmetic forecast
+
+**Status:** Accepted · 2026-10-06
+
+**Decision.** "Print a report" on the dashboard goes to `/admin/reports/brief` — a static
+page, a sibling of the dynamic `/admin/reports/[kind]` — rendering five sections from one
+server action, `getRegistrationBrief` in `src/lib/actions/registrations.ts`: the
+registration trend and its direction, which segments are rising and which falling, the
+schools with the most entries, the top referrers split between batch and campus ambassador,
+and an estimate for the next day. **No PDF is generated server-side.** The page is a
+print-styled document (`data-print="report"`, `@page { size: A4 }`, the chrome hidden) and
+the browser's own *Save as PDF* writes the file; `?print=1` mounts `<AutoPrint />` so the
+dialog opens by itself, and `metadata.title` is the suggested filename.
+
+The forecast is arithmetic, not a model: `estimateNextDay` in `src/lib/admin/brief.ts` fits
+a least-squares line through the last seven local days, reads it one day past the end,
+clamps at twice the week's busiest day, and sets the band at the larger of the residual
+scatter and a fifth of the figure.
+
+**Why.** A server-side PDF means a headless browser or a canvas library in the runtime —
+hundreds of MB of dependency, a new failure mode on every deploy, and a document nobody can
+inspect in DevTools. The route already had to be a document for the paper case; a browser
+that can print to paper can print to a file for the same effort, and the filename lands in
+`metadata`. The cost is that the PDF's fidelity is the browser's, and the fonts must be
+loaded before the dialog opens — both of which `AutoPrint` already handles.
+
+One action, one transaction, statements run **sequentially**. `withDbTimeout` checks out a
+single pooled connection, and the Supabase pooler is sized for roughly five; six parallel
+reads from one page would be six connections for six other admins. Sequential statements on
+one borrowed connection is the shape that survives the pooler.
+
+The forecast had to be printed arithmetic because the reader has to be able to check it. A
+regression you cannot explain is a number; a least-squares line whose slope, cap and
+scatter are written under it as a `Method ·` sentence is a claim an admin can disagree with.
+A daily mean — what the first cut was — is worse than that: it answers "what has a day been
+lately", and on a growth week it systematically predicts the past. The line answers "what is
+a day right now", and growth makes its residual band *smaller*, not bigger.
+
+`/admin/reports/brief` is static rather than another `[kind]` value because the brief has no
+filter scope, no column set and no export shape — the three things `AdminSourceConfig`
+exists to parametrise. Sharing the dynamic route would have meant a config that says "this
+one is different", plus a `kind` union carrying a member the table pages cannot render.
+`pnpm build` confirms both coexist: `ƒ /admin/reports/brief` and `ƒ
+/admin/reports/[kind]` are listed separately, static taking precedence.
+
+**Consequences.**
+
+- The brief's numbers are only as trustworthy as `src/lib/admin/brief.ts`, and its SQL only
+  as trustworthy as the action. `pnpm db:verify` (`scripts/verify-admin-db.ts` §6) mirrors
+  all six statements against the live database and asserts the arithmetic — payment
+  components summing to the total, buckets matching the span, each segment equal to the sum
+  of its own catalogue events, referrer tallies matching the referral count, `low ≤
+  expected ≤ high`, and the estimate's date one past the last trend day. **Change the brief,
+  change the mirror, run `pnpm db:verify`.** A static check cannot validate this.
+- Sections 1 and 2 count different things: the trend counts *forms*, the segment table
+  counts *event entries*, and one form that entered two events appears under both. The page
+  prints the difference when the two diverge instead of letting a reader find it as a
+  contradiction.
+- A day is a **local** day: `(created_at at time zone 'Asia/Dhaka')::date`. Any new window
+  in the brief must use the same expression, and offsets must carry `::int` or `date - $1`
+  silently becomes the date-difference operator.
+- Payment status is read through `stemfestEffectivePaymentStatus()` — `coalesce(payment_decision,
+  'verified' if the TrxID matches, else 'pending')` — so the brief cannot disagree with the
+  table it summarises.
+- `?print=1` is the only interactivity on the page (one client leaf). Nothing else about the
+  brief requires JS; without it the admin presses Ctrl-P themselves.
+- The document's typography comes from the print restatement in ADR-0037, so a new type step
+  in the panel needs its paper counterpart or the brief renders it in screen units.
+
+---
+
+## ADR-0035 — A filter operator rides on the filter's value
+
+**Status:** Accepted · 2026-10-05
+
+**Decision.** An admin filter may compare with an **operator** — *contains*,
+*is exactly*, *is not* — and the operator is written **into the value** as a
+one-character prefix rather than into a second query parameter: `!` for `not`,
+`=` for a text field's `is`. `AdminQueryState.values` therefore holds exactly what
+the URL spells, and `readFilterValue` / `encodeFilterValue` in
+`src/lib/admin/filters.ts` are the only two functions that take a value apart or
+put one together.
+
+**Why.** The alternative — a sibling parameter per field (`school=&schoolNot=1`,
+or `school_op=not`) — triples the query-string surface for every field, has to be
+kept in step with the value by hand (an operator without a value is meaningless),
+and breaks the property the whole panel leans on: **one string per filter, so
+`buildAdminHref(parse(state))` is byte-identical to `state`**, which is what stops
+the debounced search box from re-navigating forever. A prefix keeps the URL
+contract exactly as it was (field id → value), keeps `values` a plain
+`Record<string, string>`, and makes the operator part of what a chip reads:
+`?school=!Manarat` *is* "school does not contain Manarat".
+
+Validation runs **after** the prefix is stripped, so a `select`'s whitelist still
+sees the raw option value (`!verified` → `verified`, negated). Only `text` and
+`select` fields offer operators; a date bound and a number bound take none,
+because for those the bound *is* the question. An undecodable value is dropped,
+not passed to Postgres.
+
+**Consequences.**
+
+- `!` and `=` are reserved at the start of a **text** value; a literal leading
+  `!` or `=` in free text would be read as an operator. Neither is realistic in
+  the fields that carry operators (school, class, roll, sender, TrxID), and the
+  prefix is stripped before the `LIKE` escaping, so the match itself stays literal.
+- Anywhere a filter is described — the chip row, the report's scope strip, the
+  spreadsheet's scope sheet — the operator is spelled out from one table of labels
+  (`filterOperatorLabel`), so the three can never phrase it three ways.
+- The action layer reads filters through `filterMatches(source, state)` instead of
+  touching `state.values` directly; a new comparison belongs there, next to the
+  SQL it builds.
+
+---
+
+## ADR-0034 — The admin panel has its own visual language: flat, warm monochrome
+
+**Status:** Accepted · 2026-10-05
+
+**Decision.** The admin panel is styled from a palette of its own — the
+`--admin-*` tokens in `globals.css` — rather than from the public site's brand
+colours: a warm bone canvas (`#f7f6f3`), white cards on `1px solid #eaeaea`, off-black
+text (`#111111` / `#2f3437`) with `#787774` for secondary, four washed-out pastels
+used **only** where colour carries meaning (a payment status, a warning, a chart
+series), solid-ink buttons, crisp radii (10px cards, 6px controls) and no resting
+shadows. Shared class strings live in `src/components/admin/styles.ts`.
+
+It also keeps the panel's type to the three faces the public site already loads,
+by role: **DM Sans** (`font-space-body`) for UI and data, **Cormorant Garamond**
+(`font-space-display`) for headings, **Geist Mono** (`font-mono`) for identifiers
+and figures. The shell declares `data-admin`, which sets the panel's base
+font-family, raises lucide's stroke width to 2.25, and recomposes `--font-mono`.
+
+**Why.** The panel is a working surface an admin reads for an hour at a time, and
+it was wearing the marketing site's clothes: a dark gradiented rail, teal-tinted
+icon chips on every card, heavy `shadow-subtle` on every surface, and a type mix
+in which the *same* table cell could be Rubik, Geist or the browser default.
+Colour everywhere means colour says nothing — a Verified pill has to compete with
+seven other coloured things to be noticed. A flat monochrome surface with pastel
+tags gives status colour back its meaning, and one face per role gives the panel
+the editorial contrast the *minimalist-ui* protocol asks for without importing a
+font or an icon package: the site's own three faces already do the job.
+
+**Consequences.**
+
+- New admin UI copies a class from `styles.ts`; a raw hex, a Tailwind default
+  palette colour (`bg-amber-50`, `text-slate-600`) or a `shadow-lg` in admin code
+  is a mistake, not a variation.
+- Status pill tones live in `src/lib/admin/statuses.ts` (data, not components) and
+  resolve to the pastel pairs; `chartToneVar` in `src/lib/admin/dashboard.ts` now
+  maps every chart tone to an admin ink — the primary series is charcoal.
+- `font-mono` was **broken project-wide before this change**: `--font-mono` is
+  declared on `:root` as `var(--font-geist-mono)` while Geist Mono's variable is
+  set on `<body>`, so the chain resolved to nothing and `.font-mono` fell back to
+  the browser's default serif — every TrxID in the panel was set in Times New
+  Roman. The panel recomposes the variable inside `[data-admin]` (both halves in
+  scope there); the public site's own `font-mono` usage is untouched and still
+  falls back.
+- The panel has none of the site's scroll choreography: only hover/focus colour
+  transitions, and nothing hidden behind an animation, so content is present
+  under `prefers-reduced-motion` and without JS.
+- Lucide remains the icon set. The protocol prefers Phosphor/Radix, but this
+  project is built on `lucide-react` throughout and one dependency is not worth
+  switching for; the protocol's real intent — a consistent, slightly heavier
+  stroke — is met by the single 2.25 stroke rule on `[data-admin]`.
+- Print was deliberately left alone: the `@media print` block and every
+  `data-print` hook are unchanged, so ADR-0033's verified PDF output still holds.
+  The report's masthead keeps its teal rule and eyebrow on screen *and* on paper,
+  because a report that changes colour when it is saved is two documents.
+
+**Amended 2026-10-06.** The secondary ink named above (`#787774`) measured
+4.48:1 on `--admin-surface`, 4.32:1 on `--admin-sunken` and 4.14:1 on
+`--admin-canvas` — under WCAG AA's 4.5:1 for the 12–15px secondary text the panel
+sets almost everywhere (31 files use `text-admin-muted`). `--admin-muted` is now
+`#6d6c69` (5.25 / 5.07 / 4.86 on the same three), which keeps the same warm-neutral
+hue, stays clearly quieter than `--admin-ink-soft` at 12.6:1, and stops one step
+short of `--admin-neutral-ink` so the two do not collapse into each other. Fixed at
+the token rather than at 31 call sites, for the same reason the type ladder was.
+The other inks the palette depends on were measured in the same pass and already
+clear AA: the six accent inks run 5.48–8.51, the status inks 4.74–7.20, and no solid
+accent is used as text anywhere in the panel.
 
 ---
 

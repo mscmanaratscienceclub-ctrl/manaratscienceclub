@@ -12,6 +12,13 @@ import {
 import { previewBulkEmail } from "@/lib/actions/registrations";
 import { useBulkEmailSend } from "@/lib/hooks/use-bulk-email-send";
 import { cn } from "@/lib/utils";
+import {
+  adminButton,
+  adminButtonPrimary,
+  adminChipSoft,
+  adminPanel,
+  adminTextButton,
+} from "@/components/admin/styles";
 import AudienceEmailList from "./audience-email-list";
 import SendProgress from "./send-progress";
 import EmailPreviewModal from "./preview-email";
@@ -72,19 +79,16 @@ export default function PaymentConfirmationSection({
   }
 
   return (
-    <section className="rounded-2xl bg-surface p-5 shadow-subtle sm:p-6">
+    <section className={cn(adminPanel, "p-5 sm:p-6")}>
       <header className="flex items-start gap-3">
-        <div className="rounded-xl bg-emerald-50 p-2.5">
-          <BadgeCheck
-            className="h-5 w-5 text-emerald-600"
-            aria-hidden="true"
-          />
-        </div>
+        <span aria-hidden="true" className={cn(adminChipSoft, "size-9")}>
+          <BadgeCheck className="size-4" />
+        </span>
         <div>
-          <h2 className="font-display text-lg font-bold text-ink">
+          <h2 className="font-space-display text-2xl leading-tight font-medium tracking-tight text-admin-ink">
             Payment confirmations
           </h2>
-          <p className="mt-1 font-body text-sm text-ink/60">
+          <p className="mt-1.5 font-space-body text-sm leading-relaxed text-admin-muted">
             The receipt each verified participant is entitled to — their
             registration ID, payment details and confirmed events. Built per
             registration, so there is nothing to write. Anyone whose receipt has
@@ -94,24 +98,24 @@ export default function PaymentConfirmationSection({
       </header>
 
       {audience.truncated ? (
-        <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2 font-body text-sm text-amber-700">
+        <p className="mt-4 rounded-[6px] bg-admin-warn-bg px-3 py-2 font-space-body text-sm text-admin-warn-ink">
           More than {BULK_EMAIL_MAX_RECIPIENTS} verified registrations match these
           filters. Narrow them above — nothing will be sent until you do.
         </p>
       ) : count === 0 ? (
-        <p className="mt-4 rounded-xl bg-cream/60 px-3 py-2 font-body text-sm text-ink/60">
+        <p className="mt-4 rounded-[6px] bg-admin-sunken px-3 py-2 font-space-body text-sm text-admin-muted">
           No verified registration in this audience has an email address on file.
           Verify payments on the Science Competition table, or clear the filters
           above.
         </p>
       ) : unsent === 0 ? (
-        <p className="mt-4 rounded-xl bg-emerald-50 px-3 py-2 font-body text-sm text-emerald-700">
+        <p className="mt-4 rounded-[6px] bg-admin-positive-bg px-3 py-2 font-space-body text-sm text-admin-positive-ink">
           All {count} {count === 1 ? "registration" : "registrations"} in this
           audience already have their receipt — there is nothing left to send.
         </p>
       ) : (
-        <p className="mt-4 font-body text-sm text-ink/60">
-          <span className="font-semibold text-ink">{unsent}</span>{" "}
+        <p className="mt-4 font-space-body text-sm text-admin-muted">
+          <span className="font-medium text-admin-ink">{unsent}</span>{" "}
           {unsent === 1 ? "receipt" : "receipts"} will go out
           {alreadySent > 0 && (
             <>
@@ -140,15 +144,15 @@ export default function PaymentConfirmationSection({
             <button
               type="button"
               onClick={handleSend}
-              className="inline-flex items-center gap-2 rounded-xl bg-manara-teal px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-manara-teal/90 focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none"
+              className={adminButtonPrimary}
             >
-              <Send className="h-4 w-4" aria-hidden="true" />
+              <Send className="size-4" aria-hidden="true" />
               Yes, send {unsent} {unsent === 1 ? "receipt" : "receipts"}
             </button>
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="font-body text-sm text-ink/50 underline underline-offset-2 transition-colors hover:text-ink"
+              className={adminTextButton}
             >
               Cancel
             </button>
@@ -160,11 +164,11 @@ export default function PaymentConfirmationSection({
               onClick={handlePreview}
               disabled={!canPreview || previewing}
               className={cn(
-                "inline-flex items-center gap-2 rounded-xl border border-ink/15 bg-surface px-4 py-2 font-body text-sm font-semibold text-ink transition-colors hover:bg-cream focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none",
+                adminButton,
                 (!canPreview || previewing) && "cursor-not-allowed opacity-50",
               )}
             >
-              <Eye className="h-4 w-4" aria-hidden="true" />
+              <Eye className="size-4" aria-hidden="true" />
               {previewing ? "Rendering…" : "Preview"}
             </button>
             <button
@@ -176,23 +180,16 @@ export default function PaymentConfirmationSection({
                   ? "Only registrations that have not received a receipt yet are written to."
                   : "Nobody in this audience is waiting on a receipt — narrow the filters, or verify some payments first."
               }
-              className={cn(
-                "inline-flex items-center gap-2 rounded-xl bg-manara-teal px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-manara-teal/90 focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none",
-                !ready && "cursor-not-allowed opacity-50",
-              )}
+              className={cn(adminButtonPrimary, !ready && "cursor-not-allowed opacity-50")}
             >
-              <Send className="h-4 w-4" aria-hidden="true" />
+              <Send className="size-4" aria-hidden="true" />
               Send confirmations
             </button>
           </>
         )}
 
         {progress.finished && (
-          <button
-            type="button"
-            onClick={reset}
-            className="font-body text-sm text-ink/50 underline underline-offset-2 transition-colors hover:text-ink"
-          >
+          <button type="button" onClick={reset} className={adminTextButton}>
             Clear
           </button>
         )}

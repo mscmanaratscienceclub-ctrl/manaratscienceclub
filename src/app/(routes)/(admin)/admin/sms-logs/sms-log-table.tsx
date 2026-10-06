@@ -29,6 +29,16 @@ import { cn } from "@/lib/utils";
 import AdminEmptyState from "@/components/admin/admin-empty-state";
 import FilterBar from "@/components/admin/filter-bar";
 import Pagination from "@/components/admin/pagination";
+import {
+  adminControl,
+  adminDetailLabel,
+  adminLabel,
+  adminPanel,
+  adminTableScroller,
+  adminTag,
+  adminTh,
+} from "@/components/admin/styles";
+import { adminRowDisclosure } from "@/components/admin/row-disclosure";
 
 export interface SmsLogRow {
   id: string;
@@ -57,7 +67,7 @@ const timeFormatter = new Intl.DateTimeFormat("en-US", {
 
 /** A missing value, drawn as an em dash so an absent field is never a zero. */
 function Absent() {
-  return <span className="text-ink/35">—</span>;
+  return <span className="text-admin-muted">—</span>;
 }
 
 /** A pill's icon, chosen per status rather than by colour. */
@@ -123,8 +133,8 @@ function SmsStatusCell({ row }: { row: SmsLogRow }) {
       <span
         title={option?.description}
         className={cn(
-          "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
-          option?.tone ?? "bg-slate-100 text-slate-600",
+          adminTag,
+          option?.tone ?? "bg-admin-neutral-bg text-admin-neutral-ink",
         )}
       >
         <Icon className="h-3.5 w-3.5" aria-hidden="true" />
@@ -140,7 +150,7 @@ function SmsStatusCell({ row }: { row: SmsLogRow }) {
         disabled={isPending}
         onChange={(event) => apply(event.target.value)}
         className={cn(
-          "rounded-lg border border-manara-teal/15 bg-surface px-2 py-1 font-body text-xs text-ink/70 outline-none focus:border-manara-teal focus:ring-1 focus:ring-manara-teal/30",
+          cn(adminControl, "w-auto px-2 py-1 text-xs"),
           isPending && "cursor-not-allowed opacity-50",
         )}
       >
@@ -189,7 +199,7 @@ export default function SmsLogTable({
   const filtering = activeFilterCount(source, state) > 0;
 
   return (
-    <div className="rounded-2xl bg-surface shadow-subtle">
+    <div className={adminPanel}>
       <FilterBar source={source} state={state} controls={controls} />
 
       <div
@@ -205,24 +215,24 @@ export default function SmsLogTable({
             onClearAll={filtering ? controls.clearAll : undefined}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className={adminTableScroller}>
             {/* `min-w` is what makes the container above scroll at all: a
                 `w-full` table shrinks to fit instead of overflowing. */}
             <table className="w-full min-w-[64rem]">
               <thead>
-                <tr className="border-b border-ink/5 text-left">
-                  <th className="w-8 px-3 py-3" aria-label="Expand" />
+                <tr className="border-b border-admin-line text-left">
+                  <th className="w-8 bg-admin-accent-soft px-3 py-3" aria-label="Expand" />
                   {COLUMNS.map((label) => (
                     <th
                       key={label}
-                      className="px-4 py-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase"
+                      className={adminTh}
                     >
                       {label}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-ink/5">
+              <tbody className="divide-y divide-admin-line">
                 {rows.map((row) => {
                   const expanded = expandedId === row.id;
                   return (
@@ -270,62 +280,62 @@ function LogRow({
   return (
     <>
       <tr
-        onClick={onToggle}
-        className={cn(
-          "cursor-pointer transition-colors",
-          expanded ? "bg-cream/60" : "hover:bg-cream/40",
-        )}
+        {...adminRowDisclosure({
+          expanded,
+          onToggle,
+          detailId: `${row.id}-detail`,
+        })}
       >
         <td className="px-3 py-4">
           <ChevronDown
             className={cn(
-              "h-4 w-4 text-ink/40 transition-transform",
+              "size-4 text-admin-muted transition-transform",
               expanded && "rotate-180",
             )}
             aria-hidden="true"
           />
         </td>
-        <td className="px-4 py-4 font-body text-sm text-ink/70">
+        <td className="px-4 py-4 font-space-body text-sm text-admin-ink-soft">
           <span className="block whitespace-nowrap">
             {dateTimeFormatter.format(new Date(row.receivedAt))}
           </span>
-          <span className="block text-xs text-ink/40">
+          <span className="block text-xs text-admin-muted">
             {timeFormatter.format(new Date(row.receivedAt))}
           </span>
         </td>
-        <td className="px-4 py-4 font-body text-sm font-medium text-ink">
+        <td className="px-4 py-4 font-space-body text-sm font-medium text-admin-ink">
           {row.sender}
         </td>
-        <td className="px-4 py-4 font-mono text-sm text-ink/70">
+        <td className="px-4 py-4 font-mono text-sm text-admin-ink-soft">
           {row.transactionId ?? <Absent />}
         </td>
-        <td className="px-4 py-4 font-body text-sm text-ink/60">
+        <td className="px-4 py-4 font-space-body text-sm text-admin-ink-soft">
           {row.amount ? <>৳{row.amount}</> : <Absent />}
         </td>
-        <td className="px-4 py-4 font-mono text-sm text-ink/60">
+        <td className="px-4 py-4 font-mono text-sm text-admin-ink-soft">
           {row.senderNumber ?? <Absent />}
         </td>
         <td className="px-4 py-4">
           <SmsStatusCell row={row} />
         </td>
-        <td className="max-w-xs truncate px-4 py-4 font-body text-sm text-ink/60">
+        <td className="max-w-xs truncate px-4 py-4 font-space-body text-sm text-admin-ink-soft">
           {row.rawMessage}
         </td>
       </tr>
 
       {expanded && (
-        <tr className="bg-cream/60">
+        <tr id={`${row.id}-detail`} className="bg-admin-accent-soft/60">
           <td />
           <td colSpan={7} className="px-4 pt-1 pb-6">
             <section className="mt-4">
-              <h3 className="mb-3 flex items-center gap-2 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
+              <h3 className={cn(adminLabel, "mb-3 flex items-center gap-2")}>
                 <Mail className="h-3.5 w-3.5" aria-hidden="true" />
                 Full Message
               </h3>
               <dl className="space-y-3">
                 <div className="grid gap-1 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-6">
-                  <dt className="font-body text-sm text-ink/50">Raw SMS</dt>
-                  <dd className="max-w-3xl font-mono text-sm leading-relaxed break-words text-ink/80">
+                  <dt className={adminDetailLabel}>Raw SMS</dt>
+                  <dd className="max-w-3xl font-mono text-sm leading-relaxed break-words text-admin-ink-soft">
                     {row.rawMessage}
                   </dd>
                 </div>
@@ -334,10 +344,8 @@ function LogRow({
                     key={field.label}
                     className="grid gap-1 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-6"
                   >
-                    <dt className="font-body text-sm text-ink/50">
-                      {field.label}
-                    </dt>
-                    <dd className="font-mono text-sm text-ink/80">
+                    <dt className={adminDetailLabel}>{field.label}</dt>
+                    <dd className="font-mono text-sm text-admin-ink-soft">
                       {field.value ?? <Absent />}
                     </dd>
                   </div>

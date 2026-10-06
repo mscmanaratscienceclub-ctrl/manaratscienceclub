@@ -1,12 +1,241 @@
 ---
 tags: [meta, changelog]
-updated: 2026-10-03
+updated: 2026-10-06
 ---
 
 # Changelog
 
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
+
+## 2026-10-06 — Print trigger waits for the whole document
+
+Reported against the admin panel: an exported PDF "doesn't print everything". Not
+reproducible from the repo — the file is written by the browser on the admin's
+machine, and every report route needs an admin session — but the print path had one
+mechanism that can produce exactly that, and it is now closed.
+
+- **`AutoPrint`** (`src/components/admin/auto-print.tsx`) waited only for
+  `document.fonts.ready`. Every admin route renders behind `admin/loading.tsx`, so a
+  report's masthead, scope strip and 400-odd rows arrive in *continuation* chunks of
+  the same still-open document; the dialog could open on a page that was still being
+  written. It now awaits `load` first — the one signal that the document has
+  finished arriving — and the fonts after it, in that order because the report's own
+  faces only enter the font queue once its text is in the document.
+- **The zero `@page` margin's cost is now written down** ([[filters-reports]] §
+  "To paper"). ADR-0033 keeps page margins at zero so Chrome has nowhere to draw its
+  date/URL strip, which means the report carries its own padding — and a fragmented
+  box's *vertical* padding applies only to its first and last fragment. Sheets 2…N
+  sit flush to the paper edge, where a printer's ≈5mm unprintable band can clip the
+  first row. The horizontal padding repeats, so the sides were never at risk. This is
+  a limit of letting the browser paginate, not of these rules, and there is no
+  print-CSS answer.
+- **Not changed:** the `@page` geometry itself, and ADR-0033's decision to keep the
+  browser as the writer. Real page geometry is the only fix for the second point, and
+  that is the server-side PDF generator now being specified.
+
+`pnpm lint`, `pnpm build` clean.
+
+## 2026-10-06 — STEM Fest filter: every event, not four segments
+
+An admin asking "who entered General Science?" could only narrow to *Olympiads* —
+the `segment` filter listed the four groups the registration form uses to organise
+the fest, while a registration row records the **events** it entered. The grouping
+was never the thing stored, so filtering by it returned rows about five other events
+too. The field now offers all eleven events, grouped under their segment headings.
+
+- **Options** (`src/lib/admin/filters.ts`). Built from `stemfestEvents`, valued by
+  event id, labelled by event name, with a new optional `group` on
+  `AdminFilterOption` carrying the parent segment's name through
+  `getStemfestSegment()`. `group` is presentation only — it never reaches the URL,
+  and `validateFilterValue` still reads `value` alone. The visible label is now
+  **Event**, matching the form's step 02 and the report column that prints these
+  names; the field id and query key stay `segment`, because that is the column and
+  the key existing links use.
+- **Rendering** (`src/components/admin/filter-controls.tsx`). `FilterField`'s select
+  gathers options into `<optgroup>`s by `group`, in first-appearance order, so the
+  bulk-email audience bar — which renders the same field through the same component
+  — groups identically for free.
+- **Matching** (`src/lib/actions/registrations.ts`). `segmentMatch` resolves one id
+  through `getStemfestEvent()` and issues a single `ILIKE '%Event Name%'` instead of
+  OR-ing a segment's event names, so `stemfestSegmentEventNames()` was deleted from
+  `src/lib/data/stemfest-registration.ts`. One substring match is safe only because
+  no catalogue event name contains another.
+- **Guarded against the live table** (`scripts/verify-admin-db.ts`). A new
+  `eventReachability()` read counts, per event, the rows the filter's own predicate
+  reaches; the assertion is that no event the brief counts in its window exceeds
+  what the filter can reach all-time — i.e. the id in the URL still resolves to the
+  text in the column.
+- **Cost.** `?segment=olympiads`, `?segment=robotics`, `?segment=esports` no longer
+  validate and are dropped by `parseAdminQuery`, leaving the list unfiltered rather
+  than erroring. `?segment=project-display` survives by coincidence — event and
+  segment share that id and the same name. `/admin-preview`'s negated-select fixture
+  moved from `!robotics` to `!lfr`, which is the only way that demo stays reachable
+  without an admin session, and its "Most-entered events" rows — "Robotics Sprint",
+  "Science Olympiad", ids `robotics`/`olympiad`/`display` — are now real catalogue
+  events sublabelled with their real segments.
+
+`pnpm lint` and `pnpm build` clean; contract text in [[filters-reports]] §
+"The event filter (STEM Fest)".
+
+## 2026-10-06 — Admin panel: section accents, real charts, a command rail, and a printable brief
+
+Follows the 2026-10-05 structural rebuild (ADR-0034) and finishes what it started. The
+panel had become a competent monochrome spreadsheet: one charcoal ink everywhere, so
+nothing answered "which section am I in"; a trend line with no axis, no gridlines and no
+hover state, so nobody could read a number off it; type that had crept down to 9.6px
+literals because six tables did not fit at 14px. The work below is covered by ADR-0036,
+ADR-0037 and ADR-0038.
+
+- **Section accents** (`src/lib/admin/accents.ts`, ADR-0036). One hue per section —
+  dashboard teal, campus ambassador violet, volunteer emerald, science competition azure,
+  SMS logs amber, emails rose — scoped by `adminAccentStyle()` on the section root and
+  read below as `--admin-accent` / `-soft` / `-ink`. A section does not thread an `accent`
+  prop down; the shared class strings in `styles.ts` stay section-agnostic. Chart tones
+  that name a *series* (`teal`/`blue`/`purple`/`pink`) take accents from
+  `CHART_TONE_ACCENT`; `green`/`yellow`/`red` deliberately do not, so the payment-status
+  ring and the pills beside it cannot disagree about what "pending" looks like.
+- **A gradient layer, mixed not hardcoded.** `--admin-wash-masthead`,
+  `--admin-glow-masthead`, `--admin-wash-head`, `--admin-edge-accent`,
+  `--admin-fill-accent`, `--admin-fill-ink`, `--admin-sheen` in `globals.css`. Every stop
+  is a `color-mix()` of the live accent triple, so one `adminAccentStyle()` call
+  re-colours a masthead, its panel heads, its edges and its chart fills at once, and a
+  re-themed accent needs no edit below that block. Gradient is spent on hierarchy: the
+  masthead lifts off the canvas, a panel edge names its section, a bar reads as volume.
+  `--admin-fill-ink` exists because the plain accent is too light for white ink at chip
+  and button sizes — amber fails 3:1 without it.
+- **Charts** (ADR-0036). `activity-chart.tsx` grew real axes: a tick ceiling rounded up
+  to four even steps, subtle gridlines, a crosshair hover state that names the day and
+  every series in it, and stacked series rather than overlapped ones. `donut-chart.tsx`
+  replaced a legend-shaped bar; `RankedBars` in `charts.tsx` carries the long event names
+  a column chart would have to abbreviate, and is a labelled list in the markup — the bar
+  is decoration, the number is the data. `Sparkline` now paints its area with a clip-path
+  fade and keeps a 1.5px `vector-effect` stroke.
+- **The muted ink was under AA** (`--admin-muted`, amends ADR-0034). Computing every
+  palette pair found the secondary ink — panel descriptions, chart axes, table metadata —
+  measured 4.48:1 on a card, 4.32:1 on `--admin-sunken` and 4.14:1 on the canvas, all
+  below the 4.5:1 its 12–15px size requires. It is now `#6d6c69` (5.25 / 5.07 / 4.86),
+  the same warm-neutral hue a shade darker, fixed once in the token instead of in the 31
+  files that use it. Everything else in the palette measured clean in the same pass: the
+  six accent inks run 5.48–8.51:1 on white, the status inks 4.74–7.20:1, each accent ink
+  at least 5.25:1 on its own `-soft` wash, and no solid accent is used as text anywhere.
+- **A selectable trend span** (`range-segments.tsx`). The activity panel's 7 / 30 / 90-day
+  control is three `Link`s with `aria-current`, and the span lives in the URL as `?days=`,
+  so a Server Component renders an interactive chart with zero client JavaScript and the
+  back button works on it. `parseTrendRange` falls back to 30 for anything unknown — an
+  empty chart is a worse answer than a default one. `ActivityChart` now sets its own plot
+  floor at 12px per column instead of a fixed `34rem`, so 90 days scroll rather than
+  becoming bars thinner than the pointer that has to hit them. Verified in the browser at
+  390 / 820 / 1440 through same-origin iframes (the in-app tab has no viewport emulation,
+  so media queries were keyed off the iframe width) — which is how the control's
+  `flex-wrap` was found and replaced with `shrink-0`: at a narrow panel head the third
+  segment wrapped to its own line, and half a control on one row and half on the next is
+  not a segmented control. Measuring caught it; reasoning had already shipped it.
+  `pnpm db:verify` §3 now checks all three spans against the live database — axis and SQL
+  window starting on the same local day, every day bucket inside the window having a
+  column — which also showed what the 90-day view will actually look like today: all 414
+  STEM Fest entries already fall inside the last 30 days, so the extra columns are the
+  quiet run before the fest opened, not missing data.
+- **Navigation**: `admin-shell.tsx` owns ⌘K / Ctrl-K → `command-palette.tsx`, which ranks
+  `ADMIN_ACTIONS` + `PALETTE_TARGETS` by name, keyword, then path, moves focus in and
+  restores it on Escape. `AdminSidebar` collapses to an icon rail, remembered in
+  `localStorage` under `admin-rail-collapsed`, with tooltips on every collapsed item.
+- **The panel owns its type ladder** (ADR-0037): `--text-2xs/-xs/-sm` restated on
+  `[data-admin]` as 12 / 13 / 15px, nothing below 12 anywhere in the panel. Redefining
+  three theme variables beat editing forty call sites, and the public site is untouched
+  because `data-admin` only ever sits on the admin shell.
+- **Printable registration brief** (ADR-0038): the dashboard's **Print a report** now goes
+  to `/admin/reports/brief`, a static sibling of `/admin/reports/[kind]`, with five
+  sections — trend and direction, segments rising and falling, schools, referrers split
+  batch vs campus ambassador, and a next-day estimate. It is *printed* to PDF, not
+  rendered as one; there is no server-side PDF dependency. `pnpm db:verify` now mirrors the
+  brief's six statements against the live pooler and asserts the arithmetic.
+
+Also fixed: `estimateNextDay` in `src/lib/admin/brief.ts` used to answer with a mean times
+a same-weekday ratio, which on a growth week predicts the past. It now fits a
+least-squares line through the last seven local days and reads it one day past the end,
+with a band from the residual scatter (floored at a fifth of the figure) and a ceiling at
+twice the week's busiest day. Live, the forecast went from "25, range 0–70" to
+"76, range 35–117, moderate". `scripts/verify-admin-db.ts` also catches a contradiction a
+reader would have found: section 1 counts *forms*, section 2 counts *event entries*, so
+the brief prints the difference instead of letting the two numbers look like a mistake.
+
+## 2026-10-06 — Content images re-optimised: Supabase cached egress cut ~96%
+
+Supabase **Cached Egress** (CDN-delivered bytes) was dominated by the public site serving raw
+image originals: `src/lib/data/index.ts` named **38 multi-megabyte objects (33.65 MB per full
+render)** — `adminimages/abrar.png` alone is 9.4 MB and is referenced twice — and
+`src/components/ui/chroma-grid.tsx` / `competition-carousel.tsx` render with `unoptimized`, so every card
+billed those bytes again on a CDN cache hit. `/legacy` cost **~28 MB per scrolled visitor**.
+
+This undoes a silent regression: the 2026-08-30 entry below wired the data module to
+`bucketImage()` and cut `/legacy` to 0.66 MB, and commit `97774a9` ("final push", 2026-09-03)
+replaced every one of those lines with the original absolute URLs. `optimized/*` WebPs were in the
+bucket the whole time, unreferenced.
+
+- `src/lib/media.ts` gained `contentImage(path)` and `bucketOriginal(path)`. Content images are now
+  named by their **original** bucket path and resolve to the pre-optimised, one-year-cached WebP
+  (`optimized/<path>.<ext>.webp`); already-small `.webp`/`.avif` uploads are served verbatim.
+  `src/lib/data/index.ts` uses `contentImage()` for all 43 call sites — no project host is
+  hardcoded there any more. Measured against the live CDN: **1.15 MB delivered for the whole
+  `/legacy` image set, all HTTP 200**, versus 27.9 MB before.
+- `scripts/optimize-bucket-images.mjs` reads paths from `contentImage("…")` call sites (the
+  absolute-URL pattern still matches for back-compat) and skips already-small uploads so it stops
+  minting unused `x.webp.webp` objects. It also no longer crashes when the repo has `.env` but no
+  `.env.local`.
+- Kept deliberately: `unoptimized` on these `<Image>`s (the bytes are final — routing them through
+  Vercel or `/render/image/` would pay a transform for nothing).
+
+Still open, storage side:
+- `pdfs` holds 8 files / **43.4 MB** (largest 13.1 MB) with only `cache-control: max-age=3600`, so
+  each syllabus download ships megabytes. Cheapest fix is re-exporting them smaller at source —
+  cached and uncached bytes are both metered, so a longer TTL alone would not reduce total GB.
+- Tarannum Rose's photo is stored as a **genuine HEIC** under both `adminimages/rose.heif` and
+  `adminimages/rose.png` (byte-identical), so it renders only in Safari/iOS. It cannot be served
+  through `contentImage()` because no WebP can be derived locally — `sharp`'s libheif has no HEVC
+  decoder. Needs a JPEG/PNG re-export from the club, then `pnpm images:optimize`.
+
+## 2026-10-05 — Admin panel rebuilt flat; filters gain operators and a segments dropdown
+
+Three changes to the admin panel, all sharing one contract: the filter catalogue in
+`src/lib/admin/filters.ts`.
+
+**Filter operators.** A `text` or `select` filter now compares through an operator
+chosen in a picker in front of its control — *Contains* / *Is exactly* / *Does not
+contain* for text, *Is* / *Is not* for a select. The operator rides on the value as a
+one-character prefix (`!` for not, `=` for a text field's exact match), so the URL
+contract is unchanged (`?school=!Manarat`) and a chip, the report's scope strip and
+the spreadsheet's scope sheet all say the same sentence. New helpers in `filters.ts`:
+`AdminFilterOperator`, `readFilterValue`, `encodeFilterValue`, `filterOperatorOptions`,
+`filterOperatorLabel`; the action layer now builds every comparison through
+`filterMatches()` + `textMatch` / `selectMatch` / `booleanMatch` / `segmentMatch`. See
+ADR-0035.
+
+**Segments dropdown.** `stemfest.segment` was free text; it is now a dropdown of the
+fest's four segments (Olympiads, Robotics, Project Display, E-sports), primary in the
+filter bar and available to the bulk-email audience. The stored column holds the
+*events* a registration entered, so the segment id is expanded through
+`stemfestSegmentEventNames()` in `src/lib/data/stemfest-registration.ts` and matched as
+any of that segment's events — with `not` keeping the rows that entered none.
+
+**Visual language.** The whole panel — shell, rail, dashboard, five tables, filter
+bar, export dialogs, emails page and the on-screen report — was restyled on a warm
+monochrome palette of its own (`--admin-*` tokens, ADR-0034): white cards on
+`1px solid #eaeaea`, off-black text, pastel tags only where colour means something,
+solid ink buttons, no resting shadows. Type is now the site's own three faces by
+role — DM Sans for UI and data, Cormorant Garamond for headings, Geist Mono for IDs
+and figures. Shared class strings live in `src/components/admin/styles.ts`. The
+`@media print` block and every `data-print` hook are untouched, so the verified PDF
+output (ADR-0033) still holds.
+
+Also fixed along the way: `font-mono` never resolved anywhere in the app —
+`--font-mono` is declared on `:root` as `var(--font-geist-mono)` while Geist Mono's
+variable is set on `<body>` — so every TrxID and registration code rendered in the
+browser's default serif. The panel recomposes the variable inside `[data-admin]`;
+the public site is untouched. `/admin-preview` gained a **Filter contract** panel that
+reads a fixture query string back through `parseAdminQuery` / `describeFilters` /
+`buildAdminHref`, which is how the operator round-trip is checked without an admin
+session.
 
 ## 2026-10-03 — Stop re-transforming uploaded avatars (Supabase egress)
 

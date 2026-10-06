@@ -61,6 +61,34 @@ export function bucketImage(path: string): string {
   return storagePublicUrl(AVATARS_BUCKET, `optimized/${path}`);
 }
 
+/** Public URL for an object served from `avatars` exactly as it was uploaded. */
+export function bucketOriginal(path: string): string {
+  return storagePublicUrl(AVATARS_BUCKET, path);
+}
+
+/** Uploads that are already the final, small bytes (what the forms write). */
+const ALREADY_SMALL = /\.(webp|avif)$/i;
+
+/**
+ * URL for a content image, named by its **original** path in the avatars bucket
+ * (`"adminimages/abrar.png"`) rather than by the URL the browser should fetch.
+ *
+ * This is the egress switch for everything in `src/lib/data`: originals are
+ * 0.5–9 MB and, because `avatars` is public and CDN-cached, each one is billed
+ * again as cached egress on every card that renders it. `contentImage` points at
+ * the WebP that `scripts/optimize-bucket-images.mjs` pre-encoded at display size
+ * (9.4 MB → 28 KB) with an immutable one-year cache. Already-small uploads
+ * (`.webp`/`.avif`) are served verbatim — they need no re-encode.
+ *
+ * The `<original>.<ext>.webp` suffix is the optimizer's target convention
+ * (`TARGET_PREFIX + sourcePath.replace(/\\.([^.]+)$/, ".$1.webp")`); keep the two
+ * in step if that ever changes, otherwise the card 404s.
+ */
+export function contentImage(path: string): string {
+  if (ALREADY_SMALL.test(path)) return bucketOriginal(path);
+  return bucketImage(`${path}.webp`);
+}
+
 /**
  * `true` when a public-object URL already points at a WebP under `optimized/`,
  * i.e. the final display bytes produced by `scripts/optimize-bucket-images.mjs`.

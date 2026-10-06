@@ -38,6 +38,19 @@ import { cn } from "@/lib/utils";
 import AdminEmptyState from "@/components/admin/admin-empty-state";
 import FilterBar from "@/components/admin/filter-bar";
 import Pagination from "@/components/admin/pagination";
+import {
+  adminButton,
+  adminButtonPrimary,
+  adminControl,
+  adminDetailLabel,
+  adminDetailValue,
+  adminLabel,
+  adminPanel,
+  adminTableScroller,
+  adminTag,
+  adminTh,
+} from "@/components/admin/styles";
+import { adminRowDisclosure } from "@/components/admin/row-disclosure";
 
 export interface StemfestRow {
   id: string;
@@ -95,7 +108,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
 
 /** A missing value, drawn as an em dash so an absent field is never a zero. */
 function Absent() {
-  return <span className="text-ink/35">—</span>;
+  return <span className="text-admin-muted">—</span>;
 }
 
 /**
@@ -161,7 +174,7 @@ export default function ScienceCompetitionTable({
   const filtering = activeFilterCount(source, state) > 0;
 
   return (
-    <div className="rounded-2xl bg-surface shadow-subtle">
+    <div className={adminPanel}>
       <FilterBar source={source} state={state} controls={controls} />
 
       <div
@@ -177,24 +190,24 @@ export default function ScienceCompetitionTable({
             onClearAll={filtering ? controls.clearAll : undefined}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className={adminTableScroller}>
             {/* Twelve columns: `min-w` is what makes the container above scroll at
                 all, since a `w-full` table shrinks rather than overflowing. */}
             <table className="w-full min-w-[78rem]">
               <thead>
-                <tr className="border-b border-ink/5 text-left">
-                  <th className="w-8 px-3 py-3" aria-label="Expand" />
+                <tr className="border-b border-admin-line text-left">
+                  <th className="w-8 bg-admin-accent-soft px-3 py-3" aria-label="Expand" />
                   {COLUMNS.map((label) => (
                     <th
                       key={label}
-                      className="px-4 py-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase"
+                      className={adminTh}
                     >
                       {label}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-ink/5">
+              <tbody className="divide-y divide-admin-line">
                 {registrations.map((row) => {
                   const expanded = expandedId === row.id;
                   return (
@@ -262,41 +275,41 @@ function RegistrationRow({
   return (
     <>
       <tr
-        onClick={onToggle}
-        className={cn(
-          "cursor-pointer transition-colors",
-          expanded ? "bg-cream/60" : "hover:bg-cream/40",
-        )}
+        {...adminRowDisclosure({
+          expanded,
+          onToggle,
+          detailId: `${row.id}-detail`,
+        })}
       >
         <td className="px-3 py-4">
           <ChevronDown
             className={cn(
-              "h-4 w-4 text-ink/40 transition-transform",
+              "size-4 text-admin-muted transition-transform",
               expanded && "rotate-180",
             )}
             aria-hidden="true"
           />
         </td>
-        <td className="px-4 py-4 font-mono text-sm font-medium text-ink">
+        <td className="px-4 py-4 font-mono text-sm font-medium text-admin-ink">
           {row.registrationCode}
         </td>
-        <td className="px-4 py-4 font-body font-medium text-ink">{row.name}</td>
-        <td className="px-4 py-4 font-body text-sm text-ink/60">
+        <td className="px-4 py-4 font-space-body text-base font-medium text-admin-ink">{row.name}</td>
+        <td className="px-4 py-4 font-space-body text-sm text-admin-ink-soft">
           {row.classLabel}
         </td>
-        <td className="px-4 py-4 font-body text-sm text-ink/60">
+        <td className="px-4 py-4 font-space-body text-sm text-admin-ink-soft">
           {row.school}
         </td>
-        <td className="max-w-xs truncate px-4 py-4 font-body text-sm text-ink/60">
+        <td className="max-w-xs truncate px-4 py-4 font-space-body text-sm text-admin-ink-soft">
           {row.segments}
         </td>
-        <td className="px-4 py-4 font-body text-sm text-ink/60">
+        <td className="px-4 py-4 font-space-body text-sm text-admin-ink-soft">
           {row.paymentNumber}
         </td>
-        <td className="px-4 py-4 font-mono text-sm font-medium text-ink">
+        <td className="px-4 py-4 font-mono text-sm font-medium text-admin-ink">
           {row.transactionId}
         </td>
-        <td className="px-4 py-4 font-body text-sm font-medium text-ink tabular-nums">
+        <td className="px-4 py-4 font-space-body text-sm font-medium text-admin-ink tabular-nums">
           {row.totalFee === null ? <Absent /> : formatBdt(row.totalFee)}
         </td>
         <td className="px-4 py-4">
@@ -305,17 +318,17 @@ function RegistrationRow({
         <td className="px-4 py-4">
           <VerifyEmailCell row={row} />
         </td>
-        <td className="px-4 py-4 font-body text-sm text-ink/60">
+        <td className="px-4 py-4 font-space-body text-sm text-admin-ink-soft">
           {dateFormatter.format(new Date(row.createdAt))}
         </td>
       </tr>
 
       {expanded && (
-        <tr className="bg-cream/60">
+        <tr id={`${row.id}-detail`} className="bg-admin-accent-soft/60">
           <td />
           <td colSpan={11} className="px-4 pt-1 pb-6">
             <section className="mt-4">
-              <h3 className="mb-3 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
+              <h3 className={cn(adminLabel, "mb-3")}>
                 Registration Details
               </h3>
               <dl className="space-y-3">
@@ -324,10 +337,10 @@ function RegistrationRow({
                     key={field.label}
                     className="grid gap-1 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-6"
                   >
-                    <dt className="font-body text-sm text-ink/50">
+                    <dt className={adminDetailLabel}>
                       {field.label}
                     </dt>
-                    <dd className="max-w-3xl font-body text-sm leading-relaxed break-words text-ink/80">
+                    <dd className={adminDetailValue}>
                       {field.value ?? <Absent />}
                     </dd>
                   </div>
@@ -421,8 +434,8 @@ function PaymentStatusCell({ row }: { row: StemfestRow }) {
       <span
         title={option?.description}
         className={cn(
-          "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
-          option?.tone ?? "bg-slate-100 text-slate-600",
+          adminTag,
+          option?.tone ?? "bg-admin-neutral-bg text-admin-neutral-ink",
         )}
       >
         <Icon className="h-3.5 w-3.5" aria-hidden="true" />
@@ -438,7 +451,7 @@ function PaymentStatusCell({ row }: { row: StemfestRow }) {
         disabled={isPending}
         onChange={(event) => apply(event.target.value)}
         className={cn(
-          "rounded-lg border border-manara-teal/15 bg-surface px-2 py-1 font-body text-xs text-ink/70 outline-none focus:border-manara-teal focus:ring-1 focus:ring-manara-teal/30",
+          cn(adminControl, "w-auto px-2 py-1 text-xs"),
           isPending && "cursor-not-allowed opacity-50",
         )}
       >
@@ -466,7 +479,7 @@ function VerifyEmailCell({ row }: { row: StemfestRow }) {
   // The receipt only ever goes to a verified payment with an address on file.
   if (row.status !== "verified" || !row.email) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+      <span className={cn(adminTag, "bg-admin-neutral-bg text-admin-muted")}>
         <Mail className="h-3.5 w-3.5" aria-hidden="true" />
         N/A
       </span>
@@ -478,7 +491,7 @@ function VerifyEmailCell({ row }: { row: StemfestRow }) {
   return sent ? (
     <span
       title={`Sent ${dateTimeFormatter.format(new Date(row.emailSentAt!))}`}
-      className="inline-flex cursor-help items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700"
+      className={cn(adminTag, "cursor-help bg-admin-positive-bg text-admin-positive-ink")}
     >
       <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
       Sent
@@ -486,7 +499,7 @@ function VerifyEmailCell({ row }: { row: StemfestRow }) {
   ) : (
     <span
       title="Payment verified but no receipt sent yet — open the row and press Send confirmation."
-      className="inline-flex cursor-help items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700"
+      className={cn(adminTag, "cursor-help bg-admin-warn-bg text-admin-warn-ink")}
     >
       <Clock className="h-3.5 w-3.5" aria-hidden="true" />
       Not sent
@@ -545,11 +558,11 @@ function ConfirmationSettings({ row }: { row: StemfestRow }) {
 
   return (
     <section
-      className="mt-6 border-t border-ink/5 pt-5"
+      className="mt-6 border-t border-admin-line pt-5"
       // Typing here or pressing a button must not collapse the row.
       onClick={(event) => event.stopPropagation()}
     >
-      <h3 className="mb-3 flex items-center gap-2 font-body text-xs font-semibold tracking-wider text-ink/40 uppercase">
+      <h3 className={cn(adminLabel, "mb-3 flex items-center gap-2")}>
         <Mail className="h-3.5 w-3.5" aria-hidden="true" />
         Payment confirmation
       </h3>
@@ -558,7 +571,7 @@ function ConfirmationSettings({ row }: { row: StemfestRow }) {
         <div className="flex w-72 max-w-full flex-col gap-1">
           <label
             htmlFor={`payment-email-${row.id}`}
-            className="font-body text-sm text-ink/50"
+            className="font-space-body text-sm text-admin-muted"
           >
             Contact email
           </label>
@@ -573,7 +586,7 @@ function ConfirmationSettings({ row }: { row: StemfestRow }) {
             spellCheck={false}
             disabled={isSaving}
             className={cn(
-              "rounded-lg border border-manara-teal/15 bg-surface px-3 py-2 font-body text-sm text-ink outline-none placeholder:text-ink/30 focus:border-manara-teal focus:ring-1 focus:ring-manara-teal/30",
+              adminControl,
               isSaving && "cursor-not-allowed opacity-50",
             )}
           />
@@ -583,7 +596,7 @@ function ConfirmationSettings({ row }: { row: StemfestRow }) {
           type="submit"
           disabled={isSaving}
           className={cn(
-            "inline-flex items-center gap-2 rounded-xl border border-manara-teal/15 bg-surface px-4 py-2 font-body text-sm font-semibold text-ink/70 transition-colors hover:bg-cream/60 focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none",
+            adminButton,
             isSaving && "cursor-not-allowed opacity-50",
           )}
         >
@@ -596,7 +609,7 @@ function ConfirmationSettings({ row }: { row: StemfestRow }) {
           disabled={isSending || !canSend}
           title={canSend ? undefined : "Only a verified payment has a confirmation to send."}
           className={cn(
-            "inline-flex items-center gap-2 rounded-xl bg-manara-teal px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-manara-teal/90 focus-visible:ring-2 focus-visible:ring-manara-teal/40 focus-visible:outline-none",
+            adminButtonPrimary,
             (isSending || !canSend) && "cursor-not-allowed opacity-50",
           )}
         >
@@ -605,7 +618,7 @@ function ConfirmationSettings({ row }: { row: StemfestRow }) {
         </button>
       </form>
 
-      <p className="mt-2 font-body text-xs text-ink/45">
+      <p className="mt-2 font-space-body text-xs text-admin-muted">
         {describeConfirmation(row)}
       </p>
     </section>

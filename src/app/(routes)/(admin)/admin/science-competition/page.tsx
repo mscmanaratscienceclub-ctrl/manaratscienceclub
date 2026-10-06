@@ -18,6 +18,7 @@ import {
   formatBdt,
   getStemfestClassLabel,
 } from "@/lib/data/stemfest-registration";
+import { SECTION_ACCENT, adminAccentStyle } from "@/lib/admin/accents";
 import {
   describeList,
   parseAdminQuery,
@@ -90,15 +91,11 @@ export default async function ScienceCompetitionAdminPage({
       label: "Registrations",
       value: String(stats.total),
       icon: Trophy,
-      color: "text-manara-teal",
-      bg: "bg-manara-teal/10",
     },
     {
       label: "Verified Payments",
       value: String(stats.verifiedCount),
       icon: BadgeCheck,
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
     },
     // Pending and Rejected are printed beside Verified because they are what an
     // admin works through: all three count the same effective status the pill and
@@ -109,41 +106,34 @@ export default async function ScienceCompetitionAdminPage({
       label: "Amount to Collect",
       value: toCollectLabel(stats),
       icon: Banknote,
-      color: "text-manara-teal",
-      bg: "bg-manara-teal/10",
     },
     {
       label: "Pending Payments",
       value: String(stats.pendingCount),
       icon: Clock,
-      color: "text-amber-600",
-      bg: "bg-amber-50",
     },
     {
       label: "Rejected Payments",
       value: String(stats.rejectedCount),
       icon: XCircle,
-      color: "text-rose-600",
-      bg: "bg-rose-50",
     },
     {
       label: "This Week",
       value: String(stats.thisWeek),
       icon: CalendarDays,
-      color: "text-manara-yellow",
-      bg: "bg-manara-yellow/15",
     },
     {
       label: "Unique Schools",
       value: String(stats.uniqueSchools),
       icon: School,
-      color: "text-manara-purple",
-      bg: "bg-manara-purple/10",
     },
   ];
 
   return (
-    <div className="flex flex-col gap-8 p-6 md:p-10">
+    <div
+      style={adminAccentStyle(SECTION_ACCENT.scienceCompetition)}
+      className="flex flex-col gap-8 px-6 py-8 md:px-10 md:py-12"
+    >
       <PageHeader
         eyebrow="Form responses"
         title={source.reportTitle}
@@ -151,24 +141,24 @@ export default async function ScienceCompetitionAdminPage({
         icon={FlaskConical}
       />
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {/*
+        One strip rather than seven cards: the figures answer one question —
+        "how is this fest going" — and a single hairline-divided board reads as one
+        answer, where seven floating boxes read as seven.
+      */}
+      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-admin-line border-t-2 border-t-admin-accent bg-admin-line sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
         {statCards.map((stat) => (
-          <div
-            key={stat.label}
-            className="flex items-center gap-4 rounded-2xl bg-surface p-6 shadow-subtle"
-          >
-            <div className={`rounded-xl ${stat.bg} p-3`}>
-              <stat.icon className={`h-6 w-6 ${stat.color}`} aria-hidden="true" />
-            </div>
-            <div>
-              <p className="font-display text-3xl font-bold text-ink">
-                {stat.value}
-              </p>
-              <p className="font-body text-sm text-ink/60">{stat.label}</p>
-            </div>
+          <div key={stat.label} className="bg-admin-surface p-5">
+            <dt className="flex items-center gap-2 font-space-body text-2xs font-semibold tracking-[0.08em] text-admin-accent-ink uppercase">
+              <stat.icon className="size-3.5 shrink-0" aria-hidden="true" />
+              {stat.label}
+            </dt>
+            <dd className="mt-2.5 font-space-body text-2xl leading-none font-medium text-admin-ink tabular-nums">
+              {stat.value}
+            </dd>
           </div>
         ))}
-      </div>
+      </dl>
 
       <ScienceCompetitionTable
         source={source}
