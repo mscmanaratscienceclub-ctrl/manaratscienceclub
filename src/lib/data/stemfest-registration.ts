@@ -132,7 +132,7 @@ export const stemfestSchools: StemfestSchoolOption[] = [
   },
   { id: "dhaka-college", name: "Dhaka College" },
   {
-    id: "viqarunnisa-noon",
+    id: "viqarunisa-noon",
     name: "Viqarunnisa Noon School and College",
   },
   {
