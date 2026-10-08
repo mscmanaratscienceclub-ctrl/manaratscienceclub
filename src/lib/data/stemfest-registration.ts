@@ -196,6 +196,10 @@ export const stemfestSchools: StemfestSchoolOption[] = [
     id: "cantonment-public-saidpur",
     name: "Cantonment Public School and College Saidpur",
   },
+ {
+    id: "manaratuttara",
+    name: "Manarat International School Uttara(MISU)",
+  },
   {
     id: "dhaka-cantonment-girls-public",
     name: "Dhaka Cantonment Girls Public School and College",
