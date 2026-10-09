@@ -80,12 +80,16 @@ const publishedSyllabi: Record<string, { path: string; updated: string }> = {
   },
   // Robotics — one rulebook per event, and both are out.
   lfr: { path: "LFR RULEBOOK.pdf", updated: "2026-09-26" },
-  robosoccer: { path: "ROBOSOCCER RULEBOOK-1.pdf", updated: "2026-09-26" },
+  robosoccer: { path: "robosoccer rulebook.pdf", updated: "2026-09-26" },
   // Project Display — a single event, so a single rulebook.
   "project-display": {
     path: "PROJECT DISPLAY RULEBOOK.pdf",
     updated: "2026-09-27",
   },
+   // E-sports — one rulebook per title.
+  "ea-fc-26": { path: "FC26 rulebook.pdf", updated: "2026-10-09" },
+  "clash-royale": { path: "clash royale rulebook.pdf", updated: "2026-10-09" },
+  "minecraft-bedwars": { path: "bedwars rulebook.pdf", updated: "2026-10-09" },
 };
 
 export const syllabusCopy = {
