@@ -125,10 +125,15 @@ export const generalResources: GeneralResource[] = [
 const publishedRulebooks: Record<string, { label: string; bucketPath: string }[]> = {
   robotics: [
     { label: "LFR (Line Following Robot) rulebook", bucketPath: "LFR RULEBOOK.pdf" },
-    { label: "Robosoccer rulebook", bucketPath: "ROBOSOCCER RULEBOOK-1.pdf" },
+    { label: "Robosoccer rulebook", bucketPath: "robosoccer rulebook.pdf" },
   ],
   "project-display": [
     { label: "Project Display rulebook", bucketPath: "PROJECT DISPLAY RULEBOOK.pdf" },
+  ],
+    esports: [
+    { label: "EA FC 26 rulebook", bucketPath: "FC26 rulebook.pdf" },
+    { label: "Clash Royale rulebook", bucketPath: "clash royale rulebook.pdf" },
+    { label: "Minecraft Bedwars rulebook", bucketPath: "bedwars rulebook.pdf" },
   ],
 };
 
