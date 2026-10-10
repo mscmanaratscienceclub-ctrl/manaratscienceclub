@@ -1,9 +1,8 @@
-import { getPublishedPosts } from "@/lib/actions/posts";
+import { getPublishedPosts } from "@/db/queries/posts";
 import BlogsContent from "./blogs-content";
 
-// Force dynamic rendering — prevents Next.js prerendering in parallel
-// which would exhaust the Supabase free-tier connection pool
-export const dynamic = "force-dynamic";
+// Cached list; the CMS actions revalidate this path the moment a post is published.
+export const revalidate = 1800;
 
 export const metadata = {
   title: "Research & Articles | Manarat Science Club",

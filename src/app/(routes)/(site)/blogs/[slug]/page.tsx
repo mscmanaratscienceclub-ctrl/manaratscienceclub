@@ -1,15 +1,23 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getPostBySlug, getRelatedPosts } from "@/lib/actions/posts";
+import { getPostBySlug, getPublishedSlugs, getRelatedPosts } from "@/db/queries/posts";
 import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import TocSidebar from "../_components/toc-sidebar";
 import sanitizeHtml from "sanitize-html";
 import Image from "next/image";
 import { avatarUrl } from "@/lib/media";
 
-// Force dynamic rendering — prevents Next.js from prerenderering all slugs
-// in parallel at build time (would exhaust the Supabase free-tier pool)
-export const dynamic = "force-dynamic";
+// ISR. `generateStaticParams` is what puts a slug in the route cache — `revalidate`
+// alone leaves the route server-rendered on demand and re-renders every hit. The
+// free-tier risk was never serving a slug, it was the build prerendering all of them
+// at once, so `experimental.staticGenerationMaxConcurrency` in `next.config.ts`
+// bounds those workers to stay inside the connection pool.
+export const revalidate = 86_400;
+
+export async function generateStaticParams() {
+  const slugs = await getPublishedSlugs();
+  return slugs.map((slug) => ({ slug }));
+}
 
 interface PageProps {
   params: Promise<{ slug: string }>;

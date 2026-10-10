@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHash } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { withDbTimeout } from "@/db/query";
 import { stemfestPaymentSms, stemfestRegistrations } from "@/db/schema";
@@ -23,28 +23,70 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 /**
- * The secret check below fails **open** when `SMS_FORWARDER_SECRET` is unset: a stricter check
- * would be a behaviour change to a live integration, and the forwarder parks a message as failed
- * when the endpoint answers `401` — i.e. tightening it can discard real payment SMS.
- *
- * That makes the silence the dangerous part. Without the variable the ingest accepts any caller's
- * POST and writes it to the database, which from the outside looks exactly like a healthy
- * deployment. Say so, loudly, once per process.
+ * A missing `SMS_FORWARDER_SECRET` is reported once per process, at error level:
+ * the endpoint now rejects everything until it is set, so the forwarded payment
+ * SMS queue on the device grows until someone fixes the environment.
  */
-let warnedAboutMissingSecret = false;
+let reportedMissingSecret = false;
 
-function warnIfSecretMissing(): void {
-  if (process.env.SMS_FORWARDER_SECRET || warnedAboutMissingSecret) return;
-  warnedAboutMissingSecret = true;
+function reportMissingSecret(): void {
+  if (reportedMissingSecret) return;
+  reportedMissingSecret = true;
 
   const warning =
-    "SMS_FORWARDER_SECRET is not set — /api/webhooks/sms is accepting any caller " +
-    "and writing it to the database. Set it in every environment and redeploy.";
+    "SMS_FORWARDER_SECRET is not set — /api/webhooks/sms is answering every caller " +
+    "with 503 and ingesting nothing. Set it in this environment and redeploy; " +
+    "forwarded payment SMS stay queued on the device until then.";
 
-  console.warn(
+  console.error(
     `\n${"=".repeat(70)}\n  [SMS WEBHOOK] ${warning}\n${"=".repeat(70)}\n`,
   );
-  captureMessage(`[SMS webhook] ${warning}`, "warning");
+  captureMessage(`[SMS webhook] ${warning}`, "error");
+}
+
+/**
+ * Constant-time compare. `timingSafeEqual` throws on unequal lengths, so the
+ * length check is a precondition guard rather than a second comparison; the
+ * secret's length is not what needs protecting.
+ */
+function secretsMatch(supplied: string, expected: string): boolean {
+  const a = Buffer.from(supplied);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/**
+ * Verifies the forwarder's shared secret, failing **closed**. Returns `null` when
+ * the caller is authorised, otherwise the response the handler should return.
+ *
+ * Failing open here is not a logging nuisance. An accepted forgery is stored with
+ * `status = "matched"`, and `stemfestEffectivePaymentStatus()`
+ * (`src/db/queries/stemfest-payment.ts`) turns a match into a **verified** payment
+ * for any registration no admin has adjudicated — free entry with no bKash
+ * transaction behind it, and it lands in the payment-confirmed email audience.
+ *
+ * Misconfiguration answers 503 rather than 401 on purpose. The forwarder parks a
+ * message as failed on 401, so rejecting with 401 while the variable is missing
+ * would discard real payment SMS; 503 is retryable — the same status the ingest
+ * below uses for a lost database — so the message stays queued until the variable
+ * is set. A *wrong* secret still answers 401, because only the phone's
+ * HTTP-header field can fix that and retrying cannot.
+ */
+function verifyForwarderSecret(request: NextRequest): NextResponse | null {
+  const expected = process.env.SMS_FORWARDER_SECRET;
+
+  if (!expected) {
+    reportMissingSecret();
+    return NextResponse.json(
+      { error: "SMS log temporarily unavailable" },
+      { status: 503 },
+    );
+  }
+
+  const supplied = request.headers.get(SECRET_HEADER);
+  if (supplied && secretsMatch(supplied, expected)) return null;
+
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
 
 const smsPayloadSchema = z.object({
@@ -79,21 +121,17 @@ function deriveClientMessageId(
  *
  * Open this URL from the phone, with the secret header, before blaming the POST:
  * a `{"status":"ok"}` proves DNS, TLS, routing and the secret are all correct.
+ * The check now fails closed, so `ok` is only ever returned for an authenticated
+ * caller — `authenticated` is kept in the payload for the app that reads it.
  */
 export async function GET(request: NextRequest) {
-  warnIfSecretMissing();
-
-  const secret = request.headers.get(SECRET_HEADER);
-  const expected = process.env.SMS_FORWARDER_SECRET;
-
-  if (expected && secret !== expected) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const rejected = verifyForwarderSecret(request);
+  if (rejected) return rejected;
 
   return NextResponse.json({
     status: "ok",
     service: "MSC STEM Fest SMS Forwarder Webhook",
-    authenticated: Boolean(expected && secret === expected),
+    authenticated: true,
   });
 }
 
@@ -119,14 +157,8 @@ interface IngestResult {
  * retry, and the retry is safe because the ingest is idempotent.
  */
 export async function POST(request: NextRequest) {
-  warnIfSecretMissing();
-
-  const secret = request.headers.get(SECRET_HEADER);
-  const expected = process.env.SMS_FORWARDER_SECRET;
-
-  if (expected && secret !== expected) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const rejected = verifyForwarderSecret(request);
+  if (rejected) return rejected;
 
   let json: unknown;
   try {

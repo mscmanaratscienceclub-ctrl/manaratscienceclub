@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
-  ArrowUpRight,
   BookOpen,
   CalendarClock,
   Download,
@@ -19,7 +18,6 @@ import {
   resourceEntries,
   resourcesCopy,
 } from "@/lib/data/resources";
-import { pdfUrl } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -183,37 +181,20 @@ export default function ResourcesPage() {
                           </p>
                           <ul className="mt-4 space-y-3">
                             {entry.files.map((file) => (
-                              <li
-                                key={file.bucketPath ?? file.label}
-                                className="flex flex-wrap items-baseline gap-x-6 gap-y-2"
-                              >
+                              <li key={file.bucketPath}>
                                 <a
-                                  href={file.href ?? "#"}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                  href={file.href}
                                   className="inline-flex items-center gap-2 font-space-body text-sm text-space-ivory transition-colors hover:text-ion-bright"
                                 >
                                   {file.label}
-                                  <ArrowUpRight
+                                  <Download
                                     className="size-3.5"
                                     aria-hidden="true"
                                   />
                                   <span className="sr-only">
-                                    ({resourcesCopy.fileNewTabNote})
+                                    ({resourcesCopy.downloadFileLabel})
                                   </span>
                                 </a>
-                                {file.bucketPath && (
-                                  <a
-                                    href={pdfUrl(file.bucketPath, { download: true })}
-                                    className="inline-flex items-center gap-2 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-space-muted transition-colors hover:text-ion-bright"
-                                  >
-                                    <Download
-                                      className="size-3.5"
-                                      aria-hidden="true"
-                                    />
-                                    {resourcesCopy.downloadFileLabel}
-                                  </a>
-                                )}
                               </li>
                             ))}
                           </ul>

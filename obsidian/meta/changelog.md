@@ -1,12 +1,113 @@
 ---
 tags: [meta, changelog]
-updated: 2026-10-06
+updated: 2026-10-10
 ---
 
 # Changelog
 
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
+
+## 2026-10-10 — E-sports rulebooks merged with the PDF fixes; registration-extended banner; `/details` opened
+
+GitHub moved ahead of the local tree with the E-sports rulebooks (`FC26 rulebook.pdf`,
+`clash royale rulebook.pdf`, `bedwars rulebook.pdf`) and the lowercase Robosoccer key,
+while the local tree still held the 2026-10-09 PDF pass. The two overlapped inside
+`publishedRulebooks` and `publishedSyllabi`, so the merge keeps **both**: upstream's three
+E-sports keys *and* the local fixes — one URL per document, `ResourceFile.href` /
+`bucketPath` still non-null, and **Project Display still absent**. The live bucket was
+probed before deciding: the three E-sports objects answer `206` (FC26 is 4.8 MB) and
+`PROJECT DISPLAY RULEBOOK.pdf` answers `404 / NoSuchKey`, which is why upstream's copy of
+that dead entry was not restored.
+
+- **Registration-extended banner, site-wide.** `RegistrationExtendedBanner`
+  (`src/components/site/registration-extended-banner.tsx`) renders once in the public site
+  layout (`src/app/(routes)/(site)/layout.tsx`) as the first child, above the sticky
+  `top-0 z-50` header, so every `(site)` page carries it and `(auth)` / `(admin)` / `(cms)`
+  do not. It is deliberately **heading-free** — sitting before each page's `<h1>`, an `<h2>`
+  here would break every page's outline — so it is an `<aside aria-label>` of `<p>`s, and the
+  home page still leads with its own `<h1>`. Copy lives in `stemfestExtensionNotice`
+  (`src/lib/data/stemfest-registration.ts`): `label`, `message`, `deadlineLabel`, `deadline`.
+  `deadline` is `null` until the club fixes the new closing date, which hides the date line
+  rather than inventing one. Static markup on `space-amber` tokens.
+- **New route `/details`** (`src/app/(routes)/(site)/details/page.tsx`) with its content
+  module `src/lib/data/stemfest-details.ts`. `stemfestDetailSections` renders in order and
+  is empty today, so the page shows the reserved *Details coming soon* slot; publishing the
+  brief is a data edit — push a section with `heading` and `body` paragraphs. Listed in
+  `staticRoutes` (`src/app/sitemap.ts`) at priority 0.8.
+- `next build` still stops at *Collecting page data* with `CONNECT_TIMEOUT` to
+  `aws-1-ap-northeast-2.pooler.supabase.com:6543`, which its 15 workers open together; a
+  single connection runs the same `posts` query fine and compile + TypeScript pass, so this
+  is local egress to the pooler, not these changes.
+
+## 2026-10-09 — One URL per PDF; two dead document links found and fixed
+
+Cached egress was still reported high after the 2026-10-06 image pass, so the live
+bucket and the live pages were measured rather than guessed at. The images are fixed
+and stay fixed — `optimized/*` answers `max-age=31536000` with `cf-cache-status: HIT`,
+and a visitor now pulls **208 KB** of Supabase images on `/` and **986 KB** on `/legacy`,
+against ~28 MB pre-fix. What is left is **the `pdfs` bucket: 52.5 MB over 10 files,
+avg 6.6 MB, largest 13.1 MB** — one syllabus download costs the same as ~30 homepage
+loads.
+
+- **`pdfUrl(path)` no longer takes `{ download }` — it always appends `?download`**
+  (`src/lib/media.ts`). Each document had been linked twice: `/syllabus` listed
+  `…X.pdf` for *Open PDF* and `…X.pdf?download` for *Download*, `/resources` the same.
+  The CDN caches on the full URL, so every PDF was stored twice at the edge and the
+  variant nobody had clicked yet was a cold origin pull. `pdfUrl` minting one canonical
+  string per object makes the second cache key impossible to write.
+- **Both pages now render one link per document.** `/syllabus` keeps the Download anchor
+  (pointing at `document.href`, no longer re-derived in the component) and drops
+  *Open PDF*; `/resources` keeps the file-name anchor with a Download icon and drops its
+  separate Download chip. `syllabusCopy.openLabel` / `newTabNote`,
+  `resourcesCopy.openFileLabel` / `fileNewTabNote`, and `SyllabusDocument.bucketPath`
+  are gone with their last consumers. `ResourceFile.href` / `bucketPath` tightened from
+  `string | null` to `string` — an entry only exists once the PDF is uploaded.
+- **Two object keys in the data modules pointed at files the bucket does not hold**:
+  `ROBOSOCCER RULEBOOK-1.pdf` (stored lowercase as `robosoccer rulebook.pdf`) and
+  `PROJECT DISPLAY RULEBOOK.pdf` (never uploaded). Both answered **HTTP 400** on
+  production — the Robosoccer rulebook was simply un-downloadable, and Project Display
+  had a dead link in two places. Robosoccer now names the real key; Project Display is
+  removed from `publishedSyllabi` and `publishedRulebooks`, so its rows render as the
+  reserved "Coming soon" slot the modules were built for. The data-module comments that
+  claimed the `-1` suffix was a real bucket key were wrong and have been corrected to
+  say keys match the bucket byte for byte, case included.
+- **Measured after the change**: `/syllabus` emits 7 documents / 7 URLs, `/resources` 2 /
+  2 — one URL each, every one resolving 2xx with `Content-Disposition: attachment`.
+  Linked bytes per page: 74 MB of references (18 links, 4 broken) → 40.5 MB (7 links, 0
+  broken). `scripts/spike/egress-verify-build.mjs` re-checks this against a build;
+  `egress-audit.mjs` and `egress-livepages.mjs` re-measure the bucket and the live pages.
+  Verify gate: `verify.sh` 0 FAIL / 3 pre-existing WARN, `pnpm lint` clean, `pnpm build`
+  clean.
+
+Still open, storage side (see [[backend/supabase-audit-2026-09-13]]): the PDFs want
+re-exporting smaller at source (the 13.1 MB Computer Science syllabus is the single
+heaviest object on the site), `pdfs` objects carry `max-age=3600` while the edge holds
+them for days, and **47.9 MB of legacy `avatars` originals are still in the bucket** —
+only `adminimages/rose.heif` (148 KB, HEIC, so paid for and unrendered by every
+non-Safari visitor) is still referenced.
+
+## 2026-10-09 — Manual SMS replay: a run-on paste no longer swallows cash-in messages
+
+A batch of 37 pasted bKash confirmations was replayed into the live
+`stem_fest_payment_sms` log. Two of them were the **`Cash In Tk …`** form — the
+agent/cash-in message, which does not open with `You have received`.
+
+- **`scripts/replay-payment-sms.mjs`** split the paste on `You have received`
+  alone, so those two messages were absorbed into the block before them: one POST
+  instead of two, carrying the *preceding* message's TrxID, and neither payment ever
+  entered the log. The splitter now recognises both openings. The failure was
+  invisible — the script prints one line per message and exits 0 either way, so a
+  batch that quietly lost rows still reported success.
+- 36 of the 37 were ingested as `manual-replay:<TrxID>`, 31 of them linked to a
+  registration on arrival. The one Tk 5,000 message (`DJ54GVL60K`) was deliberately
+  **not** replayed, at the club's request. The script has no amount filter, so the
+  exclusion was made in the input; the database confirms no `manual-replay:` row
+  carries Tk 5,000.
+- Re-running the same paste is a no-op — `client_message_id` is derived from the
+  TrxID ([[sms-forwarder]] § Idempotency).
+
+`pnpm exec eslint scripts/replay-payment-sms.mjs` clean.
 
 ## 2026-10-06 — Print trigger waits for the whole document
 

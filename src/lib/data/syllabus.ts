@@ -32,8 +32,6 @@ export interface SyllabusDocument {
   coverage: string;
   /** Public PDF URL. `null` until the club releases the document. */
   href: string | null;
-  /** Object key inside the `pdfs` bucket, or `null` while unpublished. */
-  bucketPath: string | null;
   /** ISO date the club last replaced the PDF, or `null` while unpublished. */
   updated: string | null;
 }
@@ -56,14 +54,22 @@ export interface SyllabusSection {
  * A document is listed here whenever the club has published the PDF a
  * participant needs for that event, whatever the club named the file. That is
  * why the robotics events point at `… RULEBOOK.pdf` keys: the syllabus page is
- * the per-event index of "what do I download for my event", and for Robotics and
- * Project Display the answer is their rulebook. The same files also appear on
+ * the per-event index of "what do I download for my event", and for Robotics
+ * and E-sports the answer is their rulebook. The same files also appear on
  * `/resources`, listed per segment, from `publishedRulebooks`
  * (`src/lib/data/resources.ts`).
  *
- * Two keys carry an upload suffix — the "(1)" and the "-1" are the club's own
- * upload names, kept verbatim because they are the object keys the bucket
- * actually holds. Renaming them in the bucket means renaming them here too.
+ * Keys are matched against the bucket byte for byte, including case — the
+ * Robosoccer rulebook is stored lowercase (`robosoccer rulebook.pdf`), and a
+ * key that does not exist answers HTTP 400 with no file to show. Verify a key
+ * against the bucket before adding one.
+ *
+ * The "(1)" on the Computer Science key is the club's own upload name, kept
+ * verbatim because it is the object key the bucket holds. Renaming it in the
+ * bucket means renaming it here too.
+ *
+ * Project Display has no entry: the club has not uploaded a rulebook, so its row
+ * renders as reserved space rather than the dead link the old key pointed at.
  */
 const publishedSyllabi: Record<string, { path: string; updated: string }> = {
   // Olympiads — all five subjects.
@@ -81,12 +87,7 @@ const publishedSyllabi: Record<string, { path: string; updated: string }> = {
   // Robotics — one rulebook per event, and both are out.
   lfr: { path: "LFR RULEBOOK.pdf", updated: "2026-09-26" },
   robosoccer: { path: "robosoccer rulebook.pdf", updated: "2026-09-26" },
-  // Project Display — a single event, so a single rulebook.
-  "project-display": {
-    path: "PROJECT DISPLAY RULEBOOK.pdf",
-    updated: "2026-09-27",
-  },
-   // E-sports — one rulebook per title.
+  // E-sports — one rulebook per title.
   "ea-fc-26": { path: "FC26 rulebook.pdf", updated: "2026-10-09" },
   "clash-royale": { path: "clash royale rulebook.pdf", updated: "2026-10-09" },
   "minecraft-bedwars": { path: "bedwars rulebook.pdf", updated: "2026-10-09" },
@@ -102,9 +103,7 @@ export const syllabusCopy = {
     "A syllabus appears here the moment the club releases it. Anything still marked coming soon has not been finalised yet.",
   pendingLabel: "Coming soon",
   pendingNote: "This syllabus has not been released yet.",
-  openLabel: "Open PDF",
   downloadLabel: "Download",
-  newTabNote: "opens in a new tab",
 } as const;
 
 /**
@@ -152,7 +151,6 @@ function documentsFor(segmentId: string): SyllabusDocument[] {
         label: "Segment syllabus",
         coverage: "All brackets",
         href: null,
-        bucketPath: null,
         updated: null,
       },
     ];
@@ -166,7 +164,6 @@ function documentsFor(segmentId: string): SyllabusDocument[] {
       label: event.name,
       coverage: coverageFor(event),
       href: published ? pdfUrl(published.path) : null,
-      bucketPath: published?.path ?? null,
       updated: published?.updated ?? null,
     };
   });

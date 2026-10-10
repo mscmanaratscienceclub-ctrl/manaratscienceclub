@@ -75,6 +75,12 @@ export default function AudienceFilters({
               type="search"
               value={controls.search}
               onChange={(event) => controls.setSearch(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                controls.commitSearch();
+              }}
+              onBlur={controls.commitSearch}
               placeholder={source.searchPlaceholder}
               className={cn(adminControl, "pr-3 pl-9")}
             />

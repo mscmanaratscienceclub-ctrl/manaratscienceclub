@@ -1,13 +1,13 @@
-import { getPublishedPosts } from "@/lib/actions/posts";
+import { getPublishedPosts } from "@/db/queries/posts";
 import CompetitionCarousel from "@/components/home/competition-carousel";
 import EditorialVoices from "@/components/home/editorial-voices";
 import JournalConsole, { type JournalPost } from "@/components/home/journal-console";
 import ManifestoLines from "@/components/home/manifesto-lines";
 import MscHero from "@/components/home/msc-hero";
 
-// Force dynamic rendering — prevents Next.js prerendering in parallel
-// which would exhaust the Supabase free-tier connection pool
-export const dynamic = "force-dynamic";
+// ISR: this page renders one query (`getPublishedPosts`) over static metrics, so a
+// cache HIT replaces a per-visit DB render — an hour of staleness is the cheaper bill.
+export const revalidate = 3600;
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",

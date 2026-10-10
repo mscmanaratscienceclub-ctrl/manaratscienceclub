@@ -2,14 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
-  ArrowUpRight,
   Download,
   FileClock,
   FileText,
 } from "lucide-react";
 
 import ScrollReveal from "@/components/animations/ScrollReveal";
-import { pdfUrl } from "@/lib/media";
 import {
   formatSyllabusDate,
   syllabusCopy,
@@ -25,9 +23,9 @@ export const metadata: Metadata = {
 };
 
 function DocumentRow({ document }: { document: SyllabusDocument }) {
-  const published = document.href !== null && document.bucketPath !== null;
-
-  if (!published) {
+  // A row is published exactly when the club has an object key for its event,
+  // which is what gives it an `href`.
+  if (document.href === null) {
     return (
       <li className="flex flex-wrap items-center justify-between gap-4 border border-dashed border-space-line-soft px-5 py-4">
         <div className="flex items-center gap-4">
@@ -70,26 +68,13 @@ function DocumentRow({ document }: { document: SyllabusDocument }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-5">
-        <a
-          href={document.href ?? "#"}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-ion transition-colors hover:text-ion-bright"
-        >
-          {syllabusCopy.openLabel}
-          <ArrowUpRight className="size-3.5" aria-hidden="true" />
-          <span className="sr-only"> ({syllabusCopy.newTabNote})</span>
-        </a>
-
-        <a
-          href={pdfUrl(document.bucketPath ?? "", { download: true })}
-          className="inline-flex items-center gap-2 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-space-muted transition-colors hover:text-ion-bright"
-        >
-          <Download className="size-3.5" aria-hidden="true" />
-          {syllabusCopy.downloadLabel}
-        </a>
-      </div>
+      <a
+        href={document.href}
+        className="inline-flex items-center gap-2 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-ion transition-colors hover:text-ion-bright"
+      >
+        <Download className="size-3.5" aria-hidden="true" />
+        {syllabusCopy.downloadLabel}
+      </a>
     </li>
   );
 }

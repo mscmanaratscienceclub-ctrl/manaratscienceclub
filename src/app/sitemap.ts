@@ -3,8 +3,9 @@ import { db } from "@/db";
 import { posts } from "@/db/schema/posts";
 import { eq } from "drizzle-orm";
 
-// Always fetch fresh so newly published CMS posts appear without redeploy
-export const dynamic = "force-dynamic";
+// Crawlers fetch this constantly; an hourly render keeps the DB query off every
+// request while still surfacing a newly published post within the hour.
+export const revalidate = 3600;
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://manaratscience.club";
 
@@ -20,6 +21,7 @@ const staticRoutes: MetadataRoute.Sitemap = [
   { url: `${baseUrl}/stemfestreg`, changeFrequency: "weekly", priority: 0.9 },
   { url: `${baseUrl}/volunteer`, changeFrequency: "monthly", priority: 0.6 },
   { url: `${baseUrl}/rules`, changeFrequency: "monthly", priority: 0.7 },
+  { url: `${baseUrl}/details`, changeFrequency: "weekly", priority: 0.8 },
   { url: `${baseUrl}/resources`, changeFrequency: "monthly", priority: 0.7 },
   { url: `${baseUrl}/syllabus`, changeFrequency: "weekly", priority: 0.8 },
   { url: `${baseUrl}/legacy`, changeFrequency: "yearly", priority: 0.5 },

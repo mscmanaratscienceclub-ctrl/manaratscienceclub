@@ -963,6 +963,26 @@ export const stemfestFormCopy = {
     "Your registration is only confirmed once the payment is matched against your bKash Transaction ID. Sending a wrong or reused TrxID will delay your slots.",
 } as const;
 
+/**
+ * Banner above the registration form.
+ *
+ * `deadline` is the new closing date as the club announced it. Left `null` until
+ * a date is confirmed, which hides the date chip rather than inventing one.
+ */
+export const stemfestExtensionNotice: {
+  label: string;
+  message: string;
+  /** Leads the date line, e.g. `Open until 12 October 2026`. */
+  deadlineLabel: string;
+  deadline: string | null;
+} = {
+  label: "Registration extended",
+  message:
+    "Registration for STEM Fest stays open beyond the date first announced, so there is still time to pick your class and events and pay by bKash.",
+  deadlineLabel: "Open until",
+  deadline: null,
+};
+
 // ── Payment copy ─────────────────────────────────────────────────────────────
 
 export const stemfestPaymentCopy = {

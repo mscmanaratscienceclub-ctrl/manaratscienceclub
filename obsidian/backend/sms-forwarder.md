@@ -1,6 +1,6 @@
 ---
 tags: [backend, integration, sms, wip]
-updated: 2026-09-14
+updated: 2026-10-09
 ---
 
 # SMS Forwarder — bKash payment verification
@@ -31,6 +31,7 @@ Nothing is ever sent to a phone — messages are only read off the club's own SI
 | Matching table | `stem_fest_registrations.transaction_id` |
 | Admin view | `/admin/sms-logs` — total / matched / unmatched / ignored, searchable, paginated |
 | Reverse reconcile | `src/app/(routes)/(site)/stemfestreg/actions.ts` — when a student submits the form, any earlier *unmatched* SMS with the same TrxID is linked to the new registration |
+| Manual replay | `scripts/replay-payment-sms.mjs` — POSTs a **pasted** batch through this same webhook, for when the phone missed messages (see below) |
 
 ## Flow
 
@@ -97,6 +98,32 @@ is the fastest way to test a URL from the phone.
   endpoint is the worse trade ([[supabase-audit-2026-09-13]] finding F2).
 - The insert is `ON CONFLICT DO NOTHING` and then read back, so the losing half of
   a race returns the winner's row instead of a duplicate-key error.
+
+### Replaying a paste by hand
+
+```
+node --env-file=.env scripts/replay-payment-sms.mjs [baseUrl] < sms.txt
+```
+
+This is the recovery path when the forwarder app misses messages — phone offline,
+app reinstalled — and the club pastes the SMS text instead. It goes through the
+**real** webhook, so parsing, TrxID reconciliation and idempotency are exactly what
+the phone triggers; `baseUrl` is the dev port or the deployed site (the deployed
+site is the point when the phone is down but the site is up). Each message's
+`client_message_id` is `manual-replay:<TrxID>`, so a re-run of the same paste is a
+recognised duplicate rather than a second row.
+
+A paste is one run-on line, so a message only ends where the next one begins — and
+the splitter must know **every** way a bKash block opens. It recognises
+`You have received …` and `Cash In Tk …`. A block opening it does not know is
+absorbed into the message before it: one POST instead of two, carrying the *wrong*
+TrxID, and the payment never enters the log. The script prints one line per message
+and exits 0 either way, so the symptom is a missing row — check the paste for
+openings other than those two before trusting a count.
+
+Its amount/sender columns come from [[api-architecture|`parsePaymentSms()`]] like any
+other message, and an amount the club asks to exclude has to be filtered out of the
+input: the script has no amount filter.
 
 ### Why the ingest runs in `withDbTimeout()`
 

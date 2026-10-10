@@ -7,7 +7,8 @@
  * the forwarder app misses messages (phone offline, app reinstallled) and the
  * club pastes the SMS text instead.
  *
- * Input: the pasted SMS text, one message per "You have received" block, e.g.
+ * Input: the pasted SMS text, one message per bKash block — the usual
+ * "You have received …" form and the cash-in/agent form, e.g.
  *
  *   You have received Tk 200.00 from 01924923090. Fee Tk 0.00. Balance
  *   Tk 5,695.00. TrxID DIP4V9GEHC at 25/09/2026 18:44
@@ -48,9 +49,17 @@ function receivedAtFor(body) {
   return Number.isNaN(new Date(iso).getTime()) ? undefined : iso;
 }
 
-/** One message per "You have received" block; newlines inside a block collapse. */
+/**
+ * One message per bKash block. A pasted batch is a single run-on line, so a
+ * message only ends where the next one starts — and "Cash In Tk …" is a start
+ * of its own. Without both markers the cash-in messages are absorbed into the
+ * block before them and silently lost (one POST instead of two, carrying the
+ * wrong TrxID). Newlines inside a block collapse.
+ */
 function splitMessages(text) {
-  const starts = [...text.matchAll(/You have received\b/g)].map((m) => m.index);
+  const starts = [...text.matchAll(/You have received\b|Cash In Tk\b/g)].map(
+    (m) => m.index,
+  );
   if (starts.length === 0) return [];
   const blocks = starts.map((start, i) =>
     text.slice(start, i + 1 < starts.length ? starts[i + 1] : undefined).trim(),
@@ -61,7 +70,7 @@ function splitMessages(text) {
 const messages = splitMessages(stdin);
 if (messages.length === 0) {
   console.error(
-    "No messages on stdin — paste the bKash SMS text, one per 'You have received' block.",
+    "No messages on stdin — paste the bKash SMS text, one message per block.",
   );
   process.exit(1);
 }

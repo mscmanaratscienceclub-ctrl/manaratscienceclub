@@ -313,6 +313,12 @@ function TypedField({
     onChange(debounced);
   }, [debounced, onChange]);
 
+  const commitNow = () => {
+    if (input === committed.current) return;
+    committed.current = input;
+    onChange(input);
+  };
+
   return (
     <FieldShell id={id} label={field.label}>
       <div className="flex items-stretch gap-1.5">
@@ -323,6 +329,12 @@ function TypedField({
           inputMode={numeric ? "decimal" : "text"}
           value={input}
           onChange={(event) => setInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            commitNow();
+          }}
+          onBlur={commitNow}
           placeholder={field.placeholder}
           className={adminControl}
         />

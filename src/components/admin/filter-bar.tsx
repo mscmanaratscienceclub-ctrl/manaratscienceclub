@@ -66,6 +66,12 @@ export default function FilterBar({
               type="search"
               value={controls.search}
               onChange={(event) => controls.setSearch(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                controls.commitSearch();
+              }}
+              onBlur={controls.commitSearch}
               placeholder={source.searchPlaceholder}
               className="w-full rounded-[6px] border border-admin-line bg-admin-surface py-2 pr-3 pl-9 font-space-body text-sm text-admin-ink outline-none transition-colors placeholder:text-admin-muted focus:border-admin-ink"
             />

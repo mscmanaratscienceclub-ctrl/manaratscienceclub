@@ -11,7 +11,7 @@ import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "@/lib/auth/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { SignInSchema, SignInValues } from "./validate";
 import InputStartIcon from "../components/input-start-icon";
@@ -20,9 +20,15 @@ import { cn } from "@/lib/utils";
 import { AtSign, Loader2 } from "lucide-react";
 import { identifyUser, trackEvent } from "@/lib/analytics";
 
-export default function SignInForm({ redirect }: { redirect?: string }) {
+/** `?redirect` is user input, so only an internal path is honoured — never a scheme or `//host`. */
+function internalRedirect(raw: string | null): string {
+  return raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
+}
+
+export default function SignInForm() {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const form = useForm<SignInValues>({
     resolver: zodResolver(SignInSchema),
@@ -44,7 +50,7 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
           identifyUser({ id: user.id, email: user.email ?? undefined });
         }
         trackEvent("user_signed_in", { method: "password" });
-        router.push(redirect || "/");
+        router.push(internalRedirect(searchParams.get("redirect")));
       }
     });
   }

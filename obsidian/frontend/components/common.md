@@ -105,6 +105,21 @@ async component must mirror its final layout with one of these
 > `components/ui/` (design-system primitives) does not exist yet — create it when
 > the first primitive is added. See [[folder-structure]].
 
+## Site-wide chrome — `site/`
+
+| Component | File | Placement |
+|-----------|------|-----------|
+| `<LegalShell>` | `legal-shell.tsx` | Page shell for `/terms` and `/privacy-policy` |
+| `<RegistrationExtendedBanner>` | `registration-extended-banner.tsx` | First child of `(routes)/(site)/layout.tsx`, above the sticky `top-0 z-50` header |
+
+`<RegistrationExtendedBanner>` is the announcement strip for the extended registration
+window, so every `(site)` page carries it while `(auth)`, `(admin)` and `(cms)` do not.
+All copy comes from `stemfestExtensionNotice` (`src/lib/data/stemfest-registration.ts`);
+`deadline` renders a date line only once the club fixes one. It deliberately carries **no
+heading element** — the strip precedes every page's `<h1>` in the document outline, so an
+`<h2>` here would sit above every page title; it is an `<aside aria-label>` of `<p>`s.
+Server Component, static, no motion. See [[html-semantics]].
+
 ## Related
 
 [[component-conventions]] · [[components/animation-springs]] · [[components/admin]]

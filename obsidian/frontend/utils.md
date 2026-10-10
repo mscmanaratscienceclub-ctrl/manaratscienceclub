@@ -18,6 +18,8 @@ client) re-exports all of it.
 | Export | Purpose |
 |--------|---------|
 | `AVATARS_BUCKET` | the `avatars` bucket name |
+| `PDFS_BUCKET` | the public `pdfs` bucket name (club documents) |
+| `pdfUrl(path)` | **The only URL a page may link for a `pdfs` object.** Percent-encodes each path segment (the club's keys are its uploaded filenames, spaces and brackets included) and always appends `?download`, so Supabase answers `Content-Disposition: attachment`. Deliberately not an option: the CDN caches per full URL, so a page that also linked the bare form would store the same multi-megabyte PDF twice and pay a cold origin pull for whichever variant nobody had clicked |
 | `storagePublicUrl(bucket, path)` | public CDN URL for any object |
 | `bucketImage(path)` | URL for a **pre-optimised** WebP under `optimized/` — see [[decisions-log\|ADR-0025]] |
 | `bucketOriginal(path)` | URL for an `avatars` object served exactly as uploaded — the verbatim fallback for a photo with no optimised WebP |

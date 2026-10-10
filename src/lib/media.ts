@@ -29,7 +29,8 @@ export function storagePublicUrl(bucket: string, path: string): string {
 }
 
 /**
- * Public URL for a document in the `pdfs` bucket.
+ * Public URL for a document in the `pdfs` bucket — the **only** URL any page may
+ * link for a given object.
  *
  * Each path segment is percent-encoded because the club's object keys are the
  * filenames they uploaded (`MATH OLYMPIAD SYLLABUS.pdf`), and a raw space in a
@@ -37,16 +38,15 @@ export function storagePublicUrl(bucket: string, path: string): string {
  * rather than with `encodeURIComponent(path)` keeps the slashes in a nested key
  * intact.
  *
- * `download` makes Supabase answer with `Content-Disposition: attachment`, so a
- * "Download" link saves the file instead of opening the browser's PDF viewer.
+ * `download` is appended unconditionally rather than offered as an option: the
+ * Supabase CDN caches per full URL, so a page that also links the bare form
+ * stores the same multi-megabyte PDF twice and pays a cold origin pull for
+ * whichever variant nobody has clicked yet. One string per object means one edge
+ * copy and one billed set of bytes.
  */
-export function pdfUrl(
-  path: string,
-  options: { download?: boolean } = {},
-): string {
+export function pdfUrl(path: string): string {
   const encoded = path.split("/").map(encodeURIComponent).join("/");
-  const url = storagePublicUrl(PDFS_BUCKET, encoded);
-  return options.download ? `${url}?download` : url;
+  return `${storagePublicUrl(PDFS_BUCKET, encoded)}?download`;
 }
 
 /**

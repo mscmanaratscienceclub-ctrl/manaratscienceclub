@@ -18,12 +18,13 @@ import { stemfestSegments } from "./stemfest";
 export interface ResourceFile {
   label: string;
   /**
-   * Public URL for the document. `null` means the club has not published it yet,
-   * and the page renders the slot as unavailable rather than as a dead link.
+   * Public URL for the document. An entry only exists once the club has uploaded
+   * the PDF, so a segment with nothing published has an empty `files` list — the
+   * page renders that as reserved space rather than as a dead link.
    */
-  href: string | null;
-  /** Object key inside the `pdfs` bucket, or `null` while unpublished. */
-  bucketPath: string | null;
+  href: string;
+  /** Object key inside the `pdfs` bucket. */
+  bucketPath: string;
 }
 
 export interface ResourceEntry {
@@ -64,9 +65,8 @@ export const resourcesCopy = {
   /** Singular, for the reserved "Rulebook — coming soon" slot. */
   rulebookLabel: "Rulebook",
   rulebooksLabel: "Published rulebooks",
-  openFileLabel: "Open PDF",
-  downloadFileLabel: "Download",
-  fileNewTabNote: "opens in a new tab",
+  /** Screen-reader suffix on the file link, which saves rather than navigates. */
+  downloadFileLabel: "download",
   syllabusLinkLabel: "Syllabus PDFs",
   emptyItemsNote: "Event list to be confirmed.",
 } as const;
@@ -117,20 +117,26 @@ export const generalResources: GeneralResource[] = [
  * no entry renders its slot as reserved space rather than as a dead link.
  *
  * An entry is a *list* because a segment can release more than one document —
- * Robotics has a rulebook per event, so both of its events appear here.
+ * Robotics and E-sports have a rulebook per event, so each of their events
+ * appears here.
  *
- * The `-1` on the Robosoccer key is the club's own upload name from a re-upload;
- * it is kept verbatim because it is the object key the bucket actually holds.
+ * Keys are matched against the bucket byte for byte, including case: the
+ * Robosoccer rulebook is stored lowercase. A key the bucket does not hold answers
+ * HTTP 400, so a segment with no uploaded rulebook (Project Display today) gets
+ * no entry here and renders its slot as reserved space.
  */
-const publishedRulebooks: Record<string, { label: string; bucketPath: string }[]> = {
+const publishedRulebooks: Record<
+  string,
+  { label: string; bucketPath: string }[]
+> = {
   robotics: [
-    { label: "LFR (Line Following Robot) rulebook", bucketPath: "LFR RULEBOOK.pdf" },
+    {
+      label: "LFR (Line Following Robot) rulebook",
+      bucketPath: "LFR RULEBOOK.pdf",
+    },
     { label: "Robosoccer rulebook", bucketPath: "robosoccer rulebook.pdf" },
   ],
-  "project-display": [
-    { label: "Project Display rulebook", bucketPath: "PROJECT DISPLAY RULEBOOK.pdf" },
-  ],
-    esports: [
+  esports: [
     { label: "EA FC 26 rulebook", bucketPath: "FC26 rulebook.pdf" },
     { label: "Clash Royale rulebook", bucketPath: "clash royale rulebook.pdf" },
     { label: "Minecraft Bedwars rulebook", bucketPath: "bedwars rulebook.pdf" },

@@ -393,8 +393,39 @@ the origin). Two code+storage patterns were chasing the same cost:
    place*. Any code path (or manual URL) that hits an original re-pays the full multi-MB
    weight per fetch.
 
+### Re-measured 2026-10-09 (live bucket + live page probes)
+
+Both code fixes hold. `optimized/*` answers `max-age=31536000` with
+`cf-cache-status: HIT`; one visitor pulls **208 KB** of storage images on `/` and
+**986 KB** on `/legacy`. The remaining cached egress is **not images**:
+
+1. **`pdfs` is the cost centre — 52.5 MB over 10 files, avg 6.6 MB, largest 13.1 MB.**
+   One syllabus download ≈ 30 homepage loads. All ten carry `cache-control: max-age=3600`
+   yet the edge reports `age: 621389` (≈7 days), so the header is only re-validation
+   noise; the byte weight is what bills.
+2. **Each PDF was served under two cache keys** — `…X.pdf` (*Open PDF*) and
+   `…X.pdf?download` (*Download*) on both `/syllabus` and `/resources`, so the object was
+   held twice at the edge and the un-clicked variant was a cold origin pull. Fixed in
+   code: `pdfUrl()` now always appends `?download` and every page emits one link per
+   document. `/syllabus` went from 18 references (74 MB, 4 of them 400s) to 7 (40.5 MB,
+   all 2xx). See [[changelog]].
+3. **Two data-module keys named objects the bucket never held** —
+   `ROBOSOCCER RULEBOOK-1.pdf` (real key is lowercase `robosoccer rulebook.pdf`) and
+   `PROJECT DISPLAY RULEBOOK.pdf` (not uploaded). Both 400 in production. Verified
+   against the bucket: every key now referenced in `src/lib/data` exists.
+4. **`avatars` still holds 47.9 MB of legacy originals over 72 objects**, all
+   `max-age=3600`, all publicly fetchable — `adminimages/abrar.png` is 9.1 MB and
+   measured `cf-cache-status: MISS`, i.e. a full origin pull per request. Only
+   `adminimages/rose.heif` (148 KB) is still referenced from code, and it is a genuine
+   HEIC: every non-Safari visitor pays its bytes for an image that will not render.
+   The blog table is empty and no stored `user.image` value points at storage, so
+   nothing in the database pulls an original.
+
 ### Storage-side actions (not code — do these once)
 
+- **Re-export the PDFs smaller at source** — the 13.1 MB Computer Science syllabus is the
+  heaviest object on the site. This is the single biggest remaining lever, and cached and
+  uncached bytes are both metered, so a longer TTL alone would not reduce total GB.
 - **Archive and drop** the legacy multi-MB originals in `avatars` now that `optimized/*`
   holds the display bytes. `2.x MB → tens of KB` per object removes the worst egress
   source outright. Keep the `optimized/` set (and the content-addressed UUID uploads,

@@ -3,10 +3,10 @@
 import { db } from "@/db";
 import { posts } from "@/db/schema/posts";
 import { user } from "@/db/schema/auth/user";
+import { postFields } from "@/db/queries/posts";
 import { getServerSession } from "@/lib/auth/get-session";
-import { eq, and, ne, desc, sql, count, like } from "drizzle-orm";
+import { eq, desc, sql, count, like } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { cache } from "react";
 import { trackEvent } from "@/lib/analytics";
 
 function generateSlug(title: string): string {
@@ -33,45 +33,6 @@ async function ensureUniqueSlug(baseSlug: string, excludeId?: string): Promise<s
 function assertCmsRole(role: string) {
   if (!["admin", "writer"].includes(role)) throw new Error("Unauthorized");
 }
-
-const postFields = {
-  id: posts.id, title: posts.title, slug: posts.slug, excerpt: posts.excerpt,
-  tags: posts.tags, status: posts.status, authorId: posts.authorId,
-  publishedAt: posts.publishedAt, createdAt: posts.createdAt, updatedAt: posts.updatedAt,
-  authorName: user.name,
-  customAuthorName: posts.customAuthorName,
-  customAuthorAvatar: posts.customAuthorAvatar,
-  customAuthorBio: posts.customAuthorBio,
-};
-
-export const getPublishedPosts = cache(async (limit = 10, offset = 0) => {
-  return db
-    .select(postFields)
-    .from(posts)
-    .leftJoin(user, eq(posts.authorId, user.id))
-    .where(eq(posts.status, "published"))
-    .orderBy(desc(posts.publishedAt))
-    .limit(limit)
-    .offset(offset);
-});
-
-export async function getRelatedPosts(currentSlug: string, limit = 3) {
-  return db.select(postFields).from(posts)
-    .leftJoin(user, eq(posts.authorId, user.id))
-    .where(and(eq(posts.status, "published"), ne(posts.slug, currentSlug)))
-    .orderBy(desc(posts.publishedAt))
-    .limit(limit);
-}
-
-export const getPostBySlug = cache(async (slug: string) => {
-  const result = await db
-    .select({ ...postFields, content: posts.content })
-    .from(posts)
-    .leftJoin(user, eq(posts.authorId, user.id))
-    .where(and(eq(posts.slug, slug), eq(posts.status, "published")))
-    .limit(1);
-  return result[0] ?? null;
-});
 
 export async function getAllPostsCms(limit = 20, offset = 0) {
   const session = await getServerSession();
@@ -112,7 +73,7 @@ export async function createPost(data: { title: string; excerpt: string; content
   const slug = await ensureUniqueSlug(generateSlug(data.title));
   const id = crypto.randomUUID();
   await db.insert(posts).values({ id, title: data.title, slug, excerpt: data.excerpt, content: data.content, tags: data.tags ?? [], authorId: session.user.id, status: data.status, publishedAt: data.status === "published" ? new Date() : null, customAuthorName: data.customAuthorName ?? null, customAuthorAvatar: data.customAuthorAvatar ?? null, customAuthorBio: data.customAuthorBio ?? null });
-  revalidatePath("/cms/posts"); revalidatePath("/blogs");
+  revalidatePath("/"); revalidatePath("/cms/posts"); revalidatePath("/blogs");
   if (data.status === "published") {
     trackEvent("post_published", { postId: id });
   }
@@ -129,7 +90,8 @@ export async function updatePost(id: string, data: { title: string; excerpt: str
   if (role === "writer" && existing[0].authorId !== session.user.id) throw new Error("Unauthorized");
   const slug = await ensureUniqueSlug(generateSlug(data.title), id);
   await db.update(posts).set({ title: data.title, slug, excerpt: data.excerpt, content: data.content, tags: data.tags ?? [], status: data.status, publishedAt: data.status === "published" && !existing[0].publishedAt ? new Date() : existing[0].publishedAt, updatedAt: new Date(), customAuthorName: data.customAuthorName ?? null, customAuthorAvatar: data.customAuthorAvatar ?? null, customAuthorBio: data.customAuthorBio ?? null }).where(eq(posts.id, id));
-  revalidatePath("/cms/posts"); revalidatePath(`/cms/posts/${id}`); revalidatePath("/blogs"); revalidatePath(`/blogs/${slug}`);
+  revalidatePath("/"); revalidatePath("/cms/posts"); revalidatePath(`/cms/posts/${id}`); revalidatePath("/blogs"); revalidatePath(`/blogs/${slug}`);
+  if (existing[0].slug !== slug) revalidatePath(`/blogs/${existing[0].slug}`);
   trackEvent("post_updated", { postId: existing[0].id });
   return { id, slug };
 }
@@ -144,7 +106,7 @@ export async function deletePost(id: string) {
   if (role === "writer" && existing[0].authorId !== session.user.id) throw new Error("Unauthorized");
   const slug = existing[0].slug;
   await db.delete(posts).where(eq(posts.id, id));
-  revalidatePath("/cms/posts"); revalidatePath("/blogs"); revalidatePath(`/blogs/${slug}`);
+  revalidatePath("/"); revalidatePath("/cms/posts"); revalidatePath("/blogs"); revalidatePath(`/blogs/${slug}`);
   trackEvent("post_deleted", { postId: id });
 }
 
@@ -158,7 +120,7 @@ export async function togglePostStatus(id: string) {
   if (role === "writer" && existing[0].authorId !== session.user.id) throw new Error("Unauthorized");
   const newStatus = existing[0].status === "published" ? "draft" : "published";
   await db.update(posts).set({ status: newStatus, publishedAt: newStatus === "published" ? (existing[0].publishedAt ?? new Date()) : existing[0].publishedAt, updatedAt: new Date() }).where(eq(posts.id, id));
-  revalidatePath("/cms/posts"); revalidatePath("/blogs"); revalidatePath(`/blogs/${existing[0].slug}`);
+  revalidatePath("/"); revalidatePath("/cms/posts"); revalidatePath("/blogs"); revalidatePath(`/blogs/${existing[0].slug}`);
   return { status: newStatus };
 }
 

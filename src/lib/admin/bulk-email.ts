@@ -38,10 +38,17 @@ export const BULK_EMAIL_MAX_RECIPIENTS = 400;
  *
  * The page sends in slices rather than one long request: a single call for a
  * 300-recipient blast would hold a serverless invocation open for minutes and
- * lose the lot when it timed out. Ten per call keeps each request well inside a
- * function's budget and lets the composer show progress as it goes.
+ * lose the lot when it timed out. Every batch also rebuilds the audience, so the
+ * slice size is what a blast costs in round trips — 400 recipients at 10 per call
+ * was 80 POSTs and 80 audience queries.
+ *
+ * The ceiling is the function's clock, not Resend's: the loop is sequential, so a
+ * batch runs `size x (BULK_EMAIL_DELAY_MS + provider latency)` inside one
+ * invocation. At 20 that is roughly 22s against the platform's 60s default — no
+ * `maxDuration` is set anywhere in `src/`. Raising this further needs an explicit
+ * `maxDuration` on the emails route first, not just a bigger number here.
  */
-export const BULK_EMAIL_BATCH_SIZE = 10;
+export const BULK_EMAIL_BATCH_SIZE = 20;
 
 /**
  * Pause between two sends inside a batch.

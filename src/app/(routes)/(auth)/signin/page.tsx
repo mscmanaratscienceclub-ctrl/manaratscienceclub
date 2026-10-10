@@ -1,4 +1,5 @@
 import { type Metadata } from "next";
+import { Suspense } from "react";
 import SignInForm from "./form";
 import Link from "next/link";
 
@@ -6,11 +7,7 @@ export const metadata: Metadata = {
   title: "Sign In",
 };
 
-export default async function SignInPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ redirect?: string }>;
-}) {
+export default function SignInPage() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4 py-10">
       <div className="flex w-full flex-col border border-space-line-soft bg-space-deep/70 px-8 py-6 backdrop-blur-sm md:w-96">
@@ -21,7 +18,11 @@ export default async function SignInPage({
           Sign In
         </h1>
         <p className="mt-1 text-sm text-space-muted">Welcome back! Sign in to your account.</p>
-        <SignInForm redirect={(await searchParams).redirect} />
+        <Suspense
+          fallback={<div className="my-8 h-64 w-full motion-safe:animate-pulse border border-space-line-soft bg-space-deep/40" aria-hidden="true" />}
+        >
+          <SignInForm />
+        </Suspense>
         <div className="-mt-2 flex justify-end">
           <Link
             href="/forgot-password"
