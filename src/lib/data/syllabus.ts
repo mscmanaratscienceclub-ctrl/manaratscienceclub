@@ -53,23 +53,21 @@ export interface SyllabusSection {
  *
  * A document is listed here whenever the club has published the PDF a
  * participant needs for that event, whatever the club named the file. That is
- * why the robotics events point at `… RULEBOOK.pdf` keys: the syllabus page is
- * the per-event index of "what do I download for my event", and for Robotics
- * and E-sports the answer is their rulebook. The same files also appear on
- * `/resources`, listed per segment, from `publishedRulebooks`
- * (`src/lib/data/resources.ts`).
+ * why Robotics, E-sports and Project Display point at `… rulebook.pdf` /
+ * `… RULEBOOK.pdf` keys: the syllabus page is the per-event index of "what do I
+ * download for my event", and for those segments the answer is their rulebook.
+ * The same files also appear on `/resources`, listed per segment, from
+ * `publishedRulebooks` (`src/lib/data/resources.ts`).
  *
  * Keys are matched against the bucket byte for byte, including case — the
- * Robosoccer rulebook is stored lowercase (`robosoccer rulebook.pdf`), and a
- * key that does not exist answers HTTP 400 with no file to show. Verify a key
- * against the bucket before adding one.
+ * Robosoccer and Project Display rulebooks are stored lowercase
+ * (`robosoccer rulebook.pdf`, `project display rulebook.pdf`), and a key that
+ * does not exist answers HTTP 400 with no file to show. Verify a key against the
+ * bucket before adding one.
  *
  * The "(1)" on the Computer Science key is the club's own upload name, kept
  * verbatim because it is the object key the bucket holds. Renaming it in the
  * bucket means renaming it here too.
- *
- * Project Display has no entry: the club has not uploaded a rulebook, so its row
- * renders as reserved space rather than the dead link the old key pointed at.
  */
 const publishedSyllabi: Record<string, { path: string; updated: string }> = {
   // Olympiads — all five subjects.
@@ -87,6 +85,12 @@ const publishedSyllabi: Record<string, { path: string; updated: string }> = {
   // Robotics — one rulebook per event, and both are out.
   lfr: { path: "LFR RULEBOOK.pdf", updated: "2026-09-26" },
   robosoccer: { path: "robosoccer rulebook.pdf", updated: "2026-09-26" },
+  // Project Display — one rulebook for the whole segment, and it covers all
+  // three categories, so every category's row points at the same document.
+  "project-display": {
+    path: "project display rulebook.pdf",
+    updated: "2026-10-10",
+  },
   // E-sports — one rulebook per title.
   "ea-fc-26": { path: "FC26 rulebook.pdf", updated: "2026-10-09" },
   "clash-royale": { path: "clash royale rulebook.pdf", updated: "2026-10-09" },

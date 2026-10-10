@@ -122,8 +122,8 @@ export const generalResources: GeneralResource[] = [
  *
  * Keys are matched against the bucket byte for byte, including case: the
  * Robosoccer rulebook is stored lowercase. A key the bucket does not hold answers
- * HTTP 400, so a segment with no uploaded rulebook (Project Display today) gets
- * no entry here and renders its slot as reserved space.
+ * HTTP 400, so a segment with no uploaded rulebook gets no entry here and renders
+ * its slot as reserved space.
  */
 const publishedRulebooks: Record<
   string,
@@ -135,6 +135,12 @@ const publishedRulebooks: Record<
       bucketPath: "LFR RULEBOOK.pdf",
     },
     { label: "Robosoccer rulebook", bucketPath: "robosoccer rulebook.pdf" },
+  ],
+  "project-display": [
+    {
+      label: "Project Display rulebook",
+      bucketPath: "project display rulebook.pdf",
+    },
   ],
   esports: [
     { label: "EA FC 26 rulebook", bucketPath: "FC26 rulebook.pdf" },

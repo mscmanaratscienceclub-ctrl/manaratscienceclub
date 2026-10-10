@@ -8,6 +8,70 @@ updated: 2026-10-10
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
 
+## 2026-10-10 — Project Display syllabus row linked
+
+`src/lib/data/syllabus.ts` → `publishedSyllabi` gains `"project-display"`, so `/syllabus`
+shows the segment's **Download** row instead of *Coming soon*. The document itself was
+already live and already listed on `/resources`; only the syllabus index was missing it.
+
+- **Key casing again**: the bucket holds `project display rulebook.pdf` — probed at
+  `206 application/pdf`. The uppercase `PROJECT DISPLAY RULEBOOK.pdf` answers `400`,
+  the same trap the Robosoccer key documents.
+- `updated: "2026-10-10"`, matching the day the club uploaded it.
+- The header comment no longer claims Project Display has no entry; it now groups the
+  segment with Robotics and E-sports as the ones whose "syllabus" is their rulebook.
+- `/details` names Project Display in the Rulebooks & resources card, so the three
+  segments whose briefs live in rulebooks are listed together.
+- Still *Coming soon* on `/syllabus`, correctly: the **Fun Segment** placeholder row,
+  which has no registerable events and no document.
+
+## 2026-10-10 — `/details` populated with the STEM-FEST 2026-27 brief
+
+The page stopped being a scaffold of reserved slots. `src/lib/data/stemfest-details.ts`
+now carries the fest's published brief — dates, venue, the four prize pools, the
+per-event day format, the Olympiad paper rules, the category brackets, and the
+fest's own social pages — and `src/app/(routes)/(site)/details/page.tsx` renders it.
+
+- **Event rows are derived, not typed.** The page reads `stemfestSegments` /
+  `stemfestEvents` / `stemfestClasses` from the registration catalogue, the way
+  `/syllabus` does, so an event's name, class band and category letters here can
+  never disagree with what the form accepts. Only what the catalogue cannot say
+  (prize pools, calculator rules, the E-sports brackets, tier *names*) is
+  authored, keyed by segment and event id.
+- **The Olympiad bracket table merges bands across events.** Mathematics runs
+  A–E, the Class 7-up Olympiads run A–C, General Science A–B; the page groups by
+  class band and lists the letter each event gives it, so one table answers
+  "which category am I in" for every Olympiad at once.
+- **`৳135,000` is a sum, not a claim.** `prizePoolTotal` adds the four pools.
+- **Still reserved:** the two-day run sheet (`scheduleBody` is empty), which
+  renders as the pending card beside the note that the schedule goes out on
+  `@mdicstemfest`. Robotics rows point at their rulebooks instead of inventing
+  prose the club never published.
+- The flyer names the EA FC title **EA FC 27**; the catalogue, the rulebook
+  (`FC26 rulebook.pdf`) and `/register` all say **EA FC 26**, and the page shows
+  the catalogue's string. Rename it in `stemfest-registration.ts` if the fest has
+  actually moved titles — that change reaches this page by itself.
+
+Verified: `verify.sh` 0 FAIL, `tsc --noEmit` and `eslint` clean on both files, and
+`/details` renders HTTP 200 with a clean console on the dev server. `pnpm build`
+was not run — it still dies on the known environmental Supabase pooler
+`CONNECT_TIMEOUT` during page data collection, which this static route does not
+touch.
+
+## 2026-10-10 — Project Display rulebook published
+
+`src/lib/data/resources.ts` → `publishedRulebooks` gains a `project-display` entry,
+so `/resources` shows the segment's first real download instead of the reserved
+*Rulebook — coming soon* slot. `stemfestDetailLinks` on `/details` now names Project
+Display alongside Robotics and E-sports.
+
+- **The object key is lowercase**: `project display rulebook.pdf`, probed at `200
+  application/pdf` / 4.6 MB. The 2026-10-10 merge note above rejected
+  `PROJECT DISPLAY RULEBOOK.pdf` on a `404 / NoSuchKey` — that was the same document
+  probed under the casing every other rulebook was *typed* in, not a missing upload.
+  Case-sensitive keys again: the note in `publishedRulebooks` no longer singles out
+  Project Display as the segment with nothing uploaded.
+
 ## 2026-10-10 — E-sports rulebooks merged with the PDF fixes; registration-extended banner; `/details` opened
 
 GitHub moved ahead of the local tree with the E-sports rulebooks (`FC26 rulebook.pdf`,
