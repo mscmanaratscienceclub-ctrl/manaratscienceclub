@@ -1,6 +1,6 @@
 ---
 tags: [architecture, stable]
-updated: 2026-05-21
+updated: 2026-10-12
 ---
 
 # Tech Stack
@@ -124,6 +124,7 @@ and [[decisions-log]] for the decisions behind it.
 | Package | Version | Role |
 |---------|---------|------|
 | `write-excel-file` | `4.1.1` | Builds the admin panel's `.xlsx` exports, in memory, server-side |
+| `@aws-sdk/client-s3` | `^3.1149.0` | **devDependency** — copies objects into the Tigris bucket. Used by exactly one script, never by the app |
 
 Chosen over `exceljs` (nine dependencies, 21.8 MB unpacked) and `xlsx`/SheetJS CE
 (the npm release is 0.18.5 from 2022 and carries known advisories):
@@ -134,6 +135,24 @@ No PDF library was added, and none should be: see ADR-0032.
 
 `pnpm export:verify` (`scripts/verify-excel-export.run.mjs`) is the smoke test — it
 exercises the writer with no database and no session.
+
+**`@aws-sdk/client-s3` is build-only, and it must stay that way.** The only S3 code in
+the repository is `scripts/migrate-media-to-tigris.mjs`
+(`pnpm media:migrate:dry` / `media:migrate` / `media:verify` / `media:archive` /
+`media:purge`), which copies the byte-heavy public media out of Supabase Storage into
+Tigris so anonymous **reads** stop billing Supabase's cached egress — ADR-0041,
+[[backend/supabase-audit-2026-09-13]]. It is a devDependency **by decision**: the app
+never writes to Tigris, so importing the SDK from anywhere under `src/` would put it in
+the serverless bundle to buy a capability the project deliberately does not have there.
+Writes stay on Supabase Storage (`/api/upload`), and so do Postgres and better-auth.
+
+Tigris speaks S3 and reads the AWS SDK's own variable names, which is why `.env.example`
+documents `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
+`AWS_ENDPOINT_URL_S3=https://t3.storage.dev`, `AWS_REGION=auto` and `AWS_S3_BUCKET`
+rather than a `TIGRIS_*` set (each `TIGRIS_*` name still overrides its AWS equivalent).
+The public media origin is a *different* host from that authenticated endpoint —
+`https://<bucket>.t3.tigrisfiles.io`, or a custom domain — and it is what
+`NEXT_PUBLIC_MEDIA_BASE_URL` must be set to.
 
 ## Related
 

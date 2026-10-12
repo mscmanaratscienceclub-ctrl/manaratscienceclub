@@ -9,6 +9,11 @@
     "lint": "eslint .",
     "images:optimize": "node scripts/optimize-bucket-images.mjs",
     "images:optimize:dry": "node scripts/optimize-bucket-images.mjs --dry-run",
+    "media:migrate:dry": "node scripts/migrate-media-to-tigris.mjs --dry-run",
+    "media:migrate": "node scripts/migrate-media-to-tigris.mjs",
+    "media:verify": "node scripts/migrate-media-to-tigris.mjs --verify",
+    "media:archive": "node scripts/migrate-media-to-tigris.mjs --archive-legacy",
+    "media:purge": "node scripts/migrate-media-to-tigris.mjs --purge-legacy --yes",
     "fonts:pdf": "node scripts/generate-pdf-fonts.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit push",
@@ -63,6 +68,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.1149.0",
     "@esbuild/win32-x64": "0.25.12",
     "@tailwindcss/postcss": "^4.2.4",
     "@types/node": "^25",

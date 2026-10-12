@@ -32,6 +32,8 @@ export interface SyllabusDocument {
   coverage: string;
   /** Public PDF URL. `null` until the club releases the document. */
   href: string | null;
+  /** Object key inside the `pdfs` bucket, or `null` while unpublished. */
+  bucketPath: string | null;
   /** ISO date the club last replaced the PDF, or `null` while unpublished. */
   updated: string | null;
 }
@@ -50,27 +52,10 @@ export interface SyllabusSection {
  * Object keys inside the public `pdfs` bucket, keyed by event id.
  *
  * These are the filenames as uploaded, spaces and all — `pdfUrl` encodes them.
- *
- * A document is listed here whenever the club has published the PDF a
- * participant needs for that event, whatever the club named the file. That is
- * why Robotics, E-sports and Project Display point at `… rulebook.pdf` /
- * `… RULEBOOK.pdf` keys: the syllabus page is the per-event index of "what do I
- * download for my event", and for those segments the answer is their rulebook.
- * The same files also appear on `/resources`, listed per segment, from
- * `publishedRulebooks` (`src/lib/data/resources.ts`).
- *
- * Keys are matched against the bucket byte for byte, including case — the
- * Robosoccer and Project Display rulebooks are stored lowercase
- * (`robosoccer rulebook.pdf`, `project display rulebook.pdf`), and a key that
- * does not exist answers HTTP 400 with no file to show. Verify a key against the
- * bucket before adding one.
- *
- * The "(1)" on the Computer Science key is the club's own upload name, kept
- * verbatim because it is the object key the bucket holds. Renaming it in the
- * bucket means renaming it here too.
+ * The five Olympiad subjects and the robotics events are the ones that have one
+ * today; the rest are published by adding a line here.
  */
 const publishedSyllabi: Record<string, { path: string; updated: string }> = {
-  // Olympiads — all five subjects.
   mathematics: { path: "MATH OLYMPIAD SYLLABUS.pdf", updated: "2026-09-22" },
   physics: { path: "PHYSICS OLYMPIAD SYLLABUS.pdf", updated: "2026-09-22" },
   "bio-chem": { path: "BIOCHEM OLYMPIAD SYLLABUS.pdf", updated: "2026-09-22" },
@@ -78,23 +63,6 @@ const publishedSyllabi: Record<string, { path: string; updated: string }> = {
     path: "GEN SCIENCE OLYMPIAD SYLLABUS.pdf",
     updated: "2026-09-22",
   },
-  "computer-science": {
-    path: "COMP SCI OLYMPIAD SYLLABUS (1).pdf",
-    updated: "2026-09-26",
-  },
-  // Robotics — one rulebook per event, and both are out.
-  lfr: { path: "LFR RULEBOOK.pdf", updated: "2026-09-26" },
-  robosoccer: { path: "robosoccer rulebook.pdf", updated: "2026-09-26" },
-  // Project Display — one rulebook for the whole segment, and it covers all
-  // three categories, so every category's row points at the same document.
-  "project-display": {
-    path: "project display rulebook.pdf",
-    updated: "2026-10-10",
-  },
-  // E-sports — one rulebook per title.
-  "ea-fc-26": { path: "FC26 rulebook.pdf", updated: "2026-10-09" },
-  "clash-royale": { path: "clash royale rulebook.pdf", updated: "2026-10-09" },
-  "minecraft-bedwars": { path: "bedwars rulebook.pdf", updated: "2026-10-09" },
 };
 
 export const syllabusCopy = {
@@ -107,7 +75,9 @@ export const syllabusCopy = {
     "A syllabus appears here the moment the club releases it. Anything still marked coming soon has not been finalised yet.",
   pendingLabel: "Coming soon",
   pendingNote: "This syllabus has not been released yet.",
+  openLabel: "Open PDF",
   downloadLabel: "Download",
+  newTabNote: "opens in a new tab",
 } as const;
 
 /**
@@ -155,6 +125,7 @@ function documentsFor(segmentId: string): SyllabusDocument[] {
         label: "Segment syllabus",
         coverage: "All brackets",
         href: null,
+        bucketPath: null,
         updated: null,
       },
     ];
@@ -168,6 +139,7 @@ function documentsFor(segmentId: string): SyllabusDocument[] {
       label: event.name,
       coverage: coverageFor(event),
       href: published ? pdfUrl(published.path) : null,
+      bucketPath: published?.path ?? null,
       updated: published?.updated ?? null,
     };
   });

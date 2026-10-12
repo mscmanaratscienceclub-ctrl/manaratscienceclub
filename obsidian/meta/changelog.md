@@ -8,6 +8,93 @@ updated: 2026-10-12
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
 
+## 2026-10-12 — Public media reads move to Tigris behind one build-time env var
+
+The 2026-10-03 / 10-06 / 10-09 passes had already fixed the images and the PDF link
+duplication, so the bucket was re-measured read-only (`scripts/spike/egress-audit.mjs`)
+to find what was left: **`pdfs` 11 objects / 56.83 MB** (largest
+`COMP SCI OLYMPIAD SYLLABUS (1).pdf`, 13.08 MB) and **`avatars` 103 objects / 48.74 MB**,
+of which the display bytes under `optimized/*` are only 31 objects / **0.85 MB** — the
+other **47.6 MB is legacy originals nothing fetches**. No TTL change can move any of it,
+because Supabase meters **cached** egress: a perfectly cached 13 MB syllabus still bills
+13 MB every time its URL is served. So public *media reads* move to Tigris (S3-compatible,
+no egress charge), while Postgres, better-auth and the `/api/upload` write path stay on
+Supabase — upload is ingress, which is not metered. See ADR-0041 and
+[[backend/supabase-audit-2026-09-13]].
+
+- **One env var is the switch.** `NEXT_PUBLIC_MEDIA_BASE_URL`, read in `src/lib/media.ts`.
+  `storagePublicUrl()` is the single choke point every public URL already passed through,
+  so it now builds `<base>/<bucket>/<key>` when the var is set and the Supabase URL when it
+  is not, and it percent-encodes the key **segment-wise for both hosts** — previously only
+  `pdfUrl` encoded, which was fine while Supabase was the only host. With the var unset
+  every emitted URL is **byte-identical to before**, checked by running the builders in both
+  modes.
+- **`?download` is Supabase-only now** (`pdfUrl()`). On Tigris the
+  `Content-Disposition: attachment` header lives on the object (the migration sets it), so
+  the bare key remains the one canonical URL per document — the 2026-10-09 one-URL-per-object
+  rule survives the move, and a query suffix there would only mint a second cache key.
+- **The egress guards follow the host**: `isOptimizedObjectUrl()` broadened to
+  `/\/avatars\/optimized\//`, which matches Supabase's `/storage/v1/object/public/…` path and
+  a Tigris key alike, and `renderedImageUrl()` passes external-host URLs through untouched —
+  Supabase's `/render/image/` transform cannot read a Tigris bucket.
+- **`next/image` cannot disagree with the markup.** `externalMediaPatterns()` in
+  `next.config.ts` derives the `images.remotePatterns` entry from the same env var the URL
+  builders read, so the optimizer allow-list moves with the rendered URLs.
+- **`scripts/migrate-media-to-tigris.mjs`** — `pnpm media:migrate:dry` (plans, writes
+  nothing), `media:migrate` (copy, **byte-comparing every write**; skips a key already correct
+  at the right size), `media:verify` (HEAD each object through the **public** origin, because a
+  bucket can hold an object anonymous visitors still cannot read), `media:archive`,
+  `media:purge [--dry-run] [--yes]`. Keys mirror Supabase (`pdfs/…`, `avatars/optimized/…`),
+  which is why **no data module needed editing**. Object metadata is set at upload:
+  `Cache-Control: public, max-age=31536000, immutable`, plus `Content-Disposition: attachment`
+  on the PDFs.
+- **The copy set is what the site reads, not what the folder names suggest** — 11 PDFs,
+  31 `optimized/*` WebPs, and **7 avatars objects that `src/` fetches verbatim**:
+  `contentImage()` returns an already-small `.webp`/`.avif` at its original path, and
+  `bucketOriginal("adminimages/rose.heif")` is called directly, so neither goes through
+  `optimized/`. A naive "copy `pdfs` + `optimized/`" migration would have 404'd seven profile
+  cards on cutover day.
+- **Measured after**: 49 objects / **57.98 MB** copied to `manarat-media`, and `pnpm media:verify`
+  reports **49/49** public URLs serving the right byte count with `max-age=31536000, immutable`
+  and `attachment` on all 11 PDFs. The 65 unreferenced originals (**47.60 MB**) were copied to
+  `archive/avatars/…` on Tigris **first**, then deleted from the Supabase `avatars` bucket,
+  which is now **38 objects / 1.15 MB with no object over 300 KB**. Archiving rather than
+  hard-deleting keeps the camera originals (one is a 9.32 MB PNG) retrievable at no cost —
+  Tigris bills neither egress nor meaningful storage.
+- **Live dev-server page audit**: `/` emits **12** Tigris media URLs and **0**
+  `supabase.co/storage` URLs; `/syllabus` **8/0**; `/resources` **12/0**. **`/register` and
+  `/stemfestreg` emit no media URLs at all** and both return 200 — the registration path writes
+  to Postgres through the pooler and reads nothing from Storage, and that is what made the
+  offload safe to attempt at all. `/api/upload` (the profile avatar, used only by
+  `profile-form.tsx`) still writes to Supabase.
+- **Checked before deleting anything**: a scan of all **92 `text` columns** in the production
+  `public` schema found **0 rows** holding a Supabase storage URL, and the bucket-vs-source map
+  found **0** `contentImage()` calls whose `optimized/` twin is missing and **0** verbatim paths
+  absent from the bucket.
+
+Verify gate: `pnpm lint` and `npx tsc --noEmit` clean. `pnpm build` was **not re-run** — this
+workspace has a documented `next build` failure (a Supavisor `CONNECT_TIMEOUT` at *Collecting
+page data* from 15 concurrent workers; environmental, unrelated to these changes) and none of
+this touches that path. The substitution is instead verified by running the URL builders in both
+modes, by `pnpm media:verify` at 49/49, and by reading the rendered DOM of the five routes above.
+
+Open, stated plainly:
+
+- **Production is not cut over.** The var is read at **build** time into prerendered HTML, so it
+  must be set in Vercel's environment **and redeployed** — a runtime-only change leaves the
+  deployed site still billing Supabase.
+- The Supabase `pdfs` bucket (**56.83 MB**) is left in place as an unreferenced fallback; whether
+  to delete it after the production cutover is the user's call.
+- Tigris now requires a **verified payment method** to create a *public-read* bucket
+  (`PaymentVerificationRequired`). This project's account predates the rule, so private buckets
+  create fine and a public one would not. Anonymous reads come from
+  `https://<bucket>.t3.tigrisfiles.io`, **not** from the authenticated API endpoint
+  `https://t3.storage.dev`; a custom domain is the recommended production shape.
+- **`/syllabus` renders 4 documents, not the 7 recorded on 2026-10-09.** This is a
+  **pre-existing uncommitted edit** to `src/lib/data/syllabus.ts` — it re-adds
+  `SyllabusDocument.bucketPath` and narrows `publishedSyllabi` — **not** the migration. It needs
+  the user's confirmation before either count is treated as intended.
+
 ## 2026-10-12 — Bulk email counts the receipts still owed, not the registrations
 
 `/admin/emails` had stopped being usable: **Send confirmations** was greyed with

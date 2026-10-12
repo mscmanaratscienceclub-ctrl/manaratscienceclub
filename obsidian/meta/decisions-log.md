@@ -17,6 +17,98 @@ Template: [[templates/adr-note]].
 
 ---
 
+## ADR-0041 — Public media reads are served by Tigris; Supabase keeps the writes and the database
+
+**Status:** Accepted · 2026-10-12
+
+**Context.** Supabase bills **cached egress** — the bytes its CDN hands to visitors — and
+that is the project's dominant storage cost, not Postgres. Three passes had already removed
+everything removable from it: `avatarUrl()`/`renderedImageUrl()` stopped re-transforming on
+read (2026-10-03), `contentImage()` put the display WebPs back in use (2026-10-06, ~96% off),
+and `pdfUrl()` collapsed each PDF to one cache key (2026-10-09). A read-only re-measure
+(`scripts/spike/egress-audit.mjs`) showed what those fixes cannot reach: the `pdfs` bucket
+carries **11 objects / 56.83 MB** (largest `COMP SCI OLYMPIAD SYLLABUS (1).pdf`, 13.08 MB) and
+`avatars` **103 objects / 48.74 MB**, of which the bytes a visitor actually pulls are 31
+`optimized/*` WebPs totalling **0.85 MB** plus 7 objects served at their original path —
+**47.6 MB is legacy originals nothing fetches**.
+The ceiling is structural: caching policy only changes how often the edge revalidates, while
+every delivered byte is metered whichever way it arrives, so a well-cached 13 MB syllabus
+still bills 13 MB per download. Meanwhile the registration flow — the thing this site must
+not break — reads **no** storage URLs at all.
+
+**Decision.** Every **public media read** moves to Tigris, an S3-compatible object store with
+no egress charge, behind **one** build-time variable, and nothing else moves.
+
+- `NEXT_PUBLIC_MEDIA_BASE_URL` is the switch. `storagePublicUrl()` in `src/lib/media.ts` is the
+  choke point every public URL already passed through, so it alone decides the host:
+  `<base>/<bucket>/<key>` when the var is set, the Supabase URL when it is not. Object keys
+  mirror the Supabase layout (`pdfs/…`, `avatars/optimized/…`), so no data module, component or
+  stored value changes.
+- The bucket name stays in the key on the single Tigris bucket, standing in for two Supabase
+  buckets. `storagePublicUrl()` percent-encodes the key segment-wise for **both** hosts.
+- `pdfUrl()` appends `?download` **only** in Supabase mode: on Tigris the
+  `Content-Disposition: attachment` header is object metadata set at upload, so the bare key
+  remains the one canonical URL per document (ADR-0025's egress logic, tightened on 2026-10-09).
+- `next.config.ts` derives the `images.remotePatterns` entry from the same variable
+  (`externalMediaPatterns()`), so `next/image` and the rendered URLs cannot disagree about
+  where content images live.
+- `scripts/migrate-media-to-tigris.mjs` does the moving: default copy with every write
+  byte-compared, `--verify` (HEAD through the *public* origin), `--archive-legacy`,
+  `--purge-legacy` — which deletes an original only once its replacement bytes are confirmed on
+  Tigris at the right size.
+- **Stays on Supabase, deliberately:** Postgres and the pooler, better-auth, and the `/api/upload`
+  write path. Upload is ingress and is not metered, so moving it would buy nothing and cost the
+  one flow this decision must not touch.
+
+**Alternatives considered.**
+
+| Option | Verdict |
+|--------|---------|
+| Serve the same objects from Vercel `/public` (static) | Lost — takes them off Supabase's meter only to put them on Vercel's, which bills **every** CDN request (the finding behind ADR-0039/0040 the same day), and a club document becomes a git commit plus a redeploy to replace. Today the club re-uploads under the same key and the page needs no edit. Kept as the fallback if Tigris's billing rule below cannot be satisfied. |
+| Cloudflare R2 | Lost on nothing technical — it is the same S3-shaped, no-egress-charge design. It costs a **third** account and billing relationship (Supabase, Vercel, Cloudflare) for a volunteer-run club site, and the public-bucket and custom-domain work is identical there. This is where the decision re-opens if the Tigris blocker below is not cleared. |
+| Stay on Supabase with longer `cache-control` / TTLs | Lost — already measured and already irrelevant. The 2026-10-09 probe found the `pdfs` objects served `max-age=3600` while the edge held them for `age: 621389` (~7 days): the header is revalidation noise, and **cached bytes are metered too**, so no TTL reaches the 56.83 MB. Shrinking the PDFs at source helps the GB but not the shape of the bill, and does not touch the 47.6 MB of originals. |
+
+**Consequences.**
+
+- **An environment variable is now a billing control, and a build-time one.** It is inlined into
+  prerendered HTML, so changing it means a redeploy, and flipping it means running
+  `pnpm media:verify` before believing the site is off the meter.
+- **Two hosts hold the same keys until the cutover is finished.** A new PDF is only visible
+  where the built site points, so between now and the production flip it has to be uploaded to
+  Supabase *and* copied to Tigris (`pnpm media:migrate` re-runs idempotently and byte-compares).
+- **Callers pass raw object paths, never pre-encoded ones.** `storagePublicUrl()` encodes the
+  joined key itself; a caller that encoded first would produce `%2520`.
+- **The app must not gain an S3 dependency.** `@aws-sdk/client-s3` is a **devDependency** because
+  the app never writes to Tigris; importing it under `src/` would put it in the serverless bundle
+  for a capability this decision explicitly does not give the app.
+- **`/register` and `/stemfestreg` staying media-free is now a load-bearing invariant.** It is the
+  reason the two hosts are separable at all; a future change that puts a content image on a
+  registration route weakens the safety argument for the switch.
+- **Deleted originals live on Tigris, not in Supabase.** The 65 archived objects are at
+  `archive/avatars/…`, so a future re-encode pass (ADR-0025's `scripts/optimize-bucket-images.mjs`)
+  cannot read them from the `avatars` bucket any more; the 7 verbatim objects and the
+  `optimized/` set remain there.
+- **Measured, not estimated:** 49 objects / 57.98 MB copied and 49/49 verified public with
+  `max-age=31536000, immutable` and `attachment` on all 11 PDFs; `avatars` down to 38 objects /
+  1.15 MB after the archive-then-purge; `/` emits 12 Tigris URLs and 0 Supabase storage URLs,
+  `/syllabus` 8/0, `/resources` 12/0, and the two registration routes 0/0 at HTTP 200.
+
+**Open.**
+
+1. **Production is not cut over yet.** `NEXT_PUBLIC_MEDIA_BASE_URL` has to be set in Vercel's
+   environment **and redeployed**; a runtime-only change leaves the deployed site billing
+   Supabase. The Supabase `pdfs` bucket (56.83 MB) stays as an unreferenced fallback until that
+   is confirmed good — deleting it is the user's call.
+2. **Tigris requires a verified payment method to create a *public-read* bucket**
+   (`PaymentVerificationRequired`). This account predates the rule, so private buckets create and
+   delete fine while a public one cannot. Anonymous reads are served from
+   `https://<bucket>.t3.tigrisfiles.io`, which is a different origin from the authenticated API
+   endpoint `https://t3.storage.dev`; a custom domain is the recommended production shape.
+
+Supersedes nothing; extends ADR-0025 (pre-optimised bytes served verbatim) from "which bytes" to
+"which host", and completes the storage-side actions left open in
+[[backend/supabase-audit-2026-09-13]].
+
 ## ADR-0039 — Error tracking is Vercel's function logs; Sentry is out
 
 **Status:** Accepted · 2026-10-12

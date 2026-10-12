@@ -11,6 +11,32 @@ const SUPABASE_PROJECT_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL ??
   "https://ipmdyrxfptdsulfhxjkb.supabase.co";
 
+/**
+ * Public base URL for all CDN-read media, without a trailing slash.
+ *
+ * **This is the cached-egress switch.** Set it to a Tigris bucket domain and every
+ * PDF and content image the public site reads is served from a host with no egress
+ * billing; leave it unset and every URL is built against Supabase exactly as before.
+ * Object keys mirror the Supabase bucket layout (`<base>/pdfs/…`,
+ * `<base>/avatars/optimized/…`), so the migration script can copy paths across
+ * without rewriting a single data module.
+ *
+ * Nothing about writes or auth moves: `/api/upload` still puts avatars in Supabase
+ * (upload is ingress, which is not metered) and the registration flow reads no
+ * storage URLs at all, so a half-finished cutover cannot break it.
+ */
+const MEDIA_BASE_URL = (
+  process.env.NEXT_PUBLIC_MEDIA_BASE_URL ?? ""
+).replace(/\/+$/, "");
+
+/** `true` when media is served from the external host rather than Supabase. */
+export const usesExternalMediaHost = MEDIA_BASE_URL.length > 0;
+
+/** Percent-encode an object key segment-wise, keeping its slashes. */
+function encodeObjectKey(key: string): string {
+  return key.split("/").map(encodeURIComponent).join("/");
+}
+
 export const AVATARS_BUCKET = "avatars";
 
 /**
@@ -25,28 +51,28 @@ export const PDFS_BUCKET = "pdfs";
 
 /** Public, CDN-served URL for an arbitrary object in a bucket. */
 export function storagePublicUrl(bucket: string, path: string): string {
-  return `${SUPABASE_PROJECT_URL}/storage/v1/object/public/${bucket}/${path}`;
+  const key = encodeObjectKey(`${bucket}/${path}`);
+  if (usesExternalMediaHost) return `${MEDIA_BASE_URL}/${key}`;
+  return `${SUPABASE_PROJECT_URL}/storage/v1/object/public/${key}`;
 }
 
 /**
  * Public URL for a document in the `pdfs` bucket — the **only** URL any page may
  * link for a given object.
  *
- * Each path segment is percent-encoded because the club's object keys are the
- * filenames they uploaded (`MATH OLYMPIAD SYLLABUS.pdf`), and a raw space in a
- * URL is invalid even though browsers paper over it. Encoding segment-by-segment
- * rather than with `encodeURIComponent(path)` keeps the slashes in a nested key
- * intact.
+ * Supabase's CDN caches per full URL, and `?download` is the suffix that makes it
+ * answer with `Content-Disposition: attachment`. Minting one canonical string per
+ * object is deliberate: a page that also links the bare form stores the same
+ * multi-megabyte PDF twice at the edge and pays a cold origin pull for whichever
+ * variant nobody has clicked yet.
  *
- * `download` is appended unconditionally rather than offered as an option: the
- * Supabase CDN caches per full URL, so a page that also links the bare form
- * stores the same multi-megabyte PDF twice and pays a cold origin pull for
- * whichever variant nobody has clicked yet. One string per object means one edge
- * copy and one billed set of bytes.
+ * On the external host the disposition header is set on the object at upload time
+ * (see `scripts/migrate-media-to-tigris.mjs`), so the bare key is the canonical URL
+ * and the query suffix would only add a second cache key.
  */
 export function pdfUrl(path: string): string {
-  const encoded = path.split("/").map(encodeURIComponent).join("/");
-  return `${storagePublicUrl(PDFS_BUCKET, encoded)}?download`;
+  const url = storagePublicUrl(PDFS_BUCKET, path);
+  return usesExternalMediaHost ? url : `${url}?download`;
 }
 
 /**
@@ -96,7 +122,7 @@ export function contentImage(path: string): string {
  * browser wants — transforming them again is pure wasted egress.
  */
 export function isOptimizedObjectUrl(url: string): boolean {
-  return /\/storage\/v1\/object\/public\/avatars\/optimized\//.test(url);
+  return /\/avatars\/optimized\//.test(url);
 }
 
 /**
@@ -110,7 +136,9 @@ export function isOptimizedObjectUrl(url: string): boolean {
  * project. Only genuinely multi-megabyte *originals* that are not yet optimised
  * should be forced through the transform.
  *
- * Returns the input untouched when it isn't a public object URL.
+ * Returns the input untouched when it isn't a public object URL — which includes
+ * every URL on the external media host: Supabase's transform cannot read a Tigris
+ * bucket, so those objects are served as the final bytes the migration uploaded.
  */
 export function renderedImageUrl(
   url: string,

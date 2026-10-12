@@ -1,6 +1,6 @@
 ---
 tags: [backend, database, security, audit]
-updated: 2026-10-03
+updated: 2026-10-12
 ---
 
 # Supabase Architecture Audit — 2026-09-13
@@ -423,21 +423,63 @@ Both code fixes hold. `optimized/*` answers `max-age=31536000` with
 
 ### Storage-side actions (not code — do these once)
 
+> [!warning] Re-scored 2026-10-12 — do not re-do the finished ones
+> The reads themselves moved to Tigris (see *Offloaded to Tigris* below and
+> [[decisions-log|ADR-0041]]), which settles most of this list by changing who serves
+> the bytes. Each action below now says whether it is **Done**, **Open**, or **Moot**.
+
 - **Re-export the PDFs smaller at source** — the 13.1 MB Computer Science syllabus is the
   heaviest object on the site. This is the single biggest remaining lever, and cached and
   uncached bytes are both metered, so a longer TTL alone would not reduce total GB.
+  **Open, and demoted:** it is now a visitor-experience lever, not a billing one — those 11
+  objects / 56.83 MB are served from a host with no egress charge. The largest is
+  `COMP SCI OLYMPIAD SYLLABUS (1).pdf` at 13.08 MB.
 - **Archive and drop** the legacy multi-MB originals in `avatars` now that `optimized/*`
   holds the display bytes. `2.x MB → tens of KB` per object removes the worst egress
   source outright. Keep the `optimized/` set (and the content-addressed UUID uploads,
-  already ≤512px WebP).
+  already ≤512px WebP). **Done 2026-10-12:** 65 unreferenced originals / **47.60 MB** copied to
+  `archive/avatars/…` on Tigris **first**, then deleted from the bucket. `avatars` is now
+  **38 objects / 1.15 MB with no object over 300 KB**. Two caveats a re-run must respect: the
+  archived bytes are only on Tigris now (`optimize-bucket-images.mjs` can no longer re-encode
+  them from Supabase), and 7 avatars objects are kept because `src/` fetches them verbatim.
 - **Set a long `cache-control` on everything in `pdfs`.** PDFs are large and fetched on
   every download; without an immutable header the CDN re-validates against origin each time,
   inflating general egress for a static club document. One-time `storage.objects` update (or
   upload with the header) makes repeat downloads cheap cached egress.
+  **Done 2026-10-12, on the copied objects:** every migrated PDF carries
+  `Cache-Control: public, max-age=31536000, immutable` plus
+  `Content-Disposition: attachment`, set by the migration script at upload and confirmed in the
+  response headers by `pnpm media:verify` (49/49). **No one-time Supabase update was ever
+  applied** — the Supabase copies still answer `max-age=3600`, which is harmless while nothing
+  reads them and moot if the fallback bucket is deleted.
 - **Enable Supabase Edge Functions / custom domain CDN caching** is optional; the object-level
-  `cache-control` above is the main lever and needs no extra infra.
+  `cache-control` above is the main lever and needs no extra infra. **Moot as written** — reads
+  left Supabase instead. The custom-domain advice transfers: Tigris serves anonymous reads from
+  `https://<bucket>.t3.tigrisfiles.io` and recommends your own domain for production.
 - Keep `profile-form`/`/api/upload` compressing to 512px WebP — that is what keeps
-  new avatar egress near zero.
+  new avatar egress near zero. **Still the rule, and unchanged:** `/api/upload` deliberately
+  still writes to Supabase, because upload is ingress and is not metered.
+
+### Offloaded to Tigris (2026-10-12)
+
+Cached egress is metered on **delivered** bytes, so the remaining 56.83 MB of PDFs and the
+0.85 MB of display WebPs could not be reduced further from inside Supabase. Public *media
+reads* now point at a Tigris bucket (S3-compatible, no egress charge) behind
+`NEXT_PUBLIC_MEDIA_BASE_URL`, with the object keys mirroring the bucket layout so no data
+module moved. Postgres, better-auth and the upload write path are untouched — see
+[[decisions-log|ADR-0041]] for the reasoning and [[changelog]] for the measurements:
+49 objects / 57.98 MB copied, 49/49 public URLs verified, and `/` emitting 12 Tigris media
+URLs against **0** `supabase.co/storage` ones.
+
+Two things this audit could not close from the code side:
+
+- **Production is not cut over.** The variable is read at **build** time into prerendered
+  HTML, so it must be set in Vercel's environment and redeployed; until then the deployed site
+  still bills Supabase. The `pdfs` bucket stays as an unreferenced fallback, and deleting it
+  after the cutover is the user's call.
+- **A public-read bucket needs a verified payment method on Tigris now**
+  (`PaymentVerificationRequired`). This account predates that rule, so private buckets create
+  fine; this is a billing action, not a code one.
 
 ## Related
 

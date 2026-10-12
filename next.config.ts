@@ -12,6 +12,25 @@ const immutableAsset = {
   value: "public, max-age=31536000, immutable",
 };
 
+/**
+ * `next/image` refuses any hostname that is not listed in `remotePatterns`, so the
+ * offloaded media host has to be allow-listed as soon as `src/lib/media.ts` starts
+ * minting URLs against it. Deriving the entry from the same env var the URL builders
+ * read means the optimizer and the rendered URLs can never disagree about where
+ * content images live.
+ */
+function externalMediaPatterns(host: string | undefined) {
+  if (!host) return [];
+  const url = new URL(host);
+  return [
+    {
+      protocol: url.protocol.replace(/:$/, "") as "http" | "https",
+      hostname: url.hostname,
+      pathname: "/**",
+    },
+  ];
+}
+
 const nextConfig: NextConfig = {
   async rewrites() {
     return [];
@@ -55,6 +74,7 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "images.unsplash.com",
       },
+      ...externalMediaPatterns(process.env.NEXT_PUBLIC_MEDIA_BASE_URL),
     ],
   },
 };
