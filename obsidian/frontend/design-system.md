@@ -186,8 +186,30 @@ If you are reaching past this list, you want `<Hover>` — see
 
 ## Typography
 
-Font: **Onest** (`next/font/google`), bound to `--font-onest` → `--font-sans`.
-Loaded in `src/app/layout.tsx` and exposed on `<body>` as `--font-onest`.
+Six faces, all loaded in `src/app/layout.tsx` and bound in `globals.css`. Each
+reaches the JSX as a `font-*` utility, never as a raw family name:
+
+| Face | Variable | Utility | Where it actually paints |
+|------|----------|---------|--------------------------|
+| **DM Sans** | `--font-dm-sans` | `font-space-body`, and `--font-sans` | Body copy everywhere — the site's default face |
+| **Unbounded** | `--font-unbounded` | `font-voyage` | Public headings |
+| **Cormorant Garamond** | `--font-cormorant` | `font-space-display` | Admin figures, `/stemfestreg`, `/volunteer` |
+| **Rubik** | `--font-rubik` | `font-body` | CMS only |
+| **Fredoka** (local woff2) | `--font-fredoka` | `font-display` | CMS only |
+| **Geist Mono** (local woff) | `--font-geist-mono` | `font-mono` | Admin panel (`[data-admin]` recomposes it; the variable is on `<body>`, so `:root` cannot see it) |
+
+**Only DM Sans and Unbounded are preloaded.** The other four carry
+`preload: false`: a public pageview used to request all seven font files and
+render two of them, and each unused file is a CDN request plus its bytes on
+every visit. `next/font` still emits their `@font-face` rules, so the browser
+fetches one on the first page that paints with it. Adding a seventh face — or
+putting a `preload: false` face above the fold on a public route — should be a
+deliberate choice, not a side effect of editing the layout.
+
+`--font-sans` resolves to DM Sans. It used to be declared as
+`--font-sans: var(--font-sans)`, a self-cycle that made every `font-sans` and
+`var(--font-sans)` consumer — including the `@media print` sheet — fall through
+to the browser's default serif.
 
 ## Styling rules
 

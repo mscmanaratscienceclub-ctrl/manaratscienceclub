@@ -34,7 +34,7 @@ report() {
 }
 
 SRC() { grep -rEn --include='*.tsx' --include='*.ts' "$1" "${SCOPE[@]}" 2>/dev/null \
-        | grep -v 'sentry-example-page' | grep -v 'lib/email/templates/'; }
+        | grep -v 'lib/email/templates/'; }
 CSS() { grep -rEn --include='*.css' "$1" "${SCOPE[@]}" 2>/dev/null; }
 
 echo "── Motion (hard rule #1) ─────────────────────────────────────"

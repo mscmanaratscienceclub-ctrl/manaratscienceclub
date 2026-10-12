@@ -175,7 +175,7 @@ function withClientTimeout<T>(label: string, work: Promise<T>): Promise<T> {
  * rows and their totals come from the same snapshot instead of two separate
  * round trips that a concurrent insert can fall between.
  *
- * @param label Short name used in the timeout error and Sentry reports.
+ * @param label Short name used in the timeout error and its logs.
  * @param read Receives the transaction handle; issue reads **sequentially**
  *   (`await` each one). Pipelining several statements onto one pooled
  *   connection is what wedges Supavisor in the first place.

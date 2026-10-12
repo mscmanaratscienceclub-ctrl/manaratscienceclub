@@ -4,7 +4,6 @@ import { z } from "zod";
 import { withDbTimeout } from "@/db/query";
 import { stemfestPaymentSms, stemfestRegistrations } from "@/db/schema";
 import { parsePaymentSms } from "@/lib/sms/parser";
-import { captureException, captureMessage } from "@/lib/sentry-helpers";
 import { eq, sql } from "drizzle-orm";
 
 /**
@@ -41,7 +40,6 @@ function reportMissingSecret(): void {
   console.error(
     `\n${"=".repeat(70)}\n  [SMS WEBHOOK] ${warning}\n${"=".repeat(70)}\n`,
   );
-  captureMessage(`[SMS webhook] ${warning}`, "error");
 }
 
 /**
@@ -286,9 +284,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    // Answer with a retryable status instead of a bare 500, and report it — a
+    // Answer with a retryable status instead of a bare 500, and log it — a
     // failed ingest is the difference between a payment being verifiable or not.
-    captureException(error, { webhook: "sms", clientMessageId, sender });
+    console.error(`[SMS webhook] ingest failed ${clientMessageId} ${sender}`, error);
     return NextResponse.json(
       { error: "SMS log temporarily unavailable" },
       { status: 503 },

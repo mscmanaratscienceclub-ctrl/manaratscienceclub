@@ -16,22 +16,32 @@ import { Analytics } from "@vercel/analytics/next";
  * latin-subset variable woff2 (wght 300-700) Google itself serves for the
  * wght-only query; `--font-fredoka` keeps its name, so globals.css and every
  * `font-display` consumer are untouched.
+ *
+ * `preload: false` on Fredoka, Rubik, Cormorant and Geist Mono: those four are
+ * the faces a public page never paints with. Every pageview preloaded all seven
+ * families and rendered two of them, so the other five were CDN requests and
+ * bytes paid for nothing. `next/font` still emits their `@font-face` rules — the
+ * browser fetches each one on the first page that actually uses it (the CMS for
+ * Fredoka and Rubik, the registration forms and admin panel for the rest).
  */
 const fredoka = localFont({
   src: "./fonts/Fredoka[wght].woff2",
   variable: "--font-fredoka",
   weight: "300 700",
   display: "swap",
+  preload: false,
 });
 const rubik = Rubik({
   subsets: ["latin"],
   variable: "--font-rubik",
   weight: ["400", "500", "600", "700", "800", "900"],
+  preload: false,
 });
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   variable: "--font-cormorant",
   weight: ["400", "500", "600", "700"],
+  preload: false,
 });
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -44,15 +54,11 @@ const unbounded = Unbounded({
   weight: ["400", "500", "600", "700"],
 });
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
 const geistMono = localFont({
   src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
   weight: "100 900",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -113,7 +119,7 @@ export default function RootLayout({
       )}
     >
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistMono.variable} antialiased`}
       >
         {/* Pre-paint motion gate: tags <html class="motion-ok"> before the
             hero paints, ONLY when a JS runtime exists and the user allows

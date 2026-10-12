@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers } from "next/headers";
 import { supabase, AVATARS_BUCKET, storagePublicUrl } from "@/lib/supabase";
-import { captureException } from "@/lib/sentry-helpers";
 import { trackEvent } from "@/lib/analytics";
 
 export async function POST(request: NextRequest) {
@@ -56,7 +55,7 @@ export async function POST(request: NextRequest) {
     });
 
   if (uploadError) {
-    captureException(uploadError, { route: "upload", step: "supabase_upload" });
+    console.error("[upload: supabase_upload]", uploadError);
     trackEvent("file_upload_failed", { reason: "supabase_upload_failed" });
     // Don't leak Supabase/PostgreSQL error details to the client to prevent info leakage
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

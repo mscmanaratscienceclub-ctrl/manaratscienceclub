@@ -23,7 +23,7 @@ panel, form registrations, and a complete auth system.
 | **Forms** | react-hook-form + Zod v4 + @hookform/resolvers |
 | **Rich text** | TipTap (StarterKit, Link, Placeholder, Underline) for the CMS editor |
 | **Motion** | GSAP + ScrollTrigger (scroll/reveal), `motion/react` (micro-interactions), three.js (home blackhole shader) |
-| **Monitoring** | Sentry (`@sentry/nextjs`), Vercel Analytics + Speed Insights |
+| **Monitoring** | Vercel Analytics + Speed Insights; server-side errors go to Vercel function logs |
 | **Toasts** | sonner |
 
 ---
@@ -55,8 +55,8 @@ Three sibling groups, each with its own layout and visual language:
    `/admin-preview`). It checks for a session *cookie*: on an auth route it
    redirects an already-signed-in user away, and on a private route it redirects a
    signed-out user to `/signin`. It never checks roles. Everything else — the whole
-   public site, static assets, `/api/*` and Sentry's `/monitoring` tunnel — is
-   excluded from the matcher so no edge function runs for it.
+   public site, static assets and `/api/*` — is excluded from the matcher so no
+   edge function runs for it.
 2. **Layouts** (`(cms)/layout.tsx`, `(admin)/layout.tsx`) re-validate the
    session server-side and enforce role requirements, redirecting if needed.
 3. **Server actions** (`src/lib/actions/*`) repeat the check on every mutation
@@ -135,8 +135,6 @@ animation honours `prefers-reduced-motion` via `useReducedMotion()`
 └── src/
     ├── proxy.ts               # Next 16 middleware: cookie-based route gating
     ├── routes.ts              # publicRoutes, authRoutes, redirect constants
-    ├── instrumentation.ts     # Sentry server init
-    ├── instrumentation-client.ts  # Sentry client init
     ├── types/                 # Shared TS types
     ├── app/
     │   ├── layout.tsx         # Root layout — fonts, metadata, Providers
@@ -203,7 +201,6 @@ animation honours `prefers-reduced-motion` via `useReducedMotion()`
     │   ├── hooks/use-reduced-motion.ts
     │   ├── supabase.ts        # service-role Supabase client singleton
     │   ├── analytics.ts       # event tracking wrapper
-    │   ├── sentry-helpers.ts  # safe Sentry user/context helpers
     │   ├── tag-styles.ts      # blog tag colour mapping
     │   └── utils.ts           # cn() and misc helpers
     └── providers/             # Client providers (Toaster, analytics, toploader)
@@ -305,7 +302,6 @@ Fill in `.env.local`:
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes* | Supabase project URL (uploads + ambassador form) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes* | Server-only service role key — **never** `NEXT_PUBLIC_` |
 | `NEXT_PUBLIC_GOOGLE_FORM_URL` | No | Destination of `/join` |
-| `NEXT_PUBLIC_SENTRY_DSN` | No | Sentry error tracking |
 | `SMS_FORWARDER_SECRET` | No* | Shared secret for the Android SMS-forwarder app that posts bKash payment SMS to `/api/webhooks/sms` |
 
 Then push the schema and start developing:

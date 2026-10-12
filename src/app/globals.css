@@ -5,7 +5,7 @@
 @plugin "tailwindcss-animate";
 
 @theme {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-dm-sans);
   --font-mono: var(--font-geist-mono);
 
   /* The admin panel's micro step: overlines, table column heads, chart ticks.
@@ -289,10 +289,6 @@
     }
   }
 
-  --font-sans: var(--font-sans);
-
-  --font-heading: var(--font-heading);
-
   --font-display: var(--font-fredoka);
 
   --font-body: var(--font-rubik);
@@ -384,17 +380,18 @@
      at the panel's 16px sizes: a slightly heavier stroke is set here once
      instead of at four dozen call sites. */
   [data-admin] {
-    /* No `var(--font-sans)` fallback in this stack: `--font-sans` is declared on
-       `:root` as `var(--font-sans)`, a cycle that makes any declaration
-       referencing it invalid at computed-value time — and an invalid
-       `font-family` inherits, so the rule would silently do nothing. */
+    /* Named directly rather than through `var(--font-sans)`: the panel wants
+       `system-ui` behind DM Sans as a real fallback for the glyphs DM Sans does
+       not carry, and `--font-sans` resolves to a face with no fallback of its
+       own. */
     font-family: var(--font-dm-sans), system-ui, sans-serif;
 
     /* Geist Mono's own variable is set on `<body>` (`layout.tsx`), while
        `--font-mono` is declared on `:root` as `var(--font-geist-mono)` — which
-       resolves to nothing up there, so `.font-mono` everywhere falls back to the
-       browser's default serif. Recomposed inside the panel, where both halves are
-       in scope. The public site's own `font-mono` usage is left untouched. */
+       resolves to nothing up there, so `.font-mono` outside the panel inherits
+       whatever face surrounds it instead of getting a monospace. Recomposed here,
+       where both halves are in scope. The public site's own `font-mono` usage is
+       left untouched. */
     --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 
     /* The panel's type ladder. Tailwind's defaults start body text at 14px and

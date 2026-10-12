@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { signOut } from "@/lib/auth/client";
 import { resetAnalytics } from "@/lib/analytics";
-import { clearSentryUser } from "@/lib/sentry-helpers";
 
 export default function SignOutButton() {
   const [isPending, setIsPending] = useState(false);
@@ -18,7 +17,6 @@ export default function SignOutButton() {
         fetchOptions: {
           onSuccess: () => {
             resetAnalytics();
-            clearSentryUser();
             router.push("/");
             router.refresh();
           },

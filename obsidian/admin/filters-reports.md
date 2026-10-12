@@ -444,9 +444,9 @@ a sidebar entry in `src/components/admin/sidebar.tsx`.
 
 **A page that aggregates several sources** — read them with `Promise.allSettled`
 and resolve each through `unwrap` from `src/lib/admin/source-status.ts`. One
-failing source degrades to `UNAVAILABLE` (`—`) and files itself in Sentry; it
-must never blank the page or render as a zero, because a missing figure and a
-real zero must not look the same to an admin.
+failing source degrades to `UNAVAILABLE` (`—`) and names itself in the function
+logs; it must never blank the page or render as a zero, because a missing figure
+and a real zero must not look the same to an admin.
 
 ## Related
 

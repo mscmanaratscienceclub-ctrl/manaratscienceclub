@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
-import * as Sentry from "@sentry/nextjs";
 import { adminAccentStyle } from "@/lib/admin/accents";
 import { Button } from "@/components/ui/button";
 
@@ -19,7 +18,7 @@ export default function AdminError({
   reset: () => void;
 }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    console.error(error);
   }, [error]);
 
   return (

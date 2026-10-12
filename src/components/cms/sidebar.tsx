@@ -6,7 +6,6 @@ import { LayoutDashboard, FileText, Users, ExternalLink, LogOut, PenSquare, Tag,
 import Image from "next/image";
 import { signOut } from "@/lib/auth/client";
 import { trackEvent, resetAnalytics } from "@/lib/analytics";
-import { clearSentryUser } from "@/lib/sentry-helpers";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps { user: { name: string; email: string; role: string } }
@@ -32,7 +31,6 @@ export default function CmsSidebar({ user }: SidebarProps) {
         onSuccess: () => {
           trackEvent("user_signed_out");
           resetAnalytics();
-          clearSentryUser();
           router.push("/signin");
         },
       },

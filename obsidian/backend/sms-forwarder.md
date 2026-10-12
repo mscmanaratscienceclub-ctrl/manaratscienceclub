@@ -193,11 +193,12 @@ Cheapest test first, run **from the phone**:
 > outright when production has no secret is a behaviour change to a live
 > integration and is deliberately left as a follow-up.
 >
-> The route now warns once per process — a boxed `console.warn` plus one Sentry
-> `warning` — when the variable is absent, because failing open *silently* is what
-> made this so hard to notice: the ingest looks perfectly healthy either way. It
-> still does not reject. A `401` makes the forwarder park a real payment SMS as
-> `FAILED` (ADR-0028), so tightening the check is data-losing, not merely safer.
+> The route now warns once per process — a boxed `console.error`, which lands in
+> the Vercel function logs — when the variable is absent, because failing open
+> *silently* is what made this so hard to notice: the ingest looks perfectly
+> healthy either way. It still does not reject. A `401` makes the forwarder park a
+> real payment SMS as `FAILED` (ADR-0028), so tightening the check is
+> data-losing, not merely safer.
 
 ## What the forwarder app will and will not do
 

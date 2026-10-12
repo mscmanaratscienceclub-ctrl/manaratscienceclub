@@ -1,6 +1,6 @@
 ---
 tags: [meta, decision]
-updated: 2026-10-06
+updated: 2026-10-12
 ---
 
 # Decisions Log (ADRs)
@@ -16,6 +16,95 @@ fine; write a new ADR that says so rather than editing the old one.
 Template: [[templates/adr-note]].
 
 ---
+
+## ADR-0039 — Error tracking is Vercel's function logs; Sentry is out
+
+**Status:** Accepted · 2026-10-12
+
+**Context.** Sentry's Next.js SDK was configured with `tunnelRoute: "/monitoring"`,
+which routes every browser envelope — pageload transaction, navigation, error, and
+session-replay segment — through the site's own domain. On Vercel that makes each
+one a metered CDN request *and* a rewrite through a serverless function, and the
+config's own comment warned it "can increase your server load as well as your
+hosting bill". Three requests landed on a clean homepage load, and
+`replaysOnErrorSampleRate: 1.0` was the tail: once a replay starts it streams a
+segment roughly every five seconds, so one visitor who hit a client error and
+stayed put could produce hundreds. The project also carried two duplicate
+`instrumentation-client.ts` files (root and `src/`) with different sample rates,
+one of them holding a hardcoded DSN.
+
+**Decision.** `@sentry/nextjs` is removed outright — the SDK, the four config and
+instrumentation files at both roots, `src/lib/sentry-helpers.ts`, `withSentryConfig`
+in `next.config.ts` (and with it `tunnelRoute`, `automaticVercelMonitors` and the
+Sentry `treeshake` block), and the `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_*` variables.
+Error visibility now comes from:
+
+| Signal | Where it goes |
+|--------|---------------|
+| `console.error(error)` in the three `error.tsx` boundaries | Vercel function logs |
+| `console.error("[admin source failed: <name>]", reason)` in `unwrap` (`src/lib/admin/source-status.ts`) | Vercel function logs, named per source |
+| `console.error` in `/api/upload` and `/api/webhooks/sms` | Vercel function logs |
+| `trackEvent(...)` (`src/lib/analytics.ts`) | Vercel Analytics — `file_upload_failed` still fires |
+
+**Consequences.**
+
+- **There is no alerting.** Nobody is paged when `/api/webhooks/sms` starts
+  returning 503; the failure is visible only to someone reading the logs. For a
+  club site whose admin opens the dashboard daily, that was judged acceptable
+  against a per-pageview cost paid by every visitor. If this ever needs to change,
+  the fix is a log alert or a webhook on the SMS route, not a return to the tunnel.
+- **`source-status.ts` keeps its contract.** A degraded admin source still names
+  itself in the log, so `unwrap` is still the answer to "which of the six tables on
+  this page failed?" (ADR-0038's sibling behaviour). Only the destination changed.
+- **`src/proxy.ts`'s matcher note is now simpler.** `/monitoring` was one of the
+  paths deliberately excluded from the matcher; that exclusion stays correct but no
+  longer has anything to exclude (ADR-0030).
+- **The Sentry project and its `SENTRY_AUTH_TOKEN` are still live** in the Sentry
+  account and in the local `.env`. Delete them once this deploy is confirmed.
+
+## ADR-0040 — A page preloads only the faces it paints
+
+**Status:** Accepted · 2026-10-12
+
+**Context.** `src/app/layout.tsx` loaded seven font families and every page emitted
+`<link rel=preload>` for all seven. Measured against production, the four main
+public pages render text in exactly **two** of them — DM Sans and Unbounded. Fredoka
+and Rubik are CMS-only, Geist Mono paints only inside `[data-admin]`, and
+**Geist Sans rendered no glyphs anywhere**: `--font-sans` was declared as
+`var(--font-sans)`, a self-cycle that made it invalid at computed-value time, so
+Geist Sans was downloaded on every pageview to style nothing and the document's
+actual default face was the browser's serif. That is seven CDN requests and roughly
+200 KB per cold pageview, on a meter where Vercel bills every request the CDN
+processes — static assets and HTML included, not just function calls.
+
+**Decision.**
+
+- **Geist Sans is deleted** — the `localFont` call, `GeistVF.woff`, and the
+  `--font-sans: var(--font-geist-sans)` binding. `--font-sans` now resolves to
+  **DM Sans**, so `font-sans` and the `@media print` sheet that referenced it get a
+  real face instead of falling through to the UA default.
+- **`preload: false` on Fredoka, Rubik, Cormorant Garamond and Geist Mono.** The
+  `@font-face` rules are still emitted; the browser fetches each file on the first
+  page that actually paints with it.
+- **DM Sans and Unbounded stay preloaded** — they are above the fold on every
+  public route.
+- The dead `--font-heading: var(--font-heading)` declaration went with it.
+
+**Consequences.**
+
+- Public font preloads drop from **seven to two**; the homepage went from
+  seven font requests and ~200 KB to two. Chrome's "preloaded but not used" warning
+  for Fredoka is gone.
+- **A face must not be added to the layout without deciding its preload.** The
+  default is now `preload: false`, and flipping it on is a claim that the face
+  paints above the fold. The table lives in [[design-system]].
+- **CMS and admin typography are unchanged in every way except timing.** Fredoka and
+  Rubik still render in `/cms`; they are fetched when a staff member opens it rather
+  than by every visitor who never will.
+- **Printing an admin report now uses DM Sans**, because `@media print` says
+  `font-family: var(--font-sans)` and that variable finally resolves. Previously it
+  resolved to nothing and the browser substituted its own sans. This is the one
+  visible effect of the change, and it makes paper match screen.
 
 ## ADR-0036 — The panel wears one accent per section, and gradients are mixed from live tokens
 

@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { signOut } from "@/lib/auth/client";
 import { trackEvent, resetAnalytics } from "@/lib/analytics";
-import { clearSentryUser } from "@/lib/sentry-helpers";
 import { adminAccentStyle, SECTION_ACCENT } from "@/lib/admin/accents";
 import { ADMIN_ACTIONS, ADMIN_NAV_GROUPS, type AdminNavEntry } from "@/lib/admin/nav";
 import { cn } from "@/lib/utils";
@@ -110,7 +109,6 @@ export default function AdminSidebar({
         onSuccess: () => {
           trackEvent("user_signed_out");
           resetAnalytics();
-          clearSentryUser();
           router.push("/signin");
         },
       },

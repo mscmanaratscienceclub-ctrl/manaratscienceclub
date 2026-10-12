@@ -1,12 +1,52 @@
 ---
 tags: [meta, changelog]
-updated: 2026-10-10
+updated: 2026-10-12
 ---
 
 # Changelog
 
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
+
+## 2026-10-12 — Sentry removed; public pages preload two fonts instead of seven
+
+Prompted by the Vercel **CDN Requests** chart. Vercel bills every request the CDN
+processes — static assets, images and HTML included, not only function calls — so
+the per-pageview fan-out is the meter, and two thirds of it was overhead nobody
+could see. A cold homepage was measured at roughly 45–50 same-origin requests. See
+ADR-0039 and ADR-0040.
+
+- **`@sentry/nextjs` is gone.** Deleted the SDK dependency (−96 packages), the four
+  config/instrumentation files at both roots, `src/lib/sentry-helpers.ts`, and
+  `withSentryConfig` in `next.config.ts` — which took `tunnelRoute: "/monitoring"`,
+  `automaticVercelMonitors` and the Sentry `treeshake` block with it. The tunnel was
+  costing **3 CDN requests per pageview** by itself, because every browser envelope
+  was rewritten through the site's own domain, and `replaysOnErrorSampleRate: 1.0`
+  could turn one client error into hundreds of segment uploads.
+- **Error visibility now goes to the Vercel function logs.** `console.error` in the
+  three `error.tsx` boundaries, in `/api/upload`, and in the `/api/webhooks/sms`
+  ingest path; `unwrap` in `src/lib/admin/source-status.ts` still names the failing
+  source, so a degraded admin figure is traceable. `/api/upload` also keeps its
+  `trackEvent("file_upload_failed")`, which lands in Vercel Analytics. **There is no
+  alerting now** — this is the trade, taken deliberately.
+- **Geist Sans deleted.** `--font-sans` was declared as `var(--font-sans)`, a
+  self-cycle that made it invalid, so `GeistVF.woff` was downloaded on every
+  pageview and styled nothing — while the document's real default face was the
+  browser's serif. `--font-sans` now binds to **DM Sans**, which also gives the
+  `@media print` sheet a face it can actually resolve.
+- **`preload: false` on Fredoka, Rubik, Cormorant Garamond and Geist Mono.** The
+  four main public pages were measured rendering text in exactly two of the seven
+  loaded families. The `@font-face` rules stay; the file is fetched by the page that
+  paints with it (the CMS for Fredoka and Rubik, the registration forms and the
+  admin panel for Cormorant and Geist Mono). Homepage font preloads: **7 → 2**.
+- Dead `--font-heading: var(--font-heading)` removed, and
+  `.claude/scripts/verify.sh` no longer filters a Sentry example route that has not
+  existed since the starter was cut.
+- **One visible effect, intended:** printed admin reports now set their body in DM
+  Sans instead of whatever sans the admin's browser substitutes.
+- **Not done:** the Sentry project still exists in the account and
+  `SENTRY_AUTH_TOKEN` is still in the local `.env` and in Vercel's environment.
+  Delete both once this deploy is confirmed good.
 
 ## 2026-10-10 — Project Display syllabus row linked
 
