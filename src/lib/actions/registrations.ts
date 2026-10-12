@@ -41,7 +41,6 @@ import {
   type AdminSourceId,
 } from "@/lib/admin/filters";
 import {
-  BULK_EMAIL_BATCH_SIZE,
   BULK_EMAIL_DELAY_MS,
   BULK_EMAIL_MAX_RECIPIENTS,
   bulkEmailSendSchema,
@@ -2063,12 +2062,19 @@ export async function setSmsLogStatus(
 // page the admin uses, and can never drift from what the table shows.
 
 /**
- * Who a send would reach: the filtered registrations that carry an address.
+ * Who a send would reach: the filtered registrations it would actually write to.
  *
- * A confirmation is one per registration, so nothing is deduplicated — two
- * siblings who registered separately have two receipts. A custom message *is*
- * deduplicated by address, because a family that receives the same notice twice
- * has been told the club is not paying attention.
+ * Both exclusions are in SQL rather than in the send loop, because the ceiling on
+ * a blast counts *recipients*. Carrying the already-receipted rows along and
+ * discounting them later means a club that has mailed 400 participants finds every
+ * later send refused however few receipts are outstanding — the cap would be
+ * measuring the size of the event, not the size of the work. So a confirmation
+ * drops the rows holding a `paymentEmailSentAt` stamp, and a custom message keeps
+ * one row per address — the earliest, so a family sharing an inbox is counted once
+ * and cannot be reached twice by two different batches.
+ *
+ * `matched` is what the filters select and `sendable` what the send writes to; the
+ * gap between them is reported to the panel as left alone.
  */
 async function bulkEmailRecipients(
   state: AdminQueryState,
@@ -2082,44 +2088,61 @@ async function bulkEmailRecipients(
     sql`${t.email} is not null and btrim(${t.email}) <> ''`,
   );
 
+  // One row per recipient, oldest registration first, and never more than the
+  // ceiling plus one — that extra row is what says "there are more" without a
+  // second pass over the table.
+  const rowsSql = sql`
+    with candidates as (
+      select
+        ${t.id} as id,
+        ${t.name} as name,
+        btrim(${t.email}) as email,
+        ${t.createdAt} as created_at,
+        ${
+          kind === "confirmation"
+            ? sql`${t.paymentEmailSentAt} is null`
+            : sql`row_number() over (
+                partition by lower(btrim(${t.email}))
+                order by ${t.createdAt} asc, ${t.id} asc
+              ) = 1`
+        } as keep
+      from ${t}
+      where ${where}
+    )
+    select id, name, email
+    from candidates
+    where keep
+    order by created_at asc, id asc
+    limit ${BULK_EMAIL_MAX_RECIPIENTS + 1}
+  `;
+
+  // Counted over the whole filtered set, so the refusal does not depend on how
+  // many rows the window above happened to carry.
+  const tallySql = sql`
+    select
+      count(*)::int as matched,
+      ${
+        kind === "confirmation"
+          ? sql`count(*) filter (where ${t.paymentEmailSentAt} is null)::int`
+          : sql`count(distinct lower(btrim(${t.email})))::int`
+      } as sendable
+    from ${t}
+    where ${where}
+  `;
+
   return withDbTimeout("bulkEmailRecipients", async (tx) => {
-    const rows = await tx
-      .select({
-        id: t.id,
-        name: t.name,
-        email: t.email,
-        emailSentAt: t.paymentEmailSentAt,
-      })
-      .from(t)
-      .where(where)
-      .orderBy(asc(t.createdAt), asc(t.id))
-      // One past the ceiling: that extra row is what says "there are more" without
-      // a second count query.
-      .limit(BULK_EMAIL_MAX_RECIPIENTS + 1);
+    const rows = asRows<BulkEmailRecipient>(await tx.execute(rowsSql));
+    const tally = asRows<{ matched: number; sendable: number }>(
+      await tx.execute(tallySql),
+    );
 
-    const truncated = rows.length > BULK_EMAIL_MAX_RECIPIENTS;
-    const seen = new Set<string>();
-    const recipients: BulkEmailRecipient[] = [];
+    const sendable = tally[0]?.sendable ?? 0;
 
-    for (const row of rows.slice(0, BULK_EMAIL_MAX_RECIPIENTS)) {
-      const email = row.email?.trim() ?? "";
-      if (!email) continue;
-
-      if (kind === "custom") {
-        const key = email.toLowerCase();
-        if (seen.has(key)) continue;
-        seen.add(key);
-      }
-
-      recipients.push({
-        id: row.id,
-        name: row.name,
-        email,
-        alreadySent: row.emailSentAt !== null,
-      });
-    }
-
-    return { recipients, truncated };
+    return {
+      recipients: rows,
+      truncated: sendable > BULK_EMAIL_MAX_RECIPIENTS,
+      leftAlone: Math.max(0, (tally[0]?.matched ?? 0) - sendable),
+    };
   });
 }
 
@@ -2204,10 +2227,16 @@ async function deliverBulkRecipient(
 /**
  * Sends one slice of a bulk blast.
  *
- * The audience is rebuilt here rather than trusted from the browser: a client can
- * name a filter state, never an address, so a forged call can only ever reach a
- * registration an admin could already see. Slicing on the server also means the
- * offsets are stable regardless of what the composer believes.
+ * The audience is rebuilt here and the page's ids resolved against it: a client can
+ * name a filter state and row ids, never an address, so a forged call can only ever
+ * reach a registration an admin could already see. Rebuilding also re-checks the
+ * ceiling on the server's own numbers, so a blast cannot be walked past it by
+ * naming more rows than the panel offered.
+ *
+ * Ids rather than an offset, because the sendable audience moves while a blast runs:
+ * every accepted receipt stamps its row and takes it out of the list a position was
+ * counted against. A stale id — receipted from the row's own button since the page
+ * rendered, or marked back to pending — is counted as skipped, not mailed again.
  *
  * The loop is deliberately sequential. Resend rate-limits by request, so parallel
  * sends would be throttled and reported as failures; one at a time with a pause is
@@ -2221,7 +2250,7 @@ export async function sendBulkEmailBatch(
     const state = parseInput(bulkEmailStateSchema, input.state);
     const send = parseInput(bulkEmailSendSchema, {
       kind: input.kind,
-      offset: input.offset,
+      ids: input.ids,
       subject: input.subject,
       body: input.body,
       allowHtml: input.allowHtml,
@@ -2231,47 +2260,27 @@ export async function sendBulkEmailBatch(
 
     if (audience.truncated) {
       throw new StatusRefusal(
-        `More than ${BULK_EMAIL_MAX_RECIPIENTS} registrations match these filters. Narrow them and send again — nothing has been mailed yet.`,
+        `More than ${BULK_EMAIL_MAX_RECIPIENTS} registrations in this audience are waiting to be written to. Narrow the filters and send again — nothing has been mailed yet.`,
       );
     }
 
-    const slice = audience.recipients.slice(
-      send.offset,
-      send.offset + BULK_EMAIL_BATCH_SIZE,
+    const eligible = new Map(
+      audience.recipients.map((recipient) => [recipient.id, recipient]),
     );
-
-    // Past the end, or the audience shrank while the blast was running.
-    if (slice.length === 0) {
-      return {
-        ok: true,
-        total: audience.recipients.length,
-        sent: 0,
-        failed: 0,
-        skipped: 0,
-        failures: [],
-        nextOffset: null,
-      };
-    }
+    const batch: BulkEmailRecipient[] = [];
 
     let sent = 0;
     let failed = 0;
     let skipped = 0;
     const failures: BulkEmailFailure[] = [];
 
-    for (const [index, recipient] of slice.entries()) {
-      // A receipt has already been accepted for this row, so nothing goes out.
-      //
-      // The check is here, in the loop, rather than in the audience query on
-      // purpose. The audience is rebuilt on every batch and sliced by offset, so
-      // filtering already-stamped rows out of the query would shrink the list
-      // under the cursor as the blast stamps its way through it — batch two would
-      // start ten rows further along and silently skip ten people. The stamp
-      // rules the *recipient* out, never the list.
-      if (send.kind === "confirmation" && recipient.alreadySent) {
-        skipped += 1;
-        continue;
-      }
+    for (const id of send.ids) {
+      const recipient = eligible.get(id);
+      if (recipient) batch.push(recipient);
+      else skipped += 1;
+    }
 
+    for (const [index, recipient] of batch.entries()) {
       const result = await deliverBulkRecipient(
         send.kind,
         recipient,
@@ -2293,31 +2302,19 @@ export async function sendBulkEmailBatch(
 
       // Not after the last one: a batch hands back to the composer the moment it
       // is finished, so the progress bar moves as soon as there is news.
-      if (index < slice.length - 1) await bulkEmailPause(BULK_EMAIL_DELAY_MS);
+      if (index < batch.length - 1) await bulkEmailPause(BULK_EMAIL_DELAY_MS);
     }
 
-    const nextOffset = send.offset + slice.length;
-
-    return {
-      ok: true,
-      total: audience.recipients.length,
-      sent,
-      failed,
-      skipped,
-      failures,
-      nextOffset: nextOffset >= audience.recipients.length ? null : nextOffset,
-    };
+    return { ok: true, sent, failed, skipped, failures };
   } catch (error) {
     if (error instanceof StatusRefusal) {
       return {
         ok: false,
         message: error.message,
-        total: 0,
         sent: 0,
         failed: 0,
         skipped: 0,
         failures: [],
-        nextOffset: null,
       };
     }
     throw error;
@@ -2345,21 +2342,13 @@ export async function previewBulkEmail(
   const audience = await bulkEmailRecipients(state, kind);
   const first = audience.recipients[0];
 
-  // Who a confirmation would actually write to. A row that already carries an accepted
-  // receipt is left alone by the send (see `sendBulkEmailBatch`), so it must not
-  // appear in the preview's list of what will be sent.
-  const previewRecipients =
-    kind === "confirmation"
-      ? audience.recipients
-          .filter((recipient) => !recipient.alreadySent)
-          .map((recipient) => ({
-            name: recipient.name,
-            email: recipient.email,
-          }))
-      : audience.recipients.map((recipient) => ({
-          name: recipient.name,
-          email: recipient.email,
-        }));
+  // The audience is already the set a send writes to — a confirmation has left the
+  // receipted rows and a custom message the shared inboxes out of it — so the
+  // preview lists it unchanged.
+  const previewRecipients = audience.recipients.map((recipient) => ({
+    name: recipient.name,
+    email: recipient.email,
+  }));
 
   if (!first || audience.truncated) {
     return {

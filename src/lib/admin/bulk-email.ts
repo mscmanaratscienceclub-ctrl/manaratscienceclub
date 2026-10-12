@@ -9,7 +9,7 @@
  *   once.
  * - `confirmation` — the existing payment receipt (`sendPaymentVerifiedEmail`),
  *   built per registration from the row's own data, sent to every *verified*
- *   payment the filters match.
+ *   payment the filters match that does not already hold one.
  *
  * Everything here is plain data and pure schemas: the Server Actions in
  * `src/lib/actions/registrations.ts` are a `"use server"` module and may only
@@ -30,6 +30,12 @@ export type BulkEmailKind = "custom" | "confirmation";
  * past this the audience query stops and the panel refuses the send and asks the
  * admin to narrow the filters. Resend's rate limit and the club's own reputation
  * both want a blast to be a deliberate, watched act rather than a reflex.
+ *
+ * It counts **recipients the send would write to**, never rows the filters happen
+ * to match. The distinction is what the panel is for: a club whose verified
+ * registrations have passed this number still has receipts to send, and rows the
+ * blast leaves alone must not consume the ceiling and refuse the send on their
+ * account.
  */
 export const BULK_EMAIL_MAX_RECIPIENTS = 400;
 
@@ -38,9 +44,8 @@ export const BULK_EMAIL_MAX_RECIPIENTS = 400;
  *
  * The page sends in slices rather than one long request: a single call for a
  * 300-recipient blast would hold a serverless invocation open for minutes and
- * lose the lot when it timed out. Every batch also rebuilds the audience, so the
- * slice size is what a blast costs in round trips — 400 recipients at 10 per call
- * was 80 POSTs and 80 audience queries.
+ * lose the lot when it timed out. Each call carries the ids of one slice, so the
+ * slice size is also the largest id list the action will accept.
  *
  * The ceiling is the function's clock, not Resend's: the loop is sequential, so a
  * batch runs `size x (BULK_EMAIL_DELAY_MS + provider latency)` inside one
@@ -69,31 +74,44 @@ export const BULK_EMAIL_BODY_MAX = 5000;
  */
 export const BULK_EMAIL_NAME_TOKEN = "{{name}}";
 
-/** One participant a batch will write to. */
+/**
+ * One participant a batch will write to.
+ *
+ * Every recipient here is a row the send *is* going to touch: a confirmation's
+ * already-receipted registrations and a custom message's extra rows sharing an
+ * inbox are excluded by the query, not carried along with a flag for the send loop
+ * to discount. That is what lets the ceiling above count real work — and it is why
+ * a batch is addressed by id rather than by a position in a list that the blast
+ * itself keeps shrinking.
+ */
 export interface BulkEmailRecipient {
   id: string;
   name: string;
   /** Trimmed and non-empty — a row without an address is never a recipient. */
   email: string;
-  /**
-   * Whether a confirmation has already been accepted for this row.
-   *
-   * The confirmation blast **leaves these rows alone**. The stamp on the row is
-   * the record of who holds a receipt, so re-running a blast that stopped halfway
-   * cannot write to anyone twice. The per-row button on the Science Competition
-   * table is still there for the participant whose message bounced.
-   */
-  alreadySent: boolean;
 }
 
 /** The set of people one send would reach. */
 export interface BulkEmailAudience {
   recipients: BulkEmailRecipient[];
   /**
-   * More rows matched than `BULK_EMAIL_MAX_RECIPIENTS`. The send is refused until
+   * More recipients than `BULK_EMAIL_MAX_RECIPIENTS`. The send is refused until
    * the filters are narrowed, so a truncated list is never silently mailed.
    */
   truncated: boolean;
+  /**
+   * Rows the filters matched that this send will not write to, and why: a
+   * confirmation leaves behind the registrations already holding an accepted
+   * receipt, a custom message the extra rows that share an address with one
+   * already on the list.
+   *
+   * Reported rather than kept quiet, because "420 of your 479 verified
+   * registrations are already receipted" is the sentence that tells an admin the
+   * send is small on purpose and not broken. A receipt the panel leaves behind is
+   * still reachable: the per-row button on the Science Competition table re-sends
+   * to one named participant, which is what a bounce report calls for.
+   */
+  leftAlone: number;
 }
 
 /** A recipient the provider refused, named so an admin can follow it up. */
@@ -107,21 +125,18 @@ export interface BulkEmailFailure {
 /** What one batch call answers. */
 export interface BulkEmailBatchResult {
   ok: boolean;
-  /** Sentence for a refused batch — a stale audience or an over-wide one. */
+  /** Sentence for a refused batch — an audience narrowed since the page loaded. */
   message?: string;
-  /** Recipients across the whole audience: the progress bar's denominator. */
-  total: number;
   sent: number;
   failed: number;
   /**
-   * Confirmations deliberately not sent, because the row already carries an
-   * accepted receipt. Counted rather than silently dropped, so a blast that
-   * reaches fewer people than the audience says why.
+   * Ids the batch was given that the fresh audience no longer holds — a receipt
+   * that went out from the row's own button since the page rendered, a payment
+   * marked back to pending. Counted rather than silently dropped, so a blast that
+   * reaches fewer people than the list says why.
    */
   skipped: number;
   failures: BulkEmailFailure[];
-  /** Offset for the next call, or `null` once the audience is exhausted. */
-  nextOffset: number | null;
 }
 
 /** The audience a send is drawn from, as the panel parses it from the URL. */
@@ -143,7 +158,16 @@ export const bulkEmailStateSchema = z.object({
 export interface BulkEmailSendInput {
   state: AdminQueryState;
   kind: BulkEmailKind;
-  offset: number;
+  /**
+   * One slice of the audience the page showed, by row id.
+   *
+   * An id, never an address: the action resolves every one against an audience it
+   * rebuilds for itself, so a client can name a row it was already able to see and
+   * nothing more. Ids rather than an offset, because the sendable audience *moves*
+   * while a blast runs — every accepted receipt stamps its row and takes it out of
+   * the list — so a position in that list would point somewhere else by batch two.
+   */
+  ids: string[];
   /** Required for `custom`, ignored for `confirmation`. */
   subject?: string;
   body?: string;
@@ -154,7 +178,10 @@ export interface BulkEmailSendInput {
 export const bulkEmailSendSchema = z
   .object({
     kind: z.enum(["custom", "confirmation"]),
-    offset: z.number().int().min(0),
+    ids: z
+      .array(z.uuid("Unknown row"))
+      .min(1, "Nothing to send.")
+      .max(BULK_EMAIL_BATCH_SIZE),
     subject: z.string().trim().max(BULK_EMAIL_SUBJECT_MAX).optional(),
     body: z.string().trim().max(BULK_EMAIL_BODY_MAX).optional(),
     allowHtml: z.boolean().optional(),
@@ -208,10 +235,10 @@ export interface BulkEmailPreview {
     email: string;
   };
   /**
-   * Every address this blast will actually write to, so the preview shows exactly who
-   * the send would reach. For a confirmation this is the audience minus rows that
-   * already carry a receipt (they are left alone); for a custom message it is the
-   * deduplicated audience.
+   * Every address this blast will write to, so the preview shows exactly who the
+   * send would reach. This is the audience as the panel holds it: a confirmation
+   * already excludes the registrations carrying a receipt, and a custom message is
+   * already one message per address.
    */
   recipients: {
     name: string;

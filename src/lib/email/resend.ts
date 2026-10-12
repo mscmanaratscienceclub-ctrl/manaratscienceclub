@@ -37,9 +37,14 @@ interface SendOptions {
 
 /**
  * What a send attempt answers. `simulated` is not a failure: it means no real
- * message left the building — either this environment has no usable API key, or
- * Resend refused in development (a free testing key can only send to the account
- * owner). Callers say so rather than reporting a delivery that did not happen.
+ * message left the building because this environment has no usable API key, so the
+ * mail was only written to the log. Callers say so rather than reporting a delivery
+ * that did not happen.
+ *
+ * A refusal from Resend is a `success: false` with its reason, in every
+ * environment. It is never thrown: a caller that is mailing a list would otherwise
+ * lose the rest of the list to the one address the provider turned down, and the
+ * admin reading the result is the person who can act on the reason.
  */
 export interface SendEmailResult {
   success: boolean;
@@ -91,10 +96,7 @@ async function sendEmail({
           formatLink(url) +
           "=======================================================\n"
       );
-      if (process.env.NODE_ENV !== "production") {
-        return { success: false, error: error.message, simulated: true };
-      }
-      throw new Error(error.message);
+      return { success: false, error: error.message };
     }
 
     return { success: true, data: data ?? undefined } as SendEmailResult;
@@ -108,10 +110,7 @@ async function sendEmail({
         formatLink(url) +
         "=======================================================\n"
     );
-    if (process.env.NODE_ENV !== "production") {
-      return { success: false, error: message, simulated: true };
-    }
-    throw err;
+    return { success: false, error: message };
   }
 }
 

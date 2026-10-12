@@ -8,6 +8,55 @@ updated: 2026-10-12
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
 
+## 2026-10-12 — Bulk email counts the receipts still owed, not the registrations
+
+`/admin/emails` had stopped being usable: **Send confirmations** was greyed with
+"more than 400 verified registrations match these filters", while only 59 receipts
+were actually outstanding. `BULK_EMAIL_MAX_RECIPIENTS` counted *every row the filters
+matched*, including the 420 that already held a receipt and would be skipped — so the
+ceiling measured the size of the event, and the panel locked itself the week the club
+passed 400 verified payments. The custom-message half was locked the same way.
+Measured against the live table: 531 registrations, 479 verified with an address,
+420 of those already receipted.
+
+- **The audience is now who the send writes to.** A confirmation excludes rows
+  carrying `payment_email_sent_at` in the query; a custom message keeps the earliest
+  row per address. Both exclusions moved into SQL, and the cap and the refusal are
+  computed from a tally over the whole filtered set rather than from the length of a
+  401-row window.
+- **Custom dedup had to move into SQL** (`row_number() over (partition by
+  lower(btrim(email)))`) for the same reason the cap does: the old JavaScript dedup ran
+  inside that window, so the recipient list it produced was neither the audience the
+  cap was judging nor a stable set to page through.
+- **Batches carry row ids, not an offset.** `useBulkEmailSend` slices the audience the
+  page already rendered and posts `BULK_EMAIL_BATCH_SIZE` ids per call; the action
+  rebuilds its own audience and resolves the ids against it, so an address is still
+  never taken from the browser and the ceiling is still checked server-side. A
+  positional cursor could not have survived the change above — the sendable list
+  shrinks as it is mailed, so batch two would have started twenty rows past the people
+  still waiting. `nextOffset` and `total` left the batch result; `leftAlone` joined the
+  audience and `alreadySent` left the recipient.
+- **A refused send is reported, not thrown.** `sendEmail` re-raised every Resend
+  refusal in production, which in a sequential blast meant one turned-down address
+  ended the run and nobody past it got a receipt. It now returns
+  `{ success: false, error }` in every environment, which also retires the
+  dev-only-`simulated` divergence: `simulated` now means only "this environment has no
+  usable key". A batch that throws no longer discards the counts of the batches that
+  finished before it.
+- **Unchanged on purpose:** a registration that already holds a receipt is still never
+  re-mailed by the bulk panel — the row's own **Send confirmation** button remains the
+  way to reach one named participant.
+
+Verified: `tsc --noEmit` and `eslint` clean across the six files. The real
+`bulkEmailRecipients` was driven against the live pooler through a temporary probe
+export (since removed): no filters → **59 recipients, 420 left alone, not truncated**;
+Class 6 → 11 and 71; custom, no filters → 477 deduplicated addresses of 531 rows,
+truncated, which is the correct refusal. **No email was sent while doing this** — the
+local `.env` holds the production Resend key and database, so the send itself is
+unverified end-to-end; the first live use should watch the failure list. Resend's
+free-plan allowance is 100 emails a day, so the outstanding 59 fit in one sitting and
+a wider blast will not.
+
 ## 2026-10-12 — Sentry removed; public pages preload two fonts instead of seven
 
 Prompted by the Vercel **CDN Requests** chart. Vercel bills every request the CDN

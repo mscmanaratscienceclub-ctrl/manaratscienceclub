@@ -30,12 +30,14 @@ import EmailPreviewModal from "./preview-email";
 /** One line saying how many people this will reach, or why it cannot go out. */
 function AudienceNote({ audience }: { audience: BulkEmailAudience }) {
   const count = audience.recipients.length;
+  const shared = audience.leftAlone;
 
   if (audience.truncated) {
     return (
       <p className="mt-4 rounded-[6px] bg-admin-warn-bg px-3 py-2 font-space-body text-sm text-admin-warn-ink">
-        More than {BULK_EMAIL_MAX_RECIPIENTS} registrations match these filters.
-        Narrow them above — nothing will be sent until you do.
+        More than {BULK_EMAIL_MAX_RECIPIENTS} addresses in this audience are
+        waiting for a message. Narrow the filters above — nothing will be sent
+        until you do.
       </p>
     );
   }
@@ -52,8 +54,14 @@ function AudienceNote({ audience }: { audience: BulkEmailAudience }) {
   return (
     <p className="mt-4 font-space-body text-sm text-admin-muted">
       This will go to <span className="font-medium text-admin-ink">{count}</span>{" "}
-      {count === 1 ? "address" : "addresses"} — one message each, so siblings who
-      share an inbox are not written to twice.
+      {count === 1 ? "address" : "addresses"} — one message each
+      {shared > 0 && (
+        <>
+          , with {shared} other {shared === 1 ? "registration sharing" : "registrations sharing"} an
+          inbox written to once
+        </>
+      )}
+      .
     </p>
   );
 }
@@ -110,7 +118,7 @@ export default function CustomMessageSection({
       subject: subject.trim(),
       body: body.trim(),
       allowHtml,
-      expected: count,
+      recipients: audience.recipients,
     });
   }
 

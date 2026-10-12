@@ -25,7 +25,7 @@ import EmailPreviewModal from "./preview-email";
 
 /**
  * Sends the payment receipt (`getPaymentVerifiedEmailHtml`) to every verified
- * registration the filters match.
+ * registration the filters match that does not already hold one.
  *
  * This is the one-click answer to "send all verified payment mails at once". It
  * sends the *same* receipt the per-row button sends — the audience query is the
@@ -33,9 +33,9 @@ import EmailPreviewModal from "./preview-email";
  * on which button an admin happened to press. There is deliberately no body to
  * write: the receipt is built from each row's own data.
  *
- * Re-sends are allowed and counted, because a bounce is the common reason an admin
- * is here at all. The note above the button says how many have already received
- * one so the second send is a choice rather than an accident.
+ * A registration whose receipt has already been delivered is left out of the
+ * audience and counted as left alone, so pressing this twice is safe and a blast
+ * that stopped halfway can be simply run again.
  */
 export default function PaymentConfirmationSection({
   state,
@@ -50,14 +50,11 @@ export default function PaymentConfirmationSection({
   const [previewing, setPreviewing] = useState(false);
   const { progress, send, reset } = useBulkEmailSend();
 
+  /** Every recipient here is one this send will write to. */
   const count = audience.recipients.length;
-  const alreadySent = audience.recipients.filter(
-    (recipient) => recipient.alreadySent,
-  ).length;
-  /** Who is actually left to write to: a receipt already sent is left alone. */
-  const unsent = count - alreadySent;
-  const ready = unsent > 0 && !audience.truncated && !progress.running;
-  const canPreview = count > 0 && !audience.truncated && !progress.running;
+  const leftAlone = audience.leftAlone;
+  const ready = count > 0 && !audience.truncated && !progress.running;
+  const canPreview = ready;
 
   async function handlePreview() {
     if (!canPreview || previewing) return;
@@ -72,7 +69,7 @@ export default function PaymentConfirmationSection({
 
   async function handleSend() {
     setConfirming(false);
-    await send({ state, kind: "confirmation", expected: count });
+    await send({ state, kind: "confirmation", recipients: audience.recipients });
     // The rows' sent timestamps have moved; re-read the audience so the
     // "already had one" count is current.
     router.refresh();
@@ -99,43 +96,41 @@ export default function PaymentConfirmationSection({
 
       {audience.truncated ? (
         <p className="mt-4 rounded-[6px] bg-admin-warn-bg px-3 py-2 font-space-body text-sm text-admin-warn-ink">
-          More than {BULK_EMAIL_MAX_RECIPIENTS} verified registrations match these
-          filters. Narrow them above — nothing will be sent until you do.
+          More than {BULK_EMAIL_MAX_RECIPIENTS} verified registrations are waiting
+          for a receipt under these filters. Narrow them above — nothing will be
+          sent until you do.
         </p>
       ) : count === 0 ? (
-        <p className="mt-4 rounded-[6px] bg-admin-sunken px-3 py-2 font-space-body text-sm text-admin-muted">
-          No verified registration in this audience has an email address on file.
-          Verify payments on the Science Competition table, or clear the filters
-          above.
-        </p>
-      ) : unsent === 0 ? (
-        <p className="mt-4 rounded-[6px] bg-admin-positive-bg px-3 py-2 font-space-body text-sm text-admin-positive-ink">
-          All {count} {count === 1 ? "registration" : "registrations"} in this
-          audience already have their receipt — there is nothing left to send.
+        <p
+          className={cn(
+            "mt-4 rounded-[6px] px-3 py-2 font-space-body text-sm",
+            leftAlone > 0
+              ? "bg-admin-positive-bg text-admin-positive-ink"
+              : "bg-admin-sunken text-admin-muted",
+          )}
+        >
+          {leftAlone > 0
+            ? `All ${leftAlone} ${leftAlone === 1 ? "registration has" : "registrations have"} already had a receipt — there is nothing left to send. To post one to a named participant again, use Send confirmation on that row.`
+            : "No verified registration in this audience has an email address on file. Verify payments on the Science Competition table, or clear the filters above."}
         </p>
       ) : (
         <p className="mt-4 font-space-body text-sm text-admin-muted">
-          <span className="font-medium text-admin-ink">{unsent}</span>{" "}
-          {unsent === 1 ? "receipt" : "receipts"} will go out
-          {alreadySent > 0 && (
+          <span className="font-medium text-admin-ink">{count}</span>{" "}
+          {count === 1 ? "receipt" : "receipts"} will go out
+          {leftAlone > 0 && (
             <>
               {" "}
-              — {alreadySent}{" "}
-              {alreadySent === 1 ? "registration has" : "registrations have"}{" "}
-              already had one delivered and {alreadySent === 1 ? "is" : "are"}{" "}
-              left alone
+              — {leftAlone}{" "}
+              {leftAlone === 1 ? "registration has" : "registrations have"} already
+              had one and {leftAlone === 1 ? "is" : "are"} left alone
             </>
           )}
           .
         </p>
       )}
 
-      {!audience.truncated && unsent > 0 && (
-        <AudienceEmailList
-          recipients={audience.recipients.filter(
-            (recipient) => !recipient.alreadySent,
-          )}
-        />
+      {!audience.truncated && count > 0 && (
+        <AudienceEmailList recipients={audience.recipients} />
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -147,7 +142,7 @@ export default function PaymentConfirmationSection({
               className={adminButtonPrimary}
             >
               <Send className="size-4" aria-hidden="true" />
-              Yes, send {unsent} {unsent === 1 ? "receipt" : "receipts"}
+              Yes, send {count} {count === 1 ? "receipt" : "receipts"}
             </button>
             <button
               type="button"
@@ -178,7 +173,9 @@ export default function PaymentConfirmationSection({
               title={
                 ready
                   ? "Only registrations that have not received a receipt yet are written to."
-                  : "Nobody in this audience is waiting on a receipt — narrow the filters, or verify some payments first."
+                  : audience.truncated
+                    ? `More than ${BULK_EMAIL_MAX_RECIPIENTS} receipts are waiting — narrow the filters first.`
+                    : "Nobody in this audience is waiting on a receipt — narrow the filters, or verify some payments first."
               }
               className={cn(adminButtonPrimary, !ready && "cursor-not-allowed opacity-50")}
             >
