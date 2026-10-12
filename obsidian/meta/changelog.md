@@ -90,10 +90,17 @@ Open, stated plainly:
   create fine and a public one would not. Anonymous reads come from
   `https://<bucket>.t3.tigrisfiles.io`, **not** from the authenticated API endpoint
   `https://t3.storage.dev`; a custom domain is the recommended production shape.
-- **`/syllabus` renders 4 documents, not the 7 recorded on 2026-10-09.** This is a
-  **pre-existing uncommitted edit** to `src/lib/data/syllabus.ts` — it re-adds
-  `SyllabusDocument.bucketPath` and narrows `publishedSyllabi` — **not** the migration. It needs
-  the user's confirmation before either count is treated as intended.
+- **`/syllabus` had dropped to 4 documents; all 11 published PDFs are back.** `publishedSyllabi`
+  in `src/lib/data/syllabus.ts` had been narrowed to the four Olympiad subjects that shipped
+  first, so Computer Science, both Robotics rulebooks, Project Display and all three E-sports
+  rulebooks rendered as "Coming soon" even though the club had released them and the bucket held
+  them. Restored to one entry per event id — every key re-checked against the live bucket
+  byte-for-byte, including the lowercase `robosoccer`/`project display` names and the `(1)` in
+  the Computer Science upload name — and verified from a cold dev boot: `/syllabus` emits **11
+  distinct document URLs, all HTTP 200** from Tigris, and **0** Supabase storage URLs.
+  `SyllabusDocument.bucketPath` is populated but read by nothing: `/syllabus` links `href`, and
+  `/resources` carries its own `ResourceFile.bucketPath`. It came back with the narrowing edit
+  and can go again on the next cleanup pass.
 
 ## 2026-10-12 — Bulk email counts the receipts still owed, not the registrations
 

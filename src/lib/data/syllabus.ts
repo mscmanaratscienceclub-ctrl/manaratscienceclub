@@ -51,11 +51,14 @@ export interface SyllabusSection {
 /**
  * Object keys inside the public `pdfs` bucket, keyed by event id.
  *
- * These are the filenames as uploaded, spaces and all — `pdfUrl` encodes them.
- * The five Olympiad subjects and the robotics events are the ones that have one
- * today; the rest are published by adding a line here.
+ * These are the filenames as uploaded, spaces and all — `pdfUrl` encodes them. Keys are
+ * matched against the bucket byte for byte, including case, so verify a key against the
+ * bucket before adding one: a name that does not exist answers 400 with no file to show.
+ * The "(1)" on the Computer Science key is the club's own upload name, kept verbatim
+ * because it is the object key the bucket holds.
  */
 const publishedSyllabi: Record<string, { path: string; updated: string }> = {
+  // Olympiads — all five subjects.
   mathematics: { path: "MATH OLYMPIAD SYLLABUS.pdf", updated: "2026-09-22" },
   physics: { path: "PHYSICS OLYMPIAD SYLLABUS.pdf", updated: "2026-09-22" },
   "bio-chem": { path: "BIOCHEM OLYMPIAD SYLLABUS.pdf", updated: "2026-09-22" },
@@ -63,6 +66,23 @@ const publishedSyllabi: Record<string, { path: string; updated: string }> = {
     path: "GEN SCIENCE OLYMPIAD SYLLABUS.pdf",
     updated: "2026-09-22",
   },
+  "computer-science": {
+    path: "COMP SCI OLYMPIAD SYLLABUS (1).pdf",
+    updated: "2026-09-26",
+  },
+  // Robotics — one rulebook per event, and both are out.
+  lfr: { path: "LFR RULEBOOK.pdf", updated: "2026-09-26" },
+  robosoccer: { path: "robosoccer rulebook.pdf", updated: "2026-09-26" },
+  // Project Display — one rulebook for the whole segment, so every category's row
+  // points at the same document, and one canonical URL per object either way.
+  "project-display": {
+    path: "project display rulebook.pdf",
+    updated: "2026-10-10",
+  },
+  // E-sports — one rulebook per title.
+  "ea-fc-26": { path: "FC26 rulebook.pdf", updated: "2026-10-09" },
+  "clash-royale": { path: "clash royale rulebook.pdf", updated: "2026-10-09" },
+  "minecraft-bedwars": { path: "bedwars rulebook.pdf", updated: "2026-10-09" },
 };
 
 export const syllabusCopy = {
