@@ -438,10 +438,11 @@ Both code fixes hold. `optimized/*` answers `max-age=31536000` with
   holds the display bytes. `2.x MB → tens of KB` per object removes the worst egress
   source outright. Keep the `optimized/` set (and the content-addressed UUID uploads,
   already ≤512px WebP). **Done 2026-10-12:** 65 unreferenced originals / **47.60 MB** copied to
-  `archive/avatars/…` on Tigris **first**, then deleted from the bucket. `avatars` is now
-  **38 objects / 1.15 MB with no object over 300 KB**. Two caveats a re-run must respect: the
-  archived bytes are only on Tigris now (`optimize-bucket-images.mjs` can no longer re-encode
-  them from Supabase), and 7 avatars objects are kept because `src/` fetches them verbatim.
+  `archive/avatars/…` on Tigris **first**, then deleted from the bucket. The 7 objects `src/`
+  fetches verbatim and the `optimized/` set followed later the same day under
+  `pnpm media:retire` — **`avatars` and `pdfs` now hold 0 objects each.** The archived bytes are
+  only on Tigris, which `optimize-bucket-images.mjs` now handles: it reads an original from
+  `avatars/`, then `archive/avatars/`, then Supabase.
 - **Set a long `cache-control` on everything in `pdfs`.** PDFs are large and fetched on
   every download; without an immutable header the CDN re-validates against origin each time,
   inflating general egress for a static club document. One-time `storage.objects` update (or
@@ -450,8 +451,8 @@ Both code fixes hold. `optimized/*` answers `max-age=31536000` with
   `Cache-Control: public, max-age=31536000, immutable` plus
   `Content-Disposition: attachment`, set by the migration script at upload and confirmed in the
   response headers by `pnpm media:verify` (49/49). **No one-time Supabase update was ever
-  applied** — the Supabase copies still answer `max-age=3600`, which is harmless while nothing
-  reads them and moot if the fallback bucket is deleted.
+  applied** — the Supabase copies still answered `max-age=3600` right up to `media:retire`
+  deleting them, which is the point: a header fix on bytes nobody serves is worth nothing.
 - **Enable Supabase Edge Functions / custom domain CDN caching** is optional; the object-level
   `cache-control` above is the main lever and needs no extra infra. **Moot as written** — reads
   left Supabase instead. The custom-domain advice transfers: Tigris serves anonymous reads from
@@ -471,15 +472,24 @@ module moved. Postgres, better-auth and the upload write path are untouched — 
 49 objects / 57.98 MB copied, 49/49 public URLs verified, and `/` emitting 12 Tigris media
 URLs against **0** `supabase.co/storage` ones.
 
-Two things this audit could not close from the code side:
+What the audit could not close from the code side, and where each stands:
 
-- **Production is not cut over.** The variable is read at **build** time into prerendered
-  HTML, so it must be set in Vercel's environment and redeployed; until then the deployed site
-  still bills Supabase. The `pdfs` bucket stays as an unreferenced fallback, and deleting it
-  after the cutover is the user's call.
+- **Production cutover — done.** The variable is read at **build** time into prerendered
+  HTML, so setting it was not enough: the first probe after it was set still returned
+  Supabase on every route with `X-Vercel-Cache: HIT` and `Age: 32204`. After the redeploy the
+  live pages were re-probed — `/` 12 Tigris URLs / 0 Supabase, `/syllabus` 11 documents / 0,
+  `/resources` 6 / 0, both registration routes emitting no media URLs at all.
+- **The fallback bucket — deleted.** `pnpm media:retire` removed all 49 remaining Supabase
+  media objects (57.98 MB), each only after Tigris was confirmed to hold the same key at the
+  same byte count. Nothing is left for a stale link to bill.
 - **A public-read bucket needs a verified payment method on Tigris now**
   (`PaymentVerificationRequired`). This account predates that rule, so private buckets create
-  fine; this is a billing action, not a code one.
+  fine; this is a billing action, not a code one, and it is the reason `manarat-media` had to
+  be created on the older account.
+- **Still on Supabase, on purpose:** `/api/upload` writes profile avatars there. Upload is
+  ingress and unbilled, and each avatar is a ≤512px WebP of ~20 KB, so the recurring cached
+  egress from this path is close to nil — moving it would put the S3 SDK in the serverless
+  bundle and touch the write path next to registration for no measurable saving.
 
 ## Related
 

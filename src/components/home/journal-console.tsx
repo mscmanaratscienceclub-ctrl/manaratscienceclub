@@ -26,6 +26,7 @@ export default function JournalConsole({ posts }: { posts: JournalPost[] }) {
           </div>
           <Link
             href="/blogs"
+            prefetch={false}
             className="border border-ion-line px-6 py-3 font-mono text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-ion transition-colors duration-300 hover:border-ion hover:text-ion-bright"
           >
             All publications

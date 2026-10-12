@@ -32,8 +32,6 @@ export interface SyllabusDocument {
   coverage: string;
   /** Public PDF URL. `null` until the club releases the document. */
   href: string | null;
-  /** Object key inside the `pdfs` bucket, or `null` while unpublished. */
-  bucketPath: string | null;
   /** ISO date the club last replaced the PDF, or `null` while unpublished. */
   updated: string | null;
 }
@@ -145,7 +143,6 @@ function documentsFor(segmentId: string): SyllabusDocument[] {
         label: "Segment syllabus",
         coverage: "All brackets",
         href: null,
-        bucketPath: null,
         updated: null,
       },
     ];
@@ -159,7 +156,6 @@ function documentsFor(segmentId: string): SyllabusDocument[] {
       label: event.name,
       coverage: coverageFor(event),
       href: published ? pdfUrl(published.path) : null,
-      bucketPath: published?.path ?? null,
       updated: published?.updated ?? null,
     };
   });

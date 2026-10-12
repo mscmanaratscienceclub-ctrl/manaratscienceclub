@@ -139,7 +139,8 @@ exercises the writer with no database and no session.
 **`@aws-sdk/client-s3` is build-only, and it must stay that way.** The only S3 code in
 the repository is `scripts/migrate-media-to-tigris.mjs`
 (`pnpm media:migrate:dry` / `media:migrate` / `media:verify` / `media:archive` /
-`media:purge`), which copies the byte-heavy public media out of Supabase Storage into
+`media:retire`) and the media half of `scripts/optimize-bucket-images.mjs`, which copy the
+byte-heavy public media out of Supabase Storage into
 Tigris so anonymous **reads** stop billing Supabase's cached egress — ADR-0041,
 [[backend/supabase-audit-2026-09-13]]. It is a devDependency **by decision**: the app
 never writes to Tigris, so importing the SDK from anywhere under `src/` would put it in

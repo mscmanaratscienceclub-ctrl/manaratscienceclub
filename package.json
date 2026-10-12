@@ -13,7 +13,7 @@
     "media:migrate": "node scripts/migrate-media-to-tigris.mjs",
     "media:verify": "node scripts/migrate-media-to-tigris.mjs --verify",
     "media:archive": "node scripts/migrate-media-to-tigris.mjs --archive-legacy",
-    "media:purge": "node scripts/migrate-media-to-tigris.mjs --purge-legacy --yes",
+    "media:retire": "node scripts/migrate-media-to-tigris.mjs --retire-supabase-media --yes",
     "fonts:pdf": "node scripts/generate-pdf-fonts.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit push",

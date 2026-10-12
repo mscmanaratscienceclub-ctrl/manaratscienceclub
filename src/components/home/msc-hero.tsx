@@ -154,12 +154,14 @@ export default function MscHero() {
           <div data-hero-fade className="mt-4 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/stemfestreg"
+              prefetch={false}
               className="inline-flex h-12 items-center justify-center whitespace-nowrap bg-ion px-8 font-mono text-[0.66rem] font-semibold uppercase tracking-[0.22em] text-space-deep transition-colors duration-300 hover:bg-ion-bright"
             >
               Register for STEM Fest
             </Link>
             <Link
               href="/events"
+              prefetch={false}
               className="inline-flex h-12 items-center justify-center whitespace-nowrap border border-ion-line px-8 font-mono text-[0.66rem] font-semibold uppercase tracking-[0.22em] text-ion transition-colors duration-300 hover:border-ion hover:text-ion-bright"
             >
               Read About the STEM Fest

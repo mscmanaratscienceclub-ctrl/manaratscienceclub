@@ -22,6 +22,7 @@ export default function JournalRows({ posts }: { posts: JournalPost[] }) {
         >
           <Link
             href={`/blogs/${post.slug}`}
+            prefetch={false}
             className="group grid gap-3 py-7 sm:grid-cols-[7rem_1fr_auto] sm:items-start sm:gap-8 sm:py-9"
           >
             <div className="font-mono text-[0.62rem] uppercase leading-5 tracking-[0.22em] text-space-muted">

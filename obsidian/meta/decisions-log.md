@@ -53,9 +53,11 @@ no egress charge, behind **one** build-time variable, and nothing else moves.
   (`externalMediaPatterns()`), so `next/image` and the rendered URLs cannot disagree about
   where content images live.
 - `scripts/migrate-media-to-tigris.mjs` does the moving: default copy with every write
-  byte-compared, `--verify` (HEAD through the *public* origin), `--archive-legacy`,
-  `--purge-legacy` — which deletes an original only once its replacement bytes are confirmed on
-  Tigris at the right size.
+  byte-compared, `--archive-legacy`, and `--retire-supabase-media` — which deletes a
+  Supabase object only when Tigris holds the same key at the same byte count. `--verify`
+  HEADs the objects **`src/` references** through the *public* origin, asserting 200 +
+  immutable cache + `attachment` on PDFs; it deliberately does not read a bucket listing,
+  because after the retirement a listing-derived check has nothing left to say.
 - **Stays on Supabase, deliberately:** Postgres and the pooler, better-auth, and the `/api/upload`
   write path. Upload is ingress and is not metered, so moving it would buy nothing and cost the
   one flow this decision must not touch.
@@ -73,9 +75,11 @@ no egress charge, behind **one** build-time variable, and nothing else moves.
 - **An environment variable is now a billing control, and a build-time one.** It is inlined into
   prerendered HTML, so changing it means a redeploy, and flipping it means running
   `pnpm media:verify` before believing the site is off the meter.
-- **Two hosts hold the same keys until the cutover is finished.** A new PDF is only visible
-  where the built site points, so between now and the production flip it has to be uploaded to
-  Supabase *and* copied to Tigris (`pnpm media:migrate` re-runs idempotently and byte-compares).
+- **Tigris is the only home for media bytes.** Supabase's `pdfs` and `avatars` buckets were
+  emptied by `pnpm media:retire` once the production flip was confirmed, so a new club document
+  or photo goes to Tigris (`avatars/<path>`, or staged in Supabase and carried over by
+  `pnpm media:migrate`, which re-runs idempotently and byte-compares). There is no second copy
+  to keep in step any more — and no fallback host if Tigris is ever unreachable.
 - **Callers pass raw object paths, never pre-encoded ones.** `storagePublicUrl()` encodes the
   joined key itself; a caller that encoded first would produce `%2520`.
 - **The app must not gain an S3 dependency.** `@aws-sdk/client-s3` is a **devDependency** because
@@ -85,20 +89,21 @@ no egress charge, behind **one** build-time variable, and nothing else moves.
   reason the two hosts are separable at all; a future change that puts a content image on a
   registration route weakens the safety argument for the switch.
 - **Deleted originals live on Tigris, not in Supabase.** The 65 archived objects are at
-  `archive/avatars/…`, so a future re-encode pass (ADR-0025's `scripts/optimize-bucket-images.mjs`)
-  cannot read them from the `avatars` bucket any more; the 7 verbatim objects and the
-  `optimized/` set remain there.
+  `archive/avatars/…`; `scripts/optimize-bucket-images.mjs` was repointed the same day to read
+  an original from `avatars/`, then `archive/avatars/`, then Supabase, and to write its twin to
+  Tigris — otherwise the retirement would have left the image pipeline reading an empty bucket.
 - **Measured, not estimated:** 49 objects / 57.98 MB copied and 49/49 verified public with
-  `max-age=31536000, immutable` and `attachment` on all 11 PDFs; `avatars` down to 38 objects /
-  1.15 MB after the archive-then-purge; `/` emits 12 Tigris URLs and 0 Supabase storage URLs,
-  `/syllabus` 8/0, `/resources` 12/0, and the two registration routes 0/0 at HTTP 200.
+  `max-age=31536000, immutable` and `attachment` on all 11 PDFs; `media:retire` then released
+  the same 49 objects from Supabase, leaving `pdfs` and `avatars` at **0 objects each**; live
+  production after the redeploy emits `/` 12 Tigris URLs and 0 Supabase storage URLs,
+  `/syllabus` 11 documents / 0, `/resources` 6 / 0, and the two registration routes 0/0 at
+  HTTP 200.
 
 **Open.**
 
-1. **Production is not cut over yet.** `NEXT_PUBLIC_MEDIA_BASE_URL` has to be set in Vercel's
-   environment **and redeployed**; a runtime-only change leaves the deployed site billing
-   Supabase. The Supabase `pdfs` bucket (56.83 MB) stays as an unreferenced fallback until that
-   is confirmed good — deleting it is the user's call.
+1. **One more redeploy is owed.** `src/lib/data/index.ts` now points the Rose card at its WebP
+   twin; that is build-time data, so production still paints the HEIC for that one card until
+   the next deploy.
 2. **Tigris requires a verified payment method to create a *public-read* bucket**
    (`PaymentVerificationRequired`). This account predates the rule, so private buckets create and
    delete fine while a public one cannot. Anonymous reads are served from

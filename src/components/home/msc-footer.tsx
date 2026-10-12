@@ -39,7 +39,7 @@ export default function MscFooter() {
         <div className="grid gap-12 lg:grid-cols-12">
           {/* Brand + contact */}
           <div className="lg:col-span-4">
-            <Link href="/" className="group inline-flex items-center gap-3" aria-label="Manarat Science Club home">
+            <Link href="/" prefetch={false} className="group inline-flex items-center gap-3" aria-label="Manarat Science Club home">
               <span className="flex size-10 items-center justify-center overflow-hidden rounded-full border border-ion-line bg-ion-deep/40 transition-colors group-hover:border-ion">
                 <Image src="/stemmsc.png" alt="STEM Fest 2027" width={32} height={32} className="object-cover" />
               </span>
@@ -79,7 +79,7 @@ export default function MscFooter() {
             <ul className="mt-5 space-y-3">
               {exploreLinks.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className={footerLink}>
+                  <Link href={link.href} prefetch={false} className={footerLink}>
                     {link.label}
                   </Link>
                 </li>
@@ -93,7 +93,7 @@ export default function MscFooter() {
             <ul className="mt-5 space-y-3">
               {involvedLinks.map((link) => (
                 <li key={link.label}>
-                  <Link href={link.href} className={footerLink}>
+                  <Link href={link.href} prefetch={false} className={footerLink}>
                     {link.label === "Report a Bug" && <Bug className="mr-2 inline size-3.5 text-ion" aria-hidden="true" />}
                     {link.label}
                   </Link>
@@ -104,10 +104,10 @@ export default function MscFooter() {
             <h2 className={`mt-8 ${sectionHeading}`}>Legal</h2>
             <ul className="mt-5 space-y-3">
               <li>
-                <Link href="/privacy-policy" className={footerLink}>Privacy Policy</Link>
+                <Link href="/privacy-policy" prefetch={false} className={footerLink}>Privacy Policy</Link>
               </li>
               <li>
-                <Link href="/terms" className={footerLink}>Terms of Service</Link>
+                <Link href="/terms" prefetch={false} className={footerLink}>Terms of Service</Link>
               </li>
             </ul>
           </nav>

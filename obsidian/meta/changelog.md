@@ -44,7 +44,7 @@ Supabase — upload is ingress, which is not metered. See ADR-0041 and
   nothing), `media:migrate` (copy, **byte-comparing every write**; skips a key already correct
   at the right size), `media:verify` (HEAD each object through the **public** origin, because a
   bucket can hold an object anonymous visitors still cannot read), `media:archive`,
-  `media:purge [--dry-run] [--yes]`. Keys mirror Supabase (`pdfs/…`, `avatars/optimized/…`),
+  `media:retire [--dry-run] [--yes]`. Keys mirror Supabase (`pdfs/…`, `avatars/optimized/…`),
   which is why **no data module needed editing**. Object metadata is set at upload:
   `Cache-Control: public, max-age=31536000, immutable`, plus `Content-Disposition: attachment`
   on the PDFs.
@@ -58,8 +58,9 @@ Supabase — upload is ingress, which is not metered. See ADR-0041 and
   reports **49/49** public URLs serving the right byte count with `max-age=31536000, immutable`
   and `attachment` on all 11 PDFs. The 65 unreferenced originals (**47.60 MB**) were copied to
   `archive/avatars/…` on Tigris **first**, then deleted from the Supabase `avatars` bucket,
-  which is now **38 objects / 1.15 MB with no object over 300 KB**. Archiving rather than
-  hard-deleting keeps the camera originals (one is a 9.32 MB PNG) retrievable at no cost —
+  which is now **38 objects / 1.15 MB with no object over 300 KB** at that point — the rest went
+  the same day under `media:retire`, see *Cutover completed the same day* below. Archiving rather
+  than hard-deleting keeps the camera originals (one is a 9.32 MB PNG) retrievable at no cost —
   Tigris bills neither egress nor meaningful storage.
 - **Live dev-server page audit**: `/` emits **12** Tigris media URLs and **0**
   `supabase.co/storage` URLs; `/syllabus` **8/0**; `/resources` **12/0**. **`/register` and
@@ -78,13 +79,14 @@ page data* from 15 concurrent workers; environmental, unrelated to these changes
 this touches that path. The substitution is instead verified by running the URL builders in both
 modes, by `pnpm media:verify` at 49/49, and by reading the rendered DOM of the five routes above.
 
-Open, stated plainly:
+Open at the time of this pass — the first two closed later the same day, see
+*Cutover completed the same day* below:
 
-- **Production is not cut over.** The var is read at **build** time into prerendered HTML, so it
-  must be set in Vercel's environment **and redeployed** — a runtime-only change leaves the
+- **Production was not yet cut over.** The var is read at **build** time into prerendered HTML, so
+  it has to be set in Vercel's environment **and redeployed** — a runtime-only change leaves the
   deployed site still billing Supabase.
-- The Supabase `pdfs` bucket (**56.83 MB**) is left in place as an unreferenced fallback; whether
-  to delete it after the production cutover is the user's call.
+- The Supabase `pdfs` bucket (**56.83 MB**) was left in place as an unreferenced fallback;
+  deleting it after the production cutover was the user's call.
 - Tigris now requires a **verified payment method** to create a *public-read* bucket
   (`PaymentVerificationRequired`). This project's account predates the rule, so private buckets
   create fine and a public one would not. Anonymous reads come from
@@ -98,9 +100,47 @@ Open, stated plainly:
   byte-for-byte, including the lowercase `robosoccer`/`project display` names and the `(1)` in
   the Computer Science upload name — and verified from a cold dev boot: `/syllabus` emits **11
   distinct document URLs, all HTTP 200** from Tigris, and **0** Supabase storage URLs.
-  `SyllabusDocument.bucketPath` is populated but read by nothing: `/syllabus` links `href`, and
-  `/resources` carries its own `ResourceFile.bucketPath`. It came back with the narrowing edit
-  and can go again on the next cleanup pass.
+  `SyllabusDocument.bucketPath` was removed with it: `/syllabus` links `href`, and
+  `/resources` carries its own `ResourceFile.bucketPath`, so the field was written in two
+  places and read in none.
+
+### Cutover completed the same day
+
+- **Production is on Tigris.** After `NEXT_PUBLIC_MEDIA_BASE_URL` was set in Vercel and
+  redeployed, the live pages were re-probed rather than assumed: `/` emits 12 Tigris media
+  URLs and **0** `supabase.co/storage`, `/syllabus` 11 documents / 0, `/resources` 6 / 0,
+  and `/register` and `/stemfestreg` emit no media URLs at all. The first probe after the
+  var was *set* had still returned Supabase everywhere — `X-Vercel-Cache: HIT`,
+  `Age: 32204` — which is the concrete cost of the variable being build-time.
+- **`pnpm media:retire` emptied Supabase: 49 objects / 57.98 MB released.** `pdfs` and
+  `avatars` now hold **0 objects** each. The guard is a mirror check — an object is
+  deleted only when Tigris holds the same key at the same byte count — so stale bookmarks,
+  search-index URLs and scrapers no longer have multi-megabyte originals to bill through
+  the metered CDN.
+- **A green check that meant nothing, found and fixed.** `media:verify` built its
+  expectations from the Supabase listing, so immediately after the retirement it reported
+  `0/0 public URLs serve the right bytes` about 49 objects that were still live. "Does
+  every object the site links resolve?" is a question about the **code**, so
+  `referencedMediaKeys()` now reads the `.pdf` literals and the `contentImage()` /
+  `bucketOriginal()` call sites out of `src/` and asserts 200 + immutable cache +
+  `attachment` per PDF through the public origin. It also catches a path the data modules
+  name that nobody uploaded — which the listing-derived version structurally could not.
+  Current result: 49/49.
+- **`rose.heif` renders in every browser now.** The card served a genuine HEIC, which only
+  Safari paints; sharp cannot decode it here either (its libheif has no HEVC decoder), so
+  the original was decoded with `ffmpeg -i in.heif -frames:v 1 out.png` and run through the
+  optimizer's own encode chain — 640×480 WebP, quality 78, effort 6, **21 KB** against the
+  148 KB HEIC — written to `avatars/optimized/adminimages/rose.heif.webp`. The entry moved
+  from `bucketOriginal()` to `contentImage()`. Needs one more redeploy to reach production.
+- **`images:optimize` was silently broken by the retirement and is now Tigris-native.** It
+  read and wrote Supabase, which no longer holds a single object, so every path would have
+  failed on a 404. It now checks the twin on Tigris, sources an original from `avatars/`,
+  then `archive/avatars/` (where the pre-cutover camera originals live), then Supabase as
+  the staging fallback, and writes the twin to Tigris with the immutable header. Added
+  `--only <path>` so a single re-encode can be tested without touching 31 objects — proven
+  end to end on `adminimages/yasa.jpg` (46 KB → 33 KB).
+- Verify gate for this phase: `pnpm lint` and `npx tsc --noEmit` clean, `media:verify`
+  49/49, production re-probed on three routes plus both registration routes.
 
 ## 2026-10-12 — Bulk email counts the receipts still owed, not the registrations
 

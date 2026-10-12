@@ -1,4 +1,4 @@
-import { bucketOriginal, contentImage } from "@/lib/media";
+import { contentImage } from "@/lib/media";
 
 // Content images are named by their original bucket path — contentImage resolves
 // them to the pre-optimised, one-year-cached WebP.
@@ -241,10 +241,11 @@ export const currentMembers: Member[] = [
       {
     id: "current-rose",
     name: "Tarannum Rose",
-    // Stored bytes are genuine HEIC (`rose.png` is a byte-identical rename), so this
-    // renders only in Safari/iOS. A re-exported JPEG or PNG in the bucket would let
-    // `contentImage` optimise it for every browser.
-    image: bucketOriginal("adminimages/rose.heif"),
+    // Stored bytes are genuine HEIC, which no browser outside Safari renders and sharp
+    // cannot decode here (no HEVC plugin) — the WebP twin was made by decoding the
+    // original with ffmpeg and running it through the optimizer's own encode chain, so
+    // `contentImage` resolves it like every other card.
+    image: contentImage("adminimages/rose.heif"),
     batch: "2026–2027",
     role: "Coordinator",
     socials: {},

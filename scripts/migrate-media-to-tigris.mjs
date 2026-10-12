@@ -18,9 +18,9 @@
  *   pnpm media:verify          HEAD each object through the public origin
  *   pnpm media:archive         copy unreferenced originals to archive/ — Tigris has no
  *                              egress charge, so keeping them costs nothing
- *   pnpm run media:purge -- --dry-run   preview the legacy delete
- *   pnpm media:purge           delete an original only once its replacement bytes are
- *                              confirmed on Tigris, as an optimized twin or an archive copy
+ *   pnpm run media:retire -- --dry-run  preview the Supabase delete
+ *   pnpm media:retire          delete every Supabase media object Tigris already holds
+ *                              byte-for-byte — this is what zeroes the meter
  *
  * Env, read from `.env` (shell values win). Tigris uses the AWS SDK's own names:
  * AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_ENDPOINT_URL_S3 (default
@@ -44,7 +44,7 @@ import {
 const args = new Set(process.argv.slice(2));
 const DRY = args.has("--dry-run");
 const VERIFY = args.has("--verify");
-const PURGE = args.has("--purge-legacy");
+const RETIRE = args.has("--retire-supabase-media");
 const ARCHIVE = args.has("--archive-legacy");
 const FORCE = args.has("--force");
 const ASSUMED_YES = args.has("--yes");
@@ -125,6 +125,16 @@ const IMMUTABLE = "public, max-age=31536000, immutable";
 const ALREADY_SMALL = /\.(webp|avif)$/i;
 
 /**
+ * The `optimized/` twin `contentImage()` serves in place of an original — the same
+ * `<original>.<ext>.webp` convention `optimize-bucket-images.mjs` writes, and the reason
+ * a migration that copies only what a page names still has to carry the twins.
+ */
+function twinOf(path) {
+  if (ALREADY_SMALL.test(path)) return path;
+  return `optimized/${path.replace(/[^.]+$/, (ext) => `${ext}.webp`)}`;
+}
+
+/**
  * Supabase answers `/…?download` with `Content-Disposition: attachment`, and
  * `pdfUrl()` only appends that suffix while media still lives there. Once the objects
  * are in Tigris the header has to exist on the object itself, or a Download click
@@ -150,12 +160,6 @@ const TYPES = {
 };
 function typeFor(key) {
   return TYPES[extname(key).slice(1).toLowerCase()] ?? "application/octet-stream";
-}
-
-/** The `optimized/` twin `contentImage()` serves for a given original path. */
-function twinOf(path) {
-  if (ALREADY_SMALL.test(path)) return path;
-  return `optimized/${path.replace(/[^.]+$/, (ext) => `${ext}.webp`)}`;
 }
 
 /** Recursive listing of a bucket; Supabase returns folders as rows with `id === null`. */
@@ -205,7 +209,7 @@ function verbatimAvatarPaths() {
  * 3. every other avatars object fetched verbatim (see `verbatimAvatarPaths`).
  *
  * Unreferenced legacy originals are deliberately absent: they are the payload for
- * `--purge-legacy`, not a migration target.
+ * `--archive-legacy`, not a migration target.
  */
 async function buildPlan() {
   const pdfs = await listObjects("pdfs", "");
@@ -277,9 +281,38 @@ async function copyOne(item) {
 }
 
 /**
- * HEAD each object through the *public origin* rather than the S3 API: an object can
- * sit perfectly intact in the bucket and still be invisible to a visitor if the bucket
- * is private or a custom domain is not bound yet.
+ * Every media key `src/` can ask the CDN for, derived from the data modules.
+ *
+ * "Does every object the site links resolve?" is a question about the **code**, so the
+ * expectation set is read out of the code. Deriving it from a bucket listing was only
+ * accidentally correct: once `--retire-supabase-media` empties Supabase, a Supabase-based
+ * plan is empty and the check reports a spotless `0/0` about objects that are still live.
+ */
+function referencedMediaKeys() {
+  const keys = new Set();
+  // `pdfUrl()` is called with variables, so the object keys are the `.pdf` literals the
+  // data modules assign to `path` / `bucketPath`.
+  for (const [, path] of sourceText.matchAll(/["']([^"']+\.pdf)["']/g)) {
+    keys.add(`pdfs/${path}`);
+  }
+  for (const [, fn, arg] of sourceText.matchAll(
+    /(contentImage|bucketOriginal)\(\s*["']([^"']+)["']/g,
+  )) {
+    keys.add(
+      fn === "bucketOriginal" || ALREADY_SMALL.test(arg)
+        ? `avatars/${arg}`
+        : `avatars/${twinOf(arg)}`,
+    );
+  }
+  return [...keys].sort();
+}
+
+/**
+ * HEAD each referenced object through the *public origin* rather than the S3 API: an
+ * object can sit perfectly intact in the bucket and still be invisible to a visitor if
+ * the bucket is private or a custom domain is not bound. The assertions are the ones a
+ * visitor actually depends on — it resolves, it is cached for a year, and a PDF arrives
+ * as a download rather than opening inline.
  */
 async function verifyPublic() {
   // Tigris serves anonymous reads from a separate domain from the authenticated API.
@@ -288,22 +321,25 @@ async function verifyPublic() {
   if (!env.NEXT_PUBLIC_MEDIA_BASE_URL) {
     console.log(`Probing the inferred public origin: ${base}`);
   }
-  const plan = await buildPlan();
+  const keys = referencedMediaKeys();
   let bad = 0;
-  for (const { key, size } of plan) {
+  for (const key of keys) {
     const url = `${base.replace(/\/+$/, "")}/${encodeURI(key)}`;
     const res = await fetch(url, { method: "HEAD" });
-    const header = res.headers.get("content-length");
-    const len = header === null ? size : Number(header);
-    const ok = res.ok && len === size;
+    const cc = res.headers.get("cache-control") ?? "-";
+    const cd = res.headers.get("content-disposition") ?? "-";
+    const immutable = /max-age=31536000/.test(cc);
+    const attaches = !key.endsWith(".pdf") || /^attachment/.test(cd);
+    const ok = res.status === 200 && immutable && attaches;
     if (!ok) bad++;
     console.log(
-      `${ok ? "PASS" : "FAIL"} ${res.status} ${mb(len)} want ${mb(size)} ` +
-        `cc=${res.headers.get("cache-control") ?? "-"} ` +
-        `cd=${(res.headers.get("content-disposition") ?? "-").slice(0, 24)} ${key}`,
+      `${ok ? "PASS" : "FAIL"} ${res.status} ${mb(Number(res.headers.get("content-length") ?? 0)).padStart(11)} ` +
+        `cc=${immutable ? "immutable" : cc} cd=${cd.slice(0, 14)} ${key}`,
     );
   }
-  console.log(`\n${plan.length - bad}/${plan.length} public URLs serve the right bytes.`);
+  console.log(
+    `\n${keys.length - bad}/${keys.length} objects referenced by src/ resolve on the public origin.`,
+  );
   process.exit(bad ? 1 : 0);
 }
 
@@ -356,69 +392,65 @@ async function archiveLegacy() {
     const result = await copyOne(item);
     console.log(`${result.state.padEnd(5)} ${mb(result.size).padStart(11)} ${result.key}`);
   }
-  console.log("\nNow: pnpm media:purge");
+  console.log("\nNow: pnpm media:retire");
 }
 
 /**
- * Which copy of this object's bytes survives on Tigris: the `optimized/` twin the site
- * serves, or the `archive/` copy of the original. `null` — neither present at the
- * source's byte count — is what stops a delete.
+ * Delete every Supabase media object that Tigris already holds byte-for-byte.
+ *
+ * The mirror check *is* the guard. After the cutover no page emits a Supabase media URL,
+ * so an object whose exact bytes exist under the same key on Tigris has no remaining
+ * path to a visitor on the metered host — only stale bookmarks, search-index URLs and
+ * scrapers, each of which still bills. Anything never copied (profile uploads under a
+ * user id, or objects newer than the last migration) fails the size check and stays,
+ * which makes this safe to re-run any time after `pnpm media:migrate`.
  */
-async function replacementFor(path, size, sizes) {
-  const twin = twinOf(path);
-  const twinSize = sizes.get(twin);
-  if (twinSize !== undefined && (await remoteSize(`avatars/${twin}`)) === twinSize) {
-    return `avatars/${twin}`;
-  }
-  const archived = `archive/avatars/${path}`;
-  if ((await remoteSize(archived)) === size) return archived;
-  return null;
-}
-
-/**
- * Delete the legacy `avatars` originals. An object goes only when nothing fetches it
- * verbatim *and* its replacement bytes are confirmed on Tigris at the right size — so
- * the display images and the archived originals both survive the cutover.
- */
-async function purgeLegacy() {
+async function retireSupabase() {
   if (!ASSUMED_YES && !DRY) {
     console.error(
-      "--purge-legacy deletes production objects. Add --yes (or --dry-run to preview) once the site is verified on Tigris.",
+      "--retire-supabase-media deletes production objects. Add --yes, or --dry-run to preview.",
     );
     process.exit(1);
   }
-  const { all, verbatim } = await legacyArchiveTargets();
-  const sizes = new Map(all.map((o) => [o.path, o.size]));
   let released = 0;
-  for (const o of all) {
-    if (o.path.startsWith("optimized/")) continue;
-    if (verbatim.has(o.path)) {
-      console.log(`KEEP  src/ fetches it verbatim   ${o.path}`);
-      continue;
-    }
-    const home = await replacementFor(o.path, o.size, sizes);
-    if (!home) {
-      console.log(`KEEP  no twin or archive on Tigris ${o.path}`);
-      continue;
-    }
-    if (DRY) {
-      console.log(`would delete ${mb(o.size)} ${o.path} (kept as ${home})`);
-      released += o.size;
-      continue;
-    }
-    const { error } = await supabase.storage.from("avatars").remove([o.path]);
-    if (error) console.log(`FAILED ${o.path}: ${error.message}`);
-    else {
-      console.log(`deleted ${mb(o.size)} ${o.path} → ${home}`);
-      released += o.size;
+  let gone = 0;
+  let kept = 0;
+  for (const bucket of ["pdfs", "avatars"]) {
+    const objects = await listObjects(bucket, "");
+    console.log(`\n── ${bucket}: ${objects.length} objects, ${mb(objects.reduce((n, o) => n + o.size, 0))}`);
+    for (const o of objects) {
+      const key = `${bucket}/${o.path}`;
+      const mirrored = await remoteSize(key);
+      if (mirrored !== o.size) {
+        console.log(
+          `KEEP  ${key} — Tigris has ${mirrored === null ? "nothing" : mb(mirrored)} vs ${mb(o.size)}`,
+        );
+        kept++;
+        continue;
+      }
+      if (DRY) {
+        console.log(`would delete ${mb(o.size).padStart(11)} ${key}`);
+        released += o.size;
+        gone++;
+        continue;
+      }
+      const { error } = await supabase.storage.from(bucket).remove([o.path]);
+      if (error) console.log(`FAILED ${key}: ${error.message}`);
+      else {
+        console.log(`deleted ${mb(o.size).padStart(11)} ${key}`);
+        released += o.size;
+        gone++;
+      }
     }
   }
-  console.log(`\nReleased ${mb(released)} from the avatars bucket.`);
+  console.log(
+    `\n${gone} objects / ${mb(released)} released from Supabase; ${kept} kept as unmirrored.`,
+  );
 }
 
 if (VERIFY) await verifyPublic();
 else if (ARCHIVE) await archiveLegacy();
-else if (PURGE) await purgeLegacy();
+else if (RETIRE) await retireSupabase();
 else {
   const plan = await buildPlan();
   console.log(`${plan.length} objects, ${mb(plan.reduce((n, o) => n + o.size, 0))} → s3://${Bucket}`);

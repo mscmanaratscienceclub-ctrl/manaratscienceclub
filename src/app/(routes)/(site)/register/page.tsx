@@ -126,7 +126,7 @@ export default function RegisterPage() {
                 </ul>
 
                 <div className="mt-auto px-6 pb-7 pt-8">
-                  <Link href={choice.href} className="msc-btn-pill w-full">
+                  <Link href={choice.href} prefetch={false} className="msc-btn-pill w-full">
                     {choice.ctaLabel}
                     <ArrowRight className="size-4" aria-hidden="true" />
                   </Link>
@@ -152,7 +152,7 @@ export default function RegisterPage() {
           </div>
 
           <Link
-            href={registrationRulesLink.href}
+            href={registrationRulesLink.href} prefetch={false}
             className="inline-flex h-10 shrink-0 items-center justify-center gap-2 border border-ion-line px-5 font-mono text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-ion transition-colors hover:border-ion hover:text-ion-bright focus-visible:border-ion focus-visible:text-ion-bright focus-visible:outline-none"
           >
             {registrationRulesLink.ctaLabel}

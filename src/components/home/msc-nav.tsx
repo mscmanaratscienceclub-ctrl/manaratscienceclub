@@ -47,7 +47,7 @@ export default function MscNav() {
       )}
     >
       <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between px-5 py-4 sm:px-8 lg:px-16">
-        <Link href="/" className="group flex items-center gap-3" aria-label="Manarat Science Club home">
+        <Link href="/" prefetch={false} className="group flex items-center gap-3" aria-label="Manarat Science Club home">
           <span className="flex size-9 items-center justify-center overflow-hidden rounded-full border border-ion-line bg-ion-deep/40 transition-colors duration-300 group-hover:border-ion">
             <Image src="/stemmsc.png" alt="STEM Fest 2027" width={28} height={28} className="object-cover" />
           </span>
@@ -62,7 +62,7 @@ export default function MscNav() {
             return (
               <Link
                 key={item.label}
-                href={item.href}
+                href={item.href} prefetch={false}
                 className={cn(
                   "group relative py-2 font-mono text-[0.64rem] font-medium uppercase tracking-[0.24em] transition-colors",
                   active ? "text-ion-bright" : "text-space-muted hover:text-space-ivory"
@@ -82,7 +82,7 @@ export default function MscNav() {
         </nav>
 
         <Link
-          href="/register"
+          href="/register" prefetch={false}
           className="hidden h-10 items-center gap-2 bg-ion px-5 font-mono text-[0.64rem] font-bold uppercase tracking-[0.24em] text-space-deep transition-colors hover:bg-ion-bright lg:inline-flex"
         >
           Register
@@ -120,7 +120,7 @@ export default function MscNav() {
                 return (
                   <Link
                     key={item.label}
-                    href={item.href}
+                    href={item.href} prefetch={false}
                     onClick={closeMenu}
                     className={cn(
                       "flex items-baseline gap-3 border-b border-space-line-soft py-3.5 font-mono text-xs uppercase tracking-[0.24em] transition-colors hover:text-ion-bright",
@@ -135,7 +135,7 @@ export default function MscNav() {
                 );
               })}
               <Link
-                href="/register"
+                href="/register" prefetch={false}
                 onClick={closeMenu}
                 className="mt-5 inline-flex h-11 items-center justify-center gap-2 bg-ion px-5 font-mono text-xs font-bold uppercase tracking-[0.24em] text-space-deep transition-colors hover:bg-ion-bright"
               >
