@@ -160,7 +160,7 @@ export default function MscHero() {
               Register for STEM Fest
             </Link>
             <Link
-              href="/events"
+              href="/details"
               prefetch={false}
               className="inline-flex h-12 items-center justify-center whitespace-nowrap border border-ion-line px-8 font-mono text-[0.66rem] font-semibold uppercase tracking-[0.22em] text-ion transition-colors duration-300 hover:border-ion hover:text-ion-bright"
             >
