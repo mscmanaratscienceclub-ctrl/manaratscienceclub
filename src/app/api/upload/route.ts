@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers } from "next/headers";
-import { supabase, AVATARS_BUCKET, supabasePublicUrl } from "@/lib/supabase";
+import { getSupabase, AVATARS_BUCKET, supabasePublicUrl } from "@/lib/supabase";
 import { trackEvent } from "@/lib/analytics";
 
 export async function POST(request: NextRequest) {
@@ -44,7 +44,13 @@ export async function POST(request: NextRequest) {
   const arrayBuffer = await file.arrayBuffer();
   const buffer = new Uint8Array(arrayBuffer);
 
-  const { error: uploadError } = await supabase.storage
+  const client = getSupabase();
+  if (!client) {
+    trackEvent("file_upload_failed", { reason: "supabase_not_configured" });
+    return NextResponse.json({ error: "Uploads are not configured" }, { status: 503 });
+  }
+
+  const { error: uploadError } = await client.storage
     .from(AVATARS_BUCKET)
     .upload(fileName, buffer, {
       contentType: file.type,

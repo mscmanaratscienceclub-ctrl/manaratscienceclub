@@ -165,7 +165,11 @@ export const resourceEntries: ResourceEntry[] = stemfestSegments.map(
     details: null,
     files: (publishedRulebooks[segment.id] ?? []).map((document) => ({
       label: document.label,
-      href: pdfUrl(document.bucketPath),
+      // Resolved when the row renders, not when this module is evaluated: the
+      // media host is configuration, and `Collecting page data` must not need it.
+      get href() {
+        return pdfUrl(document.bucketPath);
+      },
       bucketPath: document.bucketPath,
     })),
   }),

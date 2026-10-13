@@ -50,6 +50,17 @@ assumed absent.
   are gone (`src/lib/media.ts`, `next.config.ts`, and `drizzle/setup-ambassador-table.mjs`,
   deleted), and `.claude/scripts/verify.sh` now FAILs on a JWT-shaped literal or a literal
   `*.supabase.co` host.
+- **Caught by the first Vercel build of this branch:** replacing the hard-coded project ref
+  with a thrown error broke any build whose environment lacked the media vars
+  (`Failed to collect page data for /_not-found`), because `src/lib/data/index.ts` minted 43
+  media URLs while the module was being evaluated and `src/lib/supabase.ts` called
+  `createClient` at import. Both are lazy now — data-module `image`/`src`/`href` are getters
+  resolved when a card renders, and `getSupabase()` returns `null` when the secrets are
+  absent, the same shape `getSupabaseAdmin()` already used. Build verified green with the
+  vars present (42 pages, home page still emitting Tigris URLs); with them absent the failure
+  now names the page that needs a host instead of the whole graph. **Preview deployments need
+  `NEXT_PUBLIC_MEDIA_BASE_URL` and `NEXT_PUBLIC_SUPABASE_URL` set too, and `NEXT_PUBLIC_*`
+  must not be marked Sensitive or the build cannot read it.**
 - Fixed on the way: `/api/upload` wrote bytes to Supabase but returned the **Tigris** URL
   for them, so fresh avatars 404'd. It now answers with `supabasePublicUrl()`.
 - **Open:** the new project's secret key is not yet in `.env.port`, so the bucket creation

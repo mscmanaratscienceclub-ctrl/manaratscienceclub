@@ -5,12 +5,23 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 // creates a new Supabase client instance.
 
 const globalForSupabase = globalThis as unknown as {
-  supabaseClient?: SupabaseClient;
+  supabaseClient?: SupabaseClient | null;
 };
 
-function makeSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+/**
+ * Service-role Supabase client for `/api/upload`.
+ *
+ * Built on first use rather than at import: `createClient("")` throws, and this
+ * module is in the server bundle, so an eager singleton turned a missing
+ * `NEXT_PUBLIC_SUPABASE_URL` into a failed build ("Failed to collect page data for
+ * /api/upload") instead of one clean 503. Same shape as `getSupabaseAdmin()`, which
+ * already returns `null` when its secrets are absent.
+ */
+function makeSupabaseClient(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) return null;
   return createClient(url, key, {
     auth: {
       persistSession: false,
@@ -19,11 +30,9 @@ function makeSupabaseClient() {
   });
 }
 
-export const supabase: SupabaseClient =
-  globalForSupabase.supabaseClient ?? makeSupabaseClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForSupabase.supabaseClient = supabase;
+export function getSupabase(): SupabaseClient | null {
+  globalForSupabase.supabaseClient ??= makeSupabaseClient();
+  return globalForSupabase.supabaseClient ?? null;
 }
 
 // Bucket names and URL building are pure/no-secret — they live in `@/lib/media`

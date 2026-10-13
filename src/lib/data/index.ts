@@ -12,13 +12,16 @@ export const siteConfig = {
   address: "Manarat Dhaka International School & College, Gulshan, Dhaka-1212",
   email: "info@manaratscience.club",
   phone: "+8801920522197",
-  bugReportUrl: "mailto:info@manaratscience.club?subject=Bug%20Report%20%7C%20MSC%20Website",
+  bugReportUrl:
+    "mailto:info@manaratscience.club?subject=Bug%20Report%20%7C%20MSC%20Website",
   social: {
     instagram: "https://www.instagram.com/manaratscience",
     discord: "https://discord.gg/FTHAkQcSHJ",
     facebook: "https://www.facebook.com/manaratscienceclub",
-    boysCommunity: "https://chat.whatsapp.com/Eyja5DTaDmYAotXkQQsCl4?s=cl&p=i&mlu=1",
-    girlsCommunity: "https://chat.whatsapp.com/F8bNUetkCdX8dsIDmXq7vi?s=cl&p=i&mlu=1",
+    boysCommunity:
+      "https://chat.whatsapp.com/Eyja5DTaDmYAotXkQQsCl4?s=cl&p=i&mlu=1",
+    girlsCommunity:
+      "https://chat.whatsapp.com/F8bNUetkCdX8dsIDmXq7vi?s=cl&p=i&mlu=1",
   },
   developer: "Abrar Jawad - B25",
   foundedYear: 2023,
@@ -26,7 +29,12 @@ export const siteConfig = {
 
 // ─── Metrics ──────────────────────────────────────────────────────────────────
 
-export const metrics = { members: 300, activeTeams: 3, completedProjects: 43, accolades: 18 };
+export const metrics = {
+  members: 300,
+  activeTeams: 3,
+  completedProjects: 43,
+  accolades: 18,
+};
 
 // ─── Leadership ───────────────────────────────────────────────────────────────
 
@@ -46,16 +54,22 @@ export const leadership: LeadershipMember[] = [
     name: "Dr. Maksud Alam",
     designation: "MCCA Convener and Club In-Charge, MSC",
     role: "faculty-advisor",
-    image: contentImage("adminimages/maksud.png"),
-    quote: "The Manarat Science Club continues to shine as a vibrant center of creativity, curiosity, and scientific enthusiasm. This year, our students have achieved remarkable success, earning awards in science fairs, quiz competitions, and Olympiads. Their research projects and innovative models ranging from environmental solutions to technological prototypes have been widely appreciated for their originality and practical value. Our hands-on workshops, experiments, and project-based activities have further strengthened students' analytical thinking and teamwork skills. Participation in exhibitions and science festivals has given our young learners the opportunity to showcase their talents with confidence, receiving recognition for both their scientific understanding and presentation skills. We are also proud of the new collaborations established with academic and scientific organizations. Through expert-led seminars and mentorship sessions, students have gained valuable insights that inspire them to aim higher and think beyond the classroom. I express my heartfelt gratitude to our respected Principal and Vice Principal for their constant encouragement and guidance. Their support has played a vital role in the club's continued growth and success. As we look ahead, we remain committed to nurturing curiosity and empowering our students to become future thinkers, innovators, and problem-solvers. Let science lead the way.",
+    get image() {
+      return contentImage("adminimages/maksud.png");
+    },
+    quote:
+      "The Manarat Science Club continues to shine as a vibrant center of creativity, curiosity, and scientific enthusiasm. This year, our students have achieved remarkable success, earning awards in science fairs, quiz competitions, and Olympiads. Their research projects and innovative models ranging from environmental solutions to technological prototypes have been widely appreciated for their originality and practical value. Our hands-on workshops, experiments, and project-based activities have further strengthened students' analytical thinking and teamwork skills. Participation in exhibitions and science festivals has given our young learners the opportunity to showcase their talents with confidence, receiving recognition for both their scientific understanding and presentation skills. We are also proud of the new collaborations established with academic and scientific organizations. Through expert-led seminars and mentorship sessions, students have gained valuable insights that inspire them to aim higher and think beyond the classroom. I express my heartfelt gratitude to our respected Principal and Vice Principal for their constant encouragement and guidance. Their support has played a vital role in the club's continued growth and success. As we look ahead, we remain committed to nurturing curiosity and empowering our students to become future thinkers, innovators, and problem-solvers. Let science lead the way.",
   },
   {
     id: "advisor-2",
     name: "Roksana Khanam",
     designation: "Club In-Charge, MSC",
     role: "faculty-advisor",
-    image: contentImage("adminimages/roksana.png"),
-    quote: "It gives me immense pleasure to share a few words on behalf of Manarat Science Club. Science is not just a subject learned in classrooms it is a mindset of inquiry, observation, and discovery. Our club is committed to nurturing this curiosity and empowering our students to think critically and creatively about the world around them. This year, we have introduced several new initiatives to inspire scientific engagement among our learners. One of our key activities is \"Science Talk,\" a platform where students confidently present scientific concepts, innovations, and real-world applications. This initiative has strengthened their communication skills and enhanced peer learning. We are also proud to begin publishing our own student-led science journals, showcasing research articles, experiment findings, creative scientific writing, and innovative ideas from our young scientists. This publication will serve as a space for students to express curiosity and develop academic writing skills with a scientific outlook. In addition to these, our workshops, exhibitions, experiments, and collaborative projects continue to make the Science Club a hub of exploration and hands-on learning. We remain dedicated to creating opportunities that help students grow as thinkers, innovators, and problem-solvers. I extend my heartfelt appreciation to our respected Principal and Vice Principal for their continuous encouragement, visionary leadership, and unwavering support. Their guidance has shaped the club's success and motivated our students to reach greater heights.",
+    get image() {
+      return contentImage("adminimages/roksana.png");
+    },
+    quote:
+      'It gives me immense pleasure to share a few words on behalf of Manarat Science Club. Science is not just a subject learned in classrooms it is a mindset of inquiry, observation, and discovery. Our club is committed to nurturing this curiosity and empowering our students to think critically and creatively about the world around them. This year, we have introduced several new initiatives to inspire scientific engagement among our learners. One of our key activities is "Science Talk," a platform where students confidently present scientific concepts, innovations, and real-world applications. This initiative has strengthened their communication skills and enhanced peer learning. We are also proud to begin publishing our own student-led science journals, showcasing research articles, experiment findings, creative scientific writing, and innovative ideas from our young scientists. This publication will serve as a space for students to express curiosity and develop academic writing skills with a scientific outlook. In addition to these, our workshops, exhibitions, experiments, and collaborative projects continue to make the Science Club a hub of exploration and hands-on learning. We remain dedicated to creating opportunities that help students grow as thinkers, innovators, and problem-solvers. I extend my heartfelt appreciation to our respected Principal and Vice Principal for their continuous encouragement, visionary leadership, and unwavering support. Their guidance has shaped the club\'s success and motivated our students to reach greater heights.',
   },
   {
     id: "president",
@@ -63,77 +77,434 @@ export const leadership: LeadershipMember[] = [
     designation: "Club President, Batch 2025–26",
     role: "president",
     image: null,
-    dedication: "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ\n\n\"Read! In the name of your Lord who created — created man from a clinging substance. Read, and your Lord is the most Generous, who taught by the pen, taught man that which he knew not.\"\n— Surah Al-ʿAlaq (96:1–5)",
-    quote: "Manarat Science Club is more than a club — it is a promise we make to each other. A promise to keep learning, to keep questioning, and to carry knowledge forward in service of something greater than ourselves. Every experiment we run, every paper we publish, every project we complete is a small act of devotion to that promise.",
+    dedication:
+      'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ\n\n"Read! In the name of your Lord who created — created man from a clinging substance. Read, and your Lord is the most Generous, who taught by the pen, taught man that which he knew not."\n— Surah Al-ʿAlaq (96:1–5)',
+    quote:
+      "Manarat Science Club is more than a club — it is a promise we make to each other. A promise to keep learning, to keep questioning, and to carry knowledge forward in service of something greater than ourselves. Every experiment we run, every paper we publish, every project we complete is a small act of devotion to that promise.",
   },
 ];
 
 // ─── Events ───────────────────────────────────────────────────────────────────
 
 export interface ClubEvent {
-  id: string; title: string; date: string; time: string;
-  description: string; status: "upcoming" | "past"; location: string; tags: string[];
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  description: string;
+  status: "upcoming" | "past";
+  location: string;
+  tags: string[];
 }
 
 export const events: ClubEvent[] = [
-  { id: "evt-001", title: "Quantum Mechanics Workshop", date: "2026-07-12", time: "10:00 AM", description: "An introductory hands-on workshop on quantum mechanics concepts, wave-particle duality, and the double-slit experiment. Suitable for students in grades 9–12.", status: "upcoming", location: "Physics Lab, Main Building", tags: ["physics", "workshop"] },
-  { id: "evt-002", title: "Robotics Team Showcase", date: "2026-07-25", time: "2:00 PM", description: "Members of the Robotics Division will demonstrate semester projects including the environmental monitoring robot and the automated greenhouse system.", status: "upcoming", location: "Auditorium, Manarat Campus", tags: ["robotics", "showcase"] },
-  { id: "evt-003", title: "Annual Science Fair 2026", date: "2026-08-15", time: "9:00 AM", description: "The flagship annual event where all MSC divisions present their research, experiments, and prototypes to faculty, industry judges, and invited guests.", status: "upcoming", location: "Main Hall & Grounds", tags: ["science-fair", "annual"] },
-  { id: "evt-004", title: "Bimonthly Journal Launch — Vol. 3", date: "2026-05-20", time: "11:00 AM", description: "Launch ceremony for Volume 3 of the MSC Research Journal, featuring 8 peer-reviewed student articles covering quantum physics to environmental biology.", status: "past", location: "Library Conference Room", tags: ["journal", "publication"] },
-  { id: "evt-005", title: "National Science Olympiad — Regional Round", date: "2026-04-08", time: "8:30 AM", description: "Manarat teams competed in the Regional Science Olympiad, achieving top-3 finishes in Physics and Biology categories.", status: "past", location: "Bangladesh University of Engineering & Technology (BUET)", tags: ["olympiad", "competition"] },
-  { id: "evt-006", title: "Chemistry Lab Open Day", date: "2026-03-05", time: "1:00 PM", description: "A public demonstration day featuring electrochemistry experiments, paper chromatography, and a demonstration of bioluminescence using analog reagents.", status: "past", location: "Chemistry Lab, Second Floor", tags: ["chemistry", "demonstration"] },
+  {
+    id: "evt-001",
+    title: "Quantum Mechanics Workshop",
+    date: "2026-07-12",
+    time: "10:00 AM",
+    description:
+      "An introductory hands-on workshop on quantum mechanics concepts, wave-particle duality, and the double-slit experiment. Suitable for students in grades 9–12.",
+    status: "upcoming",
+    location: "Physics Lab, Main Building",
+    tags: ["physics", "workshop"],
+  },
+  {
+    id: "evt-002",
+    title: "Robotics Team Showcase",
+    date: "2026-07-25",
+    time: "2:00 PM",
+    description:
+      "Members of the Robotics Division will demonstrate semester projects including the environmental monitoring robot and the automated greenhouse system.",
+    status: "upcoming",
+    location: "Auditorium, Manarat Campus",
+    tags: ["robotics", "showcase"],
+  },
+  {
+    id: "evt-003",
+    title: "Annual Science Fair 2026",
+    date: "2026-08-15",
+    time: "9:00 AM",
+    description:
+      "The flagship annual event where all MSC divisions present their research, experiments, and prototypes to faculty, industry judges, and invited guests.",
+    status: "upcoming",
+    location: "Main Hall & Grounds",
+    tags: ["science-fair", "annual"],
+  },
+  {
+    id: "evt-004",
+    title: "Bimonthly Journal Launch — Vol. 3",
+    date: "2026-05-20",
+    time: "11:00 AM",
+    description:
+      "Launch ceremony for Volume 3 of the MSC Research Journal, featuring 8 peer-reviewed student articles covering quantum physics to environmental biology.",
+    status: "past",
+    location: "Library Conference Room",
+    tags: ["journal", "publication"],
+  },
+  {
+    id: "evt-005",
+    title: "National Science Olympiad — Regional Round",
+    date: "2026-04-08",
+    time: "8:30 AM",
+    description:
+      "Manarat teams competed in the Regional Science Olympiad, achieving top-3 finishes in Physics and Biology categories.",
+    status: "past",
+    location: "Bangladesh University of Engineering & Technology (BUET)",
+    tags: ["olympiad", "competition"],
+  },
+  {
+    id: "evt-006",
+    title: "Chemistry Lab Open Day",
+    date: "2026-03-05",
+    time: "1:00 PM",
+    description:
+      "A public demonstration day featuring electrochemistry experiments, paper chromatography, and a demonstration of bioluminescence using analog reagents.",
+    status: "past",
+    location: "Chemistry Lab, Second Floor",
+    tags: ["chemistry", "demonstration"],
+  },
 ];
 
 // ─── Achievements ─────────────────────────────────────────────────────────────
 
 export interface Achievement {
-  id: string; title: string; eventName: string; year: number;
+  id: string;
+  title: string;
+  eventName: string;
+  year: number;
   tier: "gold" | "silver" | "bronze" | "merit";
   category: "science-fair" | "quiz" | "olympiad" | "exhibition";
   description: string;
 }
 
 export const achievements: Achievement[] = [
-  { id: "ach-001", title: "1st Place — Physics Olympiad", eventName: "Bangladesh National Science Olympiad", year: 2025, tier: "gold", category: "olympiad", description: "Tariq Ziad Mahmud secured first place in the Physics category, solving a complex quantum harmonic oscillator problem set under timed conditions." },
-  { id: "ach-002", title: "Best Environmental Project", eventName: "Dhaka Inter-School Science Fair", year: 2025, tier: "gold", category: "science-fair", description: "The Robotics team's Environmental Monitoring Robot won the top prize in the Environmental Solutions category for innovation and practical impact." },
-  { id: "ach-003", title: "2nd Place — Biology Quiz", eventName: "National Biology Olympiad — Regional", year: 2025, tier: "silver", category: "quiz", description: "MSC's Biology team scored second in a 120-question rapid-fire quiz covering genetics, ecology, and cell biology." },
-  { id: "ach-004", title: "3rd Place — Prototype Exhibition", eventName: "Innovate Bangladesh 2024", year: 2024, tier: "bronze", category: "exhibition", description: "The automated vertical hydroponic garden prototype earned a third-place innovation award at the national youth technology exhibition." },
-  { id: "ach-005", title: "1st Place — Interdisciplinary Research Paper", eventName: "SESIP Young Researchers Competition", year: 2024, tier: "gold", category: "science-fair", description: "Samia Begum and Farhan Ahmed co-authored the winning paper on neuroscience-backed study methodologies in Bangladeshi secondary schools." },
-  { id: "ach-006", title: "Best Chemistry Experiment", eventName: "Manarat Science Day 2024", year: 2024, tier: "gold", category: "exhibition", description: "The electrochemical water purification experiment was recognized as the most technically rigorous and practically applicable project." },
-  { id: "ach-007", title: "2nd Place — Astronomy Quiz", eventName: "South Asian Astronomy Youth Challenge", year: 2023, tier: "silver", category: "quiz", description: "The Astronomy Division team placed second in a 3-round quiz covering stellar physics, exoplanet detection, and cosmological models." },
-  { id: "ach-008", title: "Merit Certificate — Robotics", eventName: "IEEE Bangladesh Student Branch Competition", year: 2023, tier: "merit", category: "exhibition", description: "MSC received a merit certificate for the line-following and obstacle-detecting robot demonstration at the IEEE robotics challenge." },
+  {
+    id: "ach-001",
+    title: "1st Place — Physics Olympiad",
+    eventName: "Bangladesh National Science Olympiad",
+    year: 2025,
+    tier: "gold",
+    category: "olympiad",
+    description:
+      "Tariq Ziad Mahmud secured first place in the Physics category, solving a complex quantum harmonic oscillator problem set under timed conditions.",
+  },
+  {
+    id: "ach-002",
+    title: "Best Environmental Project",
+    eventName: "Dhaka Inter-School Science Fair",
+    year: 2025,
+    tier: "gold",
+    category: "science-fair",
+    description:
+      "The Robotics team's Environmental Monitoring Robot won the top prize in the Environmental Solutions category for innovation and practical impact.",
+  },
+  {
+    id: "ach-003",
+    title: "2nd Place — Biology Quiz",
+    eventName: "National Biology Olympiad — Regional",
+    year: 2025,
+    tier: "silver",
+    category: "quiz",
+    description:
+      "MSC's Biology team scored second in a 120-question rapid-fire quiz covering genetics, ecology, and cell biology.",
+  },
+  {
+    id: "ach-004",
+    title: "3rd Place — Prototype Exhibition",
+    eventName: "Innovate Bangladesh 2024",
+    year: 2024,
+    tier: "bronze",
+    category: "exhibition",
+    description:
+      "The automated vertical hydroponic garden prototype earned a third-place innovation award at the national youth technology exhibition.",
+  },
+  {
+    id: "ach-005",
+    title: "1st Place — Interdisciplinary Research Paper",
+    eventName: "SESIP Young Researchers Competition",
+    year: 2024,
+    tier: "gold",
+    category: "science-fair",
+    description:
+      "Samia Begum and Farhan Ahmed co-authored the winning paper on neuroscience-backed study methodologies in Bangladeshi secondary schools.",
+  },
+  {
+    id: "ach-006",
+    title: "Best Chemistry Experiment",
+    eventName: "Manarat Science Day 2024",
+    year: 2024,
+    tier: "gold",
+    category: "exhibition",
+    description:
+      "The electrochemical water purification experiment was recognized as the most technically rigorous and practically applicable project.",
+  },
+  {
+    id: "ach-007",
+    title: "2nd Place — Astronomy Quiz",
+    eventName: "South Asian Astronomy Youth Challenge",
+    year: 2023,
+    tier: "silver",
+    category: "quiz",
+    description:
+      "The Astronomy Division team placed second in a 3-round quiz covering stellar physics, exoplanet detection, and cosmological models.",
+  },
+  {
+    id: "ach-008",
+    title: "Merit Certificate — Robotics",
+    eventName: "IEEE Bangladesh Student Branch Competition",
+    year: 2023,
+    tier: "merit",
+    category: "exhibition",
+    description:
+      "MSC received a merit certificate for the line-following and obstacle-detecting robot demonstration at the IEEE robotics challenge.",
+  },
 ];
 
 // ─── Teams ────────────────────────────────────────────────────────────────────
 
 export interface EngineeringTeam {
-  id: string; name: string; description: string;
-  memberCount: number; openPositions: number; focus: string[]; color: string;
+  id: string;
+  name: string;
+  description: string;
+  memberCount: number;
+  openPositions: number;
+  focus: string[];
+  color: string;
 }
 
 export const teams: EngineeringTeam[] = [
-  { id: "team-robotics", name: "Robotics Division", description: "Designs, builds, and programs autonomous and semi-autonomous robotic systems for environmental, mechanical, and competitive applications.", memberCount: 18, openPositions: 3, focus: ["Arduino / Microcontrollers", "Sensor Systems", "Control Logic", "3D Printing"], color: "manara-teal" },
-  { id: "team-research", name: "Research & Publication Wing", description: "Produces the bimonthly MSC Research Journal, manages peer review, and represents the club in academic writing competitions.", memberCount: 14, openPositions: 4, focus: ["Academic Writing", "Peer Review", "Literature Research", "Data Analysis"], color: "manara-purple" },
-  { id: "team-astronomy", name: "Astronomy & Space Division", description: "Operates telescope sessions, participates in astronomy olympiads, and is currently building a small radio telescope array.", memberCount: 11, openPositions: 2, focus: ["Astrophysics", "Telescope Operation", "Radio Astronomy", "Cosmology"], color: "manara-blue" },
-  { id: "team-chemistry", name: "Chemistry Lab Division", description: "Conducts structured experiments in organic, inorganic, and electrochemistry. Leads the annual Chemistry Open Day demonstrations.", memberCount: 15, openPositions: 3, focus: ["Organic Chemistry", "Electrochemistry", "Lab Safety", "Titration & Analysis"], color: "manara-yellow" },
-  { id: "team-biology", name: "Biology Field Division", description: "Focuses on ecological fieldwork, cell biology experiments, and has an active partnership with the school's botany garden.", memberCount: 12, openPositions: 2, focus: ["Ecology & Fieldwork", "Cell Biology", "Botany", "Microscopy"], color: "manara-pink" },
-  { id: "team-editorial", name: "Editorial & Design Board", description: "Manages club communications, social media, visual design, and publication layout for the MSC Research Journal.", memberCount: 8, openPositions: 2, focus: ["Graphic Design", "Science Communication", "Social Media", "Typography"], color: "ink" },
+  {
+    id: "team-robotics",
+    name: "Robotics Division",
+    description:
+      "Designs, builds, and programs autonomous and semi-autonomous robotic systems for environmental, mechanical, and competitive applications.",
+    memberCount: 18,
+    openPositions: 3,
+    focus: [
+      "Arduino / Microcontrollers",
+      "Sensor Systems",
+      "Control Logic",
+      "3D Printing",
+    ],
+    color: "manara-teal",
+  },
+  {
+    id: "team-research",
+    name: "Research & Publication Wing",
+    description:
+      "Produces the bimonthly MSC Research Journal, manages peer review, and represents the club in academic writing competitions.",
+    memberCount: 14,
+    openPositions: 4,
+    focus: [
+      "Academic Writing",
+      "Peer Review",
+      "Literature Research",
+      "Data Analysis",
+    ],
+    color: "manara-purple",
+  },
+  {
+    id: "team-astronomy",
+    name: "Astronomy & Space Division",
+    description:
+      "Operates telescope sessions, participates in astronomy olympiads, and is currently building a small radio telescope array.",
+    memberCount: 11,
+    openPositions: 2,
+    focus: [
+      "Astrophysics",
+      "Telescope Operation",
+      "Radio Astronomy",
+      "Cosmology",
+    ],
+    color: "manara-blue",
+  },
+  {
+    id: "team-chemistry",
+    name: "Chemistry Lab Division",
+    description:
+      "Conducts structured experiments in organic, inorganic, and electrochemistry. Leads the annual Chemistry Open Day demonstrations.",
+    memberCount: 15,
+    openPositions: 3,
+    focus: [
+      "Organic Chemistry",
+      "Electrochemistry",
+      "Lab Safety",
+      "Titration & Analysis",
+    ],
+    color: "manara-yellow",
+  },
+  {
+    id: "team-biology",
+    name: "Biology Field Division",
+    description:
+      "Focuses on ecological fieldwork, cell biology experiments, and has an active partnership with the school's botany garden.",
+    memberCount: 12,
+    openPositions: 2,
+    focus: ["Ecology & Fieldwork", "Cell Biology", "Botany", "Microscopy"],
+    color: "manara-pink",
+  },
+  {
+    id: "team-editorial",
+    name: "Editorial & Design Board",
+    description:
+      "Manages club communications, social media, visual design, and publication layout for the MSC Research Journal.",
+    memberCount: 8,
+    openPositions: 2,
+    focus: [
+      "Graphic Design",
+      "Science Communication",
+      "Social Media",
+      "Typography",
+    ],
+    color: "ink",
+  },
 ];
 
 // ─── Projects ─────────────────────────────────────────────────────────────────
 
 export interface Project {
-  id: string; title: string; description: string; team: string;
-  status: "completed" | "ongoing"; materials: string[]; goals: string[]; members: string[];
+  id: string;
+  title: string;
+  description: string;
+  team: string;
+  status: "completed" | "ongoing";
+  materials: string[];
+  goals: string[];
+  members: string[];
 }
 
 export const projects: Project[] = [
-  { id: "proj-001", title: "Autonomous Environmental Monitoring Robot", description: "A self-navigating robot equipped with air quality, temperature, humidity, and soil pH sensors, designed to patrol and log environmental data in urban green spaces.", team: "Robotics Division", status: "completed", materials: ["Arduino Mega", "MQ-135 Sensor", "DHT22", "L298N Motor Driver", "LiPo Battery", "3D-Printed Chassis"], goals: ["Automate environmental data collection", "Demonstrate practical robotics in ecology", "Achieve 2.5-hour autonomous runtime"], members: ["Nadia Rahman", "Khalid Hassan", "Mariam Akter"] },
-  { id: "proj-002", title: "Vertical Hydroponic Garden System", description: "An automated vertical hydroponic system using recirculating nutrient solution, timed LED grow lights, and automated pH correction — designed for urban food production.", team: "Biology Field Division", status: "ongoing", materials: ["PVC Pipes", "Water Pump", "pH Sensor", "Nutrient Solution", "LED Grow Lights", "Arduino Nano"], goals: ["Grow leafy vegetables without soil in limited space", "Automate nutrient and pH monitoring", "Demonstrate urban food security innovation"], members: ["Samia Begum", "Fatima Tuz Zohra", "Rahim Uddin"] },
-  { id: "proj-003", title: "Electrochemical Water Purification Device", description: "A small-scale electrochemical reactor that uses electrolysis to remove heavy metal contaminants and pathogens from drinking water without chemical additives.", team: "Chemistry Lab Division", status: "completed", materials: ["Graphite Electrodes", "Stainless Steel Chamber", "DC Power Supply", "pH Meter", "Conductivity Probe"], goals: ["Remove 90%+ of heavy metals from contaminated samples", "Design for low-cost community replication", "Document full experimental protocol for publication"], members: ["Farhan Ahmed", "Tasneem Akter", "Amir Khan"] },
-  { id: "proj-004", title: "Radio Telescope Array — Phase 1", description: "Construction of a small-baseline radio interferometer array using repurposed satellite dishes and RTL-SDR receivers to detect 21cm hydrogen line emission from the Milky Way.", team: "Astronomy & Space Division", status: "ongoing", materials: ["Repurposed Satellite Dishes (×3)", "RTL-SDR Receivers", "Raspberry Pi 4", "Low-Noise Amplifiers", "Coaxial Cable"], goals: ["Detect 21cm hydrogen line emission", "Map a section of the galactic plane", "Build an open-source analysis pipeline"], members: ["Tariq Ziad Mahmud", "Sakib Mahmud", "Labiba Islam"] },
-  { id: "proj-005", title: "Automated Greenhouse Monitoring System", description: "A sensor-driven greenhouse controller that regulates irrigation, ventilation, and grow lights based on real-time soil moisture, temperature, and light readings — built for the campus botany garden.", team: "Robotics Division", status: "ongoing", materials: ["ESP32", "Capacitive Soil Moisture Sensor", "Relay Module", "Servo Actuators", "OLED Display", "Solar Panel"], goals: ["Cut manual watering effort by 80%", "Log climate data around the clock", "Power the system entirely from solar energy"], members: ["Khalid Hassan", "Ayesha Siddiqua", "Mahir Chowdhury"] },
-  { id: "proj-006", title: "Line-Following & Obstacle-Detecting Robot", description: "A compact competition robot that tracks high-contrast lines using an infrared sensor array and reroutes around obstacles with ultrasonic ranging — the build that earned MSC its IEEE merit certificate.", team: "Robotics Division", status: "completed", materials: ["Arduino Nano", "IR Line Sensor Array", "HC-SR04 Ultrasonic Sensor", "Geared DC Motors", "L293D Driver", "Acrylic Chassis"], goals: ["Complete a timed line-following course reliably", "Detect and avoid obstacles without human input", "Serve as the division's training platform for new members"], members: ["Nadia Rahman", "Rifat Hossain", "Mariam Akter"] },
+  {
+    id: "proj-001",
+    title: "Autonomous Environmental Monitoring Robot",
+    description:
+      "A self-navigating robot equipped with air quality, temperature, humidity, and soil pH sensors, designed to patrol and log environmental data in urban green spaces.",
+    team: "Robotics Division",
+    status: "completed",
+    materials: [
+      "Arduino Mega",
+      "MQ-135 Sensor",
+      "DHT22",
+      "L298N Motor Driver",
+      "LiPo Battery",
+      "3D-Printed Chassis",
+    ],
+    goals: [
+      "Automate environmental data collection",
+      "Demonstrate practical robotics in ecology",
+      "Achieve 2.5-hour autonomous runtime",
+    ],
+    members: ["Nadia Rahman", "Khalid Hassan", "Mariam Akter"],
+  },
+  {
+    id: "proj-002",
+    title: "Vertical Hydroponic Garden System",
+    description:
+      "An automated vertical hydroponic system using recirculating nutrient solution, timed LED grow lights, and automated pH correction — designed for urban food production.",
+    team: "Biology Field Division",
+    status: "ongoing",
+    materials: [
+      "PVC Pipes",
+      "Water Pump",
+      "pH Sensor",
+      "Nutrient Solution",
+      "LED Grow Lights",
+      "Arduino Nano",
+    ],
+    goals: [
+      "Grow leafy vegetables without soil in limited space",
+      "Automate nutrient and pH monitoring",
+      "Demonstrate urban food security innovation",
+    ],
+    members: ["Samia Begum", "Fatima Tuz Zohra", "Rahim Uddin"],
+  },
+  {
+    id: "proj-003",
+    title: "Electrochemical Water Purification Device",
+    description:
+      "A small-scale electrochemical reactor that uses electrolysis to remove heavy metal contaminants and pathogens from drinking water without chemical additives.",
+    team: "Chemistry Lab Division",
+    status: "completed",
+    materials: [
+      "Graphite Electrodes",
+      "Stainless Steel Chamber",
+      "DC Power Supply",
+      "pH Meter",
+      "Conductivity Probe",
+    ],
+    goals: [
+      "Remove 90%+ of heavy metals from contaminated samples",
+      "Design for low-cost community replication",
+      "Document full experimental protocol for publication",
+    ],
+    members: ["Farhan Ahmed", "Tasneem Akter", "Amir Khan"],
+  },
+  {
+    id: "proj-004",
+    title: "Radio Telescope Array — Phase 1",
+    description:
+      "Construction of a small-baseline radio interferometer array using repurposed satellite dishes and RTL-SDR receivers to detect 21cm hydrogen line emission from the Milky Way.",
+    team: "Astronomy & Space Division",
+    status: "ongoing",
+    materials: [
+      "Repurposed Satellite Dishes (×3)",
+      "RTL-SDR Receivers",
+      "Raspberry Pi 4",
+      "Low-Noise Amplifiers",
+      "Coaxial Cable",
+    ],
+    goals: [
+      "Detect 21cm hydrogen line emission",
+      "Map a section of the galactic plane",
+      "Build an open-source analysis pipeline",
+    ],
+    members: ["Tariq Ziad Mahmud", "Sakib Mahmud", "Labiba Islam"],
+  },
+  {
+    id: "proj-005",
+    title: "Automated Greenhouse Monitoring System",
+    description:
+      "A sensor-driven greenhouse controller that regulates irrigation, ventilation, and grow lights based on real-time soil moisture, temperature, and light readings — built for the campus botany garden.",
+    team: "Robotics Division",
+    status: "ongoing",
+    materials: [
+      "ESP32",
+      "Capacitive Soil Moisture Sensor",
+      "Relay Module",
+      "Servo Actuators",
+      "OLED Display",
+      "Solar Panel",
+    ],
+    goals: [
+      "Cut manual watering effort by 80%",
+      "Log climate data around the clock",
+      "Power the system entirely from solar energy",
+    ],
+    members: ["Khalid Hassan", "Ayesha Siddiqua", "Mahir Chowdhury"],
+  },
+  {
+    id: "proj-006",
+    title: "Line-Following & Obstacle-Detecting Robot",
+    description:
+      "A compact competition robot that tracks high-contrast lines using an infrared sensor array and reroutes around obstacles with ultrasonic ranging — the build that earned MSC its IEEE merit certificate.",
+    team: "Robotics Division",
+    status: "completed",
+    materials: [
+      "Arduino Nano",
+      "IR Line Sensor Array",
+      "HC-SR04 Ultrasonic Sensor",
+      "Geared DC Motors",
+      "L293D Driver",
+      "Acrylic Chassis",
+    ],
+    goals: [
+      "Complete a timed line-following course reliably",
+      "Detect and avoid obstacles without human input",
+      "Serve as the division's training platform for new members",
+    ],
+    members: ["Nadia Rahman", "Rifat Hossain", "Mariam Akter"],
+  },
 ];
 
 // ─── Legacy Content ───────────────────────────────────────────────────────────
@@ -159,23 +530,29 @@ export const currentMembers: Member[] = [
   {
     id: "current-ajmain",
     name: "Mohammad Ajmain Faieq",
-    image: contentImage("adminimages/ajmain.png"),
+    get image() {
+      return contentImage("adminimages/ajmain.png");
+    },
     batch: "2026–2027",
     role: "President",
     socials: {},
   },
-    {
+  {
     id: "current-ehsas",
     name: "Ehsas Mostafa",
-    image: contentImage("adminimages/ehsas.webp"),
+    get image() {
+      return contentImage("adminimages/ehsas.webp");
+    },
     batch: "2026–2027",
     role: "Vice President",
     socials: {},
   },
-    {
+  {
     id: "current-nafisa",
     name: "Nafisa Nawar",
-    image: contentImage("adminimages/nafisa.webp"),
+    get image() {
+      return contentImage("adminimages/nafisa.webp");
+    },
     batch: "2026–2027",
     role: "Vice President",
     socials: {},
@@ -183,30 +560,35 @@ export const currentMembers: Member[] = [
   {
     id: "current-yasa",
     name: "Yasa Rahman",
-    image: contentImage("adminimages/yasa.jpg"),
+    get image() {
+      return contentImage("adminimages/yasa.jpg");
+    },
     batch: "2026–2027",
     role: "General Secretary",
     socials: {},
   },
-  
-  
+
   {
     id: "current-zarifah",
     name: "Zarifah Tasnim",
-    image: contentImage("adminimages/zarifa.jpg"),
+    get image() {
+      return contentImage("adminimages/zarifa.jpg");
+    },
     batch: "2026–2027",
     role: "General Secretary",
     socials: {},
   },
-    {
+  {
     id: "current-sakib",
     name: "Sakib Raihan",
-    image: contentImage("adminimages/sakib.webp"),
+    get image() {
+      return contentImage("adminimages/sakib.webp");
+    },
     batch: "2026–2027",
     role: "Assistant Secretary",
     socials: {},
   },
-    {
+  {
     id: "current-takia",
     name: "Takia Nujhat ",
     image: "/memberimage/takia.webp",
@@ -214,47 +596,57 @@ export const currentMembers: Member[] = [
     role: "Assistant Secretary",
     socials: {},
   },
-      {
+  {
     id: "current-shayan",
     name: "M. Shayan Ibn Taufique",
-    image: contentImage("adminimages/shayan.webp"),
+    get image() {
+      return contentImage("adminimages/shayan.webp");
+    },
     batch: "2026–2027",
     role: "Coordinator",
     socials: {},
   },
-      {
+  {
     id: "current-wadud",
     name: "Akil Ibn Wadud",
-    image: contentImage("adminimages/wadud.webp"),
+    get image() {
+      return contentImage("adminimages/wadud.webp");
+    },
     batch: "2026–2027",
     role: "Coordinator",
     socials: {},
   },
-      {
+  {
     id: "current-junayna",
     name: "Junayna Ekrum",
-    image: contentImage("adminimages/junayna.webp"),
+    get image() {
+      return contentImage("adminimages/junayna.webp");
+    },
     batch: "2026–2027",
     role: "Coordinator",
     socials: {},
   },
-      {
+  {
     id: "current-rose",
     name: "Tarannum Rose",
     // Stored bytes are genuine HEIC, which no browser outside Safari renders and sharp
     // cannot decode here (no HEVC plugin) — the WebP twin was made by decoding the
     // original with ffmpeg and running it through the optimizer's own encode chain, so
     // `contentImage` resolves it like every other card.
-    image: contentImage("adminimages/rose.heif"),
+    get image() {
+      return contentImage("adminimages/rose.heif");
+    },
     batch: "2026–2027",
     role: "Coordinator",
     socials: {},
   },
 
-    {
+  {
     id: "current-nureen",
     name: "Nureen Rayan",
-    image: contentImage("adminimages/nureen.jpg"),
+    get image() {
+      return contentImage("adminimages/nureen.jpg");
+    },
     batch: "2026–2027",
     role: "Head of Department — Activity",
     socials: {},
@@ -262,7 +654,9 @@ export const currentMembers: Member[] = [
   {
     id: "current-nusaiba",
     name: "Nusaiba Farha",
-    image: contentImage("adminimages/nusaiba.png"),
+    get image() {
+      return contentImage("adminimages/nusaiba.png");
+    },
     batch: "2026–2027",
     role: "Head of Department — Activity",
     socials: {},
@@ -270,7 +664,9 @@ export const currentMembers: Member[] = [
   {
     id: "current-omama",
     name: "Omama Salehin",
-    image: contentImage("adminimages/Omama.jpeg"),
+    get image() {
+      return contentImage("adminimages/Omama.jpeg");
+    },
     batch: "2026–2027",
     role: "Head of Department — Activity",
     socials: {},
@@ -278,7 +674,9 @@ export const currentMembers: Member[] = [
   {
     id: "current-alfe",
     name: "Shafe Islam Alfe",
-    image: contentImage("adminimages/shafe.jpg"),
+    get image() {
+      return contentImage("adminimages/shafe.jpg");
+    },
     batch: "2026–2027",
     role: "Creative Director",
     socials: {},
@@ -286,7 +684,9 @@ export const currentMembers: Member[] = [
   {
     id: "current-aarina",
     name: "Aarina Moitry",
-    image: contentImage("adminimages/aarina.jpg"),
+    get image() {
+      return contentImage("adminimages/aarina.jpg");
+    },
     batch: "2026–2027",
     role: "Head of Department — Media",
     socials: {},
@@ -294,7 +694,9 @@ export const currentMembers: Member[] = [
   {
     id: "current-ruhma",
     name: "Ruhma Hossain",
-    image: contentImage("adminimages/ruhma.jpg"),
+    get image() {
+      return contentImage("adminimages/ruhma.jpg");
+    },
     batch: "2026–2027",
     role: "Head of Department — Academics",
     socials: {},
@@ -302,16 +704,20 @@ export const currentMembers: Member[] = [
   {
     id: "current-safwan",
     name: "Sazid Hasan Safwan",
-    image: contentImage("adminimages/safwan.jpg"),
+    get image() {
+      return contentImage("adminimages/safwan.jpg");
+    },
     batch: "2026–2027",
     role: "Head of Department — Academics",
     socials: {},
   },
 
-    {
+  {
     id: "current-abrar",
     name: "Abrar Jawad",
-    image: contentImage("adminimages/abrar.png"),
+    get image() {
+      return contentImage("adminimages/abrar.png");
+    },
     batch: "2026–2027",
     role: "Head of Department — IT",
     socials: {},
@@ -319,19 +725,22 @@ export const currentMembers: Member[] = [
   {
     id: "current-tahiad",
     name: "Mohammad Tahiad Islam",
-    image: contentImage("adminimages/tahiad.jpg"),
+    get image() {
+      return contentImage("adminimages/tahiad.jpg");
+    },
     batch: "2026–2027",
     role: "Head of Department — Engineering & Innovation",
     socials: {},
   },
-
 ];
 
 export const legacyMembers: Member[] = [
   {
     id: "current-jaif",
     name: "Jaif Bin Morshed",
-    image: contentImage("adminimages/jaif.png"),
+    get image() {
+      return contentImage("adminimages/jaif.png");
+    },
     batch: "2025–2026",
     role: "President",
     socials: {},
@@ -339,7 +748,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-ajmain",
     name: "Mohammad Ajmain Faieq",
-    image: contentImage("adminimages/ajmain.jpg"),
+    get image() {
+      return contentImage("adminimages/ajmain.jpg");
+    },
     batch: "2025–2026",
     role: "Vice President",
     socials: {},
@@ -347,7 +758,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-nureen",
     name: "Nureen Rayan",
-    image: contentImage("adminimages/nureen.png"),
+    get image() {
+      return contentImage("adminimages/nureen.png");
+    },
     batch: "2025–2026",
     role: "Vice President",
     socials: {},
@@ -355,7 +768,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-fariha",
     name: "Fariha Tasnim",
-    image: contentImage("adminimages/fariha.png"),
+    get image() {
+      return contentImage("adminimages/fariha.png");
+    },
     batch: "2025–2026",
     role: "General Secretary",
     socials: {},
@@ -363,7 +778,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-yasa",
     name: "Yasa Rahman",
-    image: contentImage("adminimages/yasa.jpg"),
+    get image() {
+      return contentImage("adminimages/yasa.jpg");
+    },
     batch: "2025–2026",
     role: "Assistant Secretary",
     socials: {},
@@ -371,7 +788,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-twaha-senior",
     name: "Samin Yasar Twaha",
-    image: contentImage("adminimages/twaha.jpg"),
+    get image() {
+      return contentImage("adminimages/twaha.jpg");
+    },
     batch: "2025–2026",
     role: "Senior Executive",
     socials: {},
@@ -379,7 +798,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-farheen-senior",
     name: "Farheen Hasnat",
-    image: contentImage("adminimages/farheen.png"),
+    get image() {
+      return contentImage("adminimages/farheen.png");
+    },
     batch: "2025–2026",
     role: "Senior Executive",
     socials: {},
@@ -387,7 +808,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-takrim",
     name: "Takrim Areefin",
-    image: contentImage("adminimages/takrim.png"),
+    get image() {
+      return contentImage("adminimages/takrim.png");
+    },
     batch: "2025–2026",
     role: "Deputy Coordinator",
     socials: {},
@@ -395,7 +818,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-nusaiba",
     name: "Nusaiba Farha",
-    image: contentImage("adminimages/nusaiba.png"),
+    get image() {
+      return contentImage("adminimages/nusaiba.png");
+    },
     batch: "2025–2026",
     role: "Deputy Coordinator",
     socials: {},
@@ -404,7 +829,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-golam",
     name: "Golam Sami",
-    image: contentImage("adminimages/golamsami.jpg"),
+    get image() {
+      return contentImage("adminimages/golamsami.jpg");
+    },
     batch: "2025–2026",
     role: "Creativity HOD",
     socials: {},
@@ -412,7 +839,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-kashfee",
     name: "Kashfee Rahman",
-    image: contentImage("adminimages/kashfee.png"),
+    get image() {
+      return contentImage("adminimages/kashfee.png");
+    },
     batch: "2025–2026",
     role: "Creativity HOD",
     socials: {},
@@ -420,7 +849,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-tamim",
     name: "Tamim Iqbal",
-    image: contentImage("adminimages/tamimiqbal.jpg"),
+    get image() {
+      return contentImage("adminimages/tamimiqbal.jpg");
+    },
     batch: "2025–2026",
     role: "Media HOD",
     socials: {},
@@ -428,7 +859,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-maisha",
     name: "Maisha Siddiqua",
-    image: contentImage("adminimages/maisha.png"),
+    get image() {
+      return contentImage("adminimages/maisha.png");
+    },
     batch: "2025–2026",
     role: "Creative Director",
     socials: {},
@@ -436,7 +869,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-nabiha",
     name: "Nabiha Zaman",
-    image: contentImage("adminimages/nabiha.png"),
+    get image() {
+      return contentImage("adminimages/nabiha.png");
+    },
     batch: "2025–2026",
     role: "Activity HOD",
     socials: {},
@@ -444,7 +879,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-farheen-activity",
     name: "Farheen Hasnat",
-    image: contentImage("adminimages/farheen.png"),
+    get image() {
+      return contentImage("adminimages/farheen.png");
+    },
     batch: "2025–2026",
     role: "Activity HOD",
     socials: {},
@@ -452,7 +889,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-twaha-events",
     name: "Samin Yasar Twaha",
-    image: contentImage("adminimages/twaha.jpg"),
+    get image() {
+      return contentImage("adminimages/twaha.jpg");
+    },
     batch: "2025–2026",
     role: "Events HOD",
     socials: {},
@@ -460,7 +899,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-abrar",
     name: "Abrar Jawad",
-    image: contentImage("adminimages/abrar.png"),
+    get image() {
+      return contentImage("adminimages/abrar.png");
+    },
     batch: "2025–2026",
     role: "IT HOD",
     socials: {},
@@ -468,7 +909,9 @@ export const legacyMembers: Member[] = [
   {
     id: "current-dhrubo",
     name: "Dhrubo Hasan",
-    image: contentImage("adminimages/dhrubo.png"),
+    get image() {
+      return contentImage("adminimages/dhrubo.png");
+    },
     batch: "2025–2026",
     role: "Engineering & Innovation HOD",
     socials: {},
@@ -520,9 +963,28 @@ export interface ShowcaseImage {
 
 /** Past STEM Fest event photos. */
 export const competitionShowcase: ShowcaseImage[] = [
-  { src: contentImage("stemfest/image1.png"), alt: "MSC STEM Fest 2025 — photo 1" },
-  { src: contentImage("stemfest/image2.png"), alt: "MSC STEM Fest 2025 — photo 2" },
-  { src: contentImage("stemfest/image3.png"), alt: "MSC STEM Fest 2025 — photo 3" },
-  { src: contentImage("stemfest/image4.png"), alt: "MSC STEM Fest 2025 — photo 4" },
- 
+  {
+    get src() {
+      return contentImage("stemfest/image1.png");
+    },
+    alt: "MSC STEM Fest 2025 — photo 1",
+  },
+  {
+    get src() {
+      return contentImage("stemfest/image2.png");
+    },
+    alt: "MSC STEM Fest 2025 — photo 2",
+  },
+  {
+    get src() {
+      return contentImage("stemfest/image3.png");
+    },
+    alt: "MSC STEM Fest 2025 — photo 3",
+  },
+  {
+    get src() {
+      return contentImage("stemfest/image4.png");
+    },
+    alt: "MSC STEM Fest 2025 — photo 4",
+  },
 ];

@@ -133,6 +133,19 @@ directly. That drift is recorded, not fixed, here.
 not yet in `.env.port`. The Vercel variable swap and deploy are the operator's step. The
 four orphan tables are ported but still owned by nothing — the F10 decision is owed.
 
+- **A data module must not resolve configuration at import.** Replacing the hard-coded
+  project ref with a loud failure exposed this: `src/lib/data/index.ts` built 43 media URLs
+  while the module was being evaluated, and `src/lib/supabase.ts` called
+  `createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!)` at import, so a build without those
+  vars died in "Collecting page data" rather than at the one page that needed them. Both are
+  now lazy — `image`/`src`/`href` are getters resolved when a card renders, and
+  `getSupabase()` returns `null` for unconfigured secrets, mirroring `getSupabaseAdmin()`.
+  Rendering a page that shows media still requires a configured host: that is the point of
+  failing loudly instead of minting URLs against a retired project. **Every environment that
+  builds must have `NEXT_PUBLIC_MEDIA_BASE_URL` and `NEXT_PUBLIC_SUPABASE_URL` present at
+  build time — including Preview — and `NEXT_PUBLIC_*` must not be marked Sensitive, or
+  Vercel cannot read it during the build.**
+
 ## Related
 
 [[backend/database-supabase]] · [[backend/supabase-audit-2026-09-13]] ·
