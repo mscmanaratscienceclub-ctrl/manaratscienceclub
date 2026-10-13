@@ -56,12 +56,16 @@ export const stemfestDetailsCopy = {
   linksHeading: "Rules, syllabus and resources",
   linksLead: "Everything else the fest publishes, page by page.",
   scheduleHeading: "Schedule & itinerary",
+  scheduleLead:
+    "The run sheet for both days, as the club published it. All times are Bangladesh Standard Time.",
+  scheduleGates: "Gates open — gate verification",
+  scheduleGatesNote:
+    "Every participant is verified at the main gate and handed their coupon/entry ticket, then taken to their designated room.",
+  scheduleNote:
+    "Apart from the Treasure Hunt, EA FC and every other leisure and fun segment run continuously across both days of the festival.",
   socialHeading: "Updates on the day",
   socialLead:
-    "The run sheet for both days goes out on the fest's own social pages — follow them for the schedule and the itinerary.",
-  pendingLabel: "Details coming soon",
-  pendingNote:
-    "The club has not published this part of the brief yet. It will appear on this page before the fest.",
+    "Room calls, floor changes and any slip in the run sheet are announced on the fest's own pages — follow them on the day.",
 } as const;
 
 // ── The fest at a glance ─────────────────────────────────────────────────────
@@ -154,6 +158,56 @@ export interface StemfestDetailLink {
   label: string;
   description: string;
   href: string;
+}
+
+/** One published window of the run sheet. */
+export interface StemfestScheduleSlot {
+  /** The window as printed, e.g. `9:00AM – 10:00AM`. */
+  time: string;
+  /**
+   * The registerable events contested in this window, read off the catalogue —
+   * so the name and the class band are what `/register` accepts, not a second
+   * copy of the flyer. Empty for a break, a ceremony or the Treasure Hunt.
+   */
+  events: StemfestEventRow[];
+  /** What the window holds when it is not an event; `null` when it is. */
+  activity: string | null;
+  /** Anything the run sheet adds, such as a later start. */
+  note: string | null;
+}
+
+/** One day of the run sheet. */
+export interface StemfestScheduleDay {
+  id: string;
+  /** `Day 1`. */
+  label: string;
+  /** The weekday and date, as the flyer gives it. */
+  date: string;
+  slots: StemfestScheduleSlot[];
+}
+
+/** One line of the run sheet. */
+export interface StemfestScheduleSlot {
+  /** The window as printed, e.g. `9:00AM – 10:00AM`. */
+  time: string;
+  /**
+   * The registerable events contested in this window, with the name and class
+   * band each one carries in the registration catalogue.
+   */
+  events: StemfestEventRow[];
+  /** What the slot is when it is not an event — a break, the ceremony. */
+  activity: string | null;
+  /** Anything the run sheet adds on top of the names. */
+  note: string | null;
+}
+
+export interface StemfestScheduleDay {
+  id: string;
+  /** `Day 1`. */
+  label: string;
+  /** `Friday, 16 October 2026`. */
+  date: string;
+  slots: StemfestScheduleSlot[];
 }
 
 // ── Authored brief ───────────────────────────────────────────────────────────
@@ -289,10 +343,70 @@ export const stemfestDetailLinks: StemfestDetailLink[] = [
 ];
 
 /**
- * The two-day run sheet. Empty until the club confirms it, which the page
- * renders as reserved space under its own heading.
+ * The two-day run sheet the club published.
+ *
+ * A window that runs a registerable event names it by its catalogue id instead of
+ * retyping its title and bracket: the flyer's `Class 3 - A2` and the catalogue's
+ * `Classes 3 – 12` are the same band seen from two ends, and only one of them may
+ * be written down here. What the page prints is then the catalogue's own words, so
+ * a schedule line cannot promise an event to a class the form would reject.
  */
-export const scheduleBody: string[] = [];
+interface SchedulePlanSlot {
+  time: string;
+  events?: string[];
+  activity?: string;
+  note?: string;
+}
+
+/** Both days open the same way, so the gate wording is authored once. */
+const gateArrival: SchedulePlanSlot = {
+  time: "7:45AM – 8:45AM",
+  activity: stemfestDetailsCopy.scheduleGates,
+  note: stemfestDetailsCopy.scheduleGatesNote,
+};
+
+const schedulePlan: {
+  id: string;
+  label: string;
+  date: string;
+  slots: SchedulePlanSlot[];
+}[] = [
+  {
+    id: "day-1",
+    label: "Day 1",
+    date: "Friday, 16 October 2026",
+    slots: [
+      gateArrival,
+      { time: "9:00AM – 10:00AM", events: ["mathematics"] },
+      { time: "10:30AM – 11:30AM", events: ["general-science"] },
+      { time: "10:30AM – 11:30AM", events: ["bio-chem"] },
+      {
+        time: "11:00AM – 1:00PM",
+        events: ["lfr", "robosoccer", "minecraft-bedwars"],
+        note: "Sessions start at 11:30AM.",
+      },
+      { time: "1:00PM – 2:30PM", activity: "Jummah prayer and lunch break" },
+      { time: "2:30PM – 3:30PM", activity: "Treasure Hunt — Fun Segment" },
+      { time: "3:30PM – 4:30PM", events: ["physics"] },
+    ],
+  },
+  {
+    id: "day-2",
+    label: "Day 2",
+    date: "Saturday, 17 October 2026",
+    slots: [
+      gateArrival,
+      {
+        time: "9:00AM – 10:00AM",
+        events: ["computer-science", "minecraft-bedwars"],
+      },
+      { time: "9:00AM – 12:00PM", events: ["project-display"] },
+      { time: "12:00PM – 1:00PM", activity: "Treasure Hunt — Fun Segment" },
+      { time: "1:00PM – 2:30PM", activity: "Prayer and lunch break" },
+      { time: "2:30PM – 5:00PM", activity: "Closing ceremony and prize giving" },
+    ],
+  },
+];
 
 // ── Derivation ───────────────────────────────────────────────────────────────
 
@@ -447,6 +561,35 @@ export const segmentRows: StemfestSegmentRow[] = stemfestSegments.map(
       .map(eventRowFor),
   }),
 );
+
+/** How a run-sheet window names what runs in it: by the catalogue's event id. */
+const eventRowById = new Map<string, StemfestEventRow>(
+  segmentRows.flatMap((segment) =>
+    segment.events.map((event) => [event.id, event] as const),
+  ),
+);
+
+/**
+ * The two days of the run sheet, with each window's event ids resolved to the
+ * catalogue's own name and class band.
+ *
+ * The page prints these resolved rows, so a schedule line promises exactly what
+ * `/register` will accept — the flyer's class band is never restated here.
+ */
+export const scheduleDays: StemfestScheduleDay[] = schedulePlan.map((day) => ({
+  id: day.id,
+  label: day.label,
+  date: day.date,
+  slots: day.slots.map((slot) => ({
+    time: slot.time,
+    activity: slot.activity ?? null,
+    note: slot.note ?? null,
+    events: (slot.events ?? []).flatMap((id) => {
+      const event = eventRowById.get(id);
+      return event ? [event] : [];
+    }),
+  })),
+}));
 
 /** What all four segments are worth together, in Taka. */
 export const prizePoolTotal: number = segmentRows.reduce(

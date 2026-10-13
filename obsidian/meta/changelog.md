@@ -8,6 +8,42 @@ updated: 2026-10-13
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
 
+## 2026-10-13 — The two-day run sheet is published on `/details`
+
+The schedule section had been a reserved card since the page shipped
+(`scheduleBody: string[] = []` → “Details coming soon”, with `socialLead` pointing at
+the fest’s social pages for a run sheet nobody had posted). The club published the
+sheet, so `/details` now carries it.
+
+- **`scheduleBody` is gone; `scheduleDays` replaced it.** The authored data is a
+  compact `schedulePlan` of windows, and every window that runs a registerable event
+  names it by its **catalogue id**. The page prints that event’s own name and class
+  band, so the flyer’s `Class 3 - A2` and the catalogue’s `Classes 3 – 12` — the same
+  bracket seen from two ends — are only written down once. A schedule line cannot
+  promise a class that `/register` would reject.
+- **Day 1 is 8 windows, Day 2 is 6**, both opening with the same gate-verification
+  note, authored once and shared rather than duplicated per day. Robotics and
+  Minecraft share the Day 1 late-morning block with its “sessions start at 11:30AM”
+  caveat; the closing note about EA FC and the other leisure segments running
+  continuously is `scheduleNote`.
+- **The PDF text for Day 2 9:00–10:00 was garbled** — “Computer Science Olympiads
+  Class 7 - A2 / Minecraft”. Confirmed with the club: the CS paper and Minecraft
+  Bedwars run in parallel that hour, so both sit on that one window.
+- **Copy changes follow the data.** `socialLead` no longer sends people to the social
+  pages *for the schedule* — it now covers room calls and slippage on the day — and
+  `pendingLabel`/`pendingNote` are deleted, the schedule being their only caller. The
+  page `metadata` advertises the run sheet in its title and description.
+
+Verified: `tsc --noEmit` and `eslint` clean, `verify.sh` 0 FAIL. `/details` served 200
+on the dev server and the rendered section was read back from the DOM — 8 and 6
+windows, **every authored event id resolved to a catalogue row** (a typo would have
+dropped one silently), no “Details coming soon” left anywhere on the page, slot
+dividers and borders computed, no horizontal overflow at 531px, console clean. Not
+checked: a desktop-width screenshot — the browser surface went unavailable mid-check,
+and the `lg:col-span-7`/`-5` split reuses the 12-column grid the rest of the section
+already ships. `pnpm build` was not run — it still dies on the known environmental
+Supabase pooler `CONNECT_TIMEOUT` during page-data collection.
+
 ## 2026-10-13 — Database ported to a new Supabase project by capturing the live catalog
 
 Everything moves to project `qrqurkqcetsneprfnofc` (Tokyo); the old one

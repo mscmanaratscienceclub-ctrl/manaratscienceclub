@@ -4,7 +4,6 @@ import {
   ArrowRight,
   CalendarDays,
   ExternalLink,
-  Info,
   MapPin,
   Trophy,
   Users,
@@ -18,18 +17,19 @@ import {
   formatTaka,
   olympiadFormat,
   prizePoolTotal,
-  scheduleBody,
+  scheduleDays,
   segmentRows,
   stemfestDetailLinks,
   stemfestDetailsCopy,
   type StemfestCategoryScheme,
   type StemfestEventRow,
+  type StemfestScheduleDay,
 } from "@/lib/data/stemfest-details";
 
 export const metadata: Metadata = {
-  title: "STEM Fest 2026-27 Details — Segments, Prize Pools, Categories & Venue",
+  title: "STEM Fest 2026-27 Details — Schedule, Segments, Prize Pool, Categories & Venue",
   description:
-    "The full MDIC STEM-FEST 2026-27 brief: 16th–17th October 2026 at Manarat Dhaka International School and College, with prize pools for Olympiads, Robotics, Project Display and E-sports, who each event is open to, how the Olympiad papers are set, and the registration, rules and syllabus pages.",
+    "The full MDIC STEM-FEST 2026-27 brief: 16th–17th October 2026 at Manarat Dhaka International School and College, the two-day run sheet with every Olympiad, Robotics, Project Display and E-sports window, prize pools, who each event is open to, how the Olympiad papers are set, and the registration, rules and syllabus pages.",
 };
 
 function EventRow({ event }: { event: StemfestEventRow }) {
@@ -82,6 +82,60 @@ function EventRow({ event }: { event: StemfestEventRow }) {
         </ul>
       ) : null}
     </li>
+  );
+}
+
+function ScheduleDay({ day }: { day: StemfestScheduleDay }) {
+  return (
+    <div>
+      <h3 className="font-voyage text-sm font-bold uppercase tracking-tight text-space-ivory">
+        {day.label}
+      </h3>
+      <p className="mt-1.5 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-space-amber">
+        {day.date}
+      </p>
+
+      <ul className="mt-4 divide-y divide-space-line-soft border border-space-line-soft">
+        {day.slots.map((slot) => (
+          <li
+            key={`${slot.time}-${slot.activity ?? slot.events.map((event) => event.id).join("+")}`}
+            className="px-4 py-3"
+          >
+            <p className="font-mono text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-ion">
+              {slot.time}
+            </p>
+
+            {slot.events.length > 0 ? (
+              <ul className="mt-2 space-y-1.5">
+                {slot.events.map((event) => (
+                  <li
+                    key={event.id}
+                    className="flex flex-wrap items-baseline gap-x-3 gap-y-1"
+                  >
+                    <span className="font-space-body text-sm font-semibold text-space-ivory">
+                      {event.name}
+                    </span>
+                    <span className="font-mono text-[0.6rem] uppercase tracking-[0.16em] text-space-muted/80">
+                      {event.eligibility}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 font-space-body text-sm font-semibold text-space-ivory">
+                {slot.activity}
+              </p>
+            )}
+
+            {slot.note ? (
+              <p className="mt-2 text-sm leading-relaxed text-space-muted">
+                {slot.note}
+              </p>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -307,33 +361,26 @@ export default function StemfestDetailsPage() {
           {stemfestDetailsCopy.scheduleHeading}
         </h2>
 
-        <div className="mt-6 grid gap-10 lg:grid-cols-12 lg:gap-12">
-          <div className="lg:col-span-6">
-            {scheduleBody.length > 0 ? (
-              <div className="space-y-4">
-                {scheduleBody.map((paragraph, index) => (
-                  <p
-                    key={`${stemfestDetailsCopy.scheduleHeading}-${index}`}
-                    className="text-sm leading-relaxed text-space-muted sm:text-[0.95rem]"
-                  >
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
-            ) : (
-              <div className="border border-dashed border-space-line-soft px-5 py-6">
-                <Info className="size-5 text-space-amber" aria-hidden="true" />
-                <p className="mt-3 font-space-body text-xs font-semibold uppercase tracking-[0.18em] text-space-ivory">
-                  {stemfestDetailsCopy.pendingLabel}
-                </p>
-                <p className="mt-2 max-w-[34rem] text-sm leading-relaxed text-space-muted sm:text-[0.95rem]">
-                  {stemfestDetailsCopy.pendingNote}
-                </p>
-              </div>
-            )}
+        <p className="mt-3 max-w-[42rem] text-sm leading-relaxed text-space-muted sm:text-[0.95rem]">
+          {stemfestDetailsCopy.scheduleLead}
+        </p>
+
+        <div className="mt-10 grid gap-10 lg:grid-cols-12 lg:gap-12">
+          <div className="lg:col-span-7">
+            <div className="grid gap-8 sm:grid-cols-2">
+              {scheduleDays.map((day) => (
+                <ScrollReveal key={day.id}>
+                  <ScheduleDay day={day} />
+                </ScrollReveal>
+              ))}
+            </div>
+
+            <p className="mt-8 border-l border-ion-line pl-4 text-sm leading-relaxed text-pretty text-space-muted sm:text-[0.95rem]">
+              {stemfestDetailsCopy.scheduleNote}
+            </p>
           </div>
 
-          <div className="lg:col-span-6">
+          <div className="lg:col-span-5">
             <h3 className="font-space-body text-base font-semibold text-space-ivory sm:text-lg">
               {stemfestDetailsCopy.socialHeading}
             </h3>
