@@ -192,7 +192,7 @@ reaches the JSX as a `font-*` utility, never as a raw family name:
 | Face | Variable | Utility | Where it actually paints |
 |------|----------|---------|--------------------------|
 | **DM Sans** | `--font-dm-sans` | `font-space-body`, and `--font-sans` | Body copy everywhere — the site's default face |
-| **Unbounded** | `--font-unbounded` | `font-voyage` | Public headings |
+| **Unbounded** (local woff2) | `--font-unbounded` | `font-voyage` | Public headings. Self-hosted since 2026-10-12: as a `next/font/google` face it broke the production build on a restored Turbopack cache — same failure Fredoka had, see [[decisions-log]] and [[changelog]] |
 | **Cormorant Garamond** | `--font-cormorant` | `font-space-display` | Admin figures, `/stemfestreg`, `/volunteer` |
 | **Rubik** | `--font-rubik` | `font-body` | CMS only |
 | **Fredoka** (local woff2) | `--font-fredoka` | `font-display` | CMS only |

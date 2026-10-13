@@ -3,7 +3,7 @@ import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
 import Providers from "@/providers";
-import { Cormorant_Garamond, DM_Sans, Rubik, Unbounded } from "next/font/google";
+import { Cormorant_Garamond, DM_Sans, Rubik } from "next/font/google";
 import { cn } from "@/lib/utils";
 
 /**
@@ -46,10 +46,19 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
   weight: ["400", "500", "600", "700"],
 });
-const unbounded = Unbounded({
-  subsets: ["latin"],
+const unbounded = localFont({
+  // Self-hosted for the same reason as Fredoka: Turbopack's `next/font/google`
+  // import map fails on this font in a restored-cache build ("queries have exactly
+  // one entry" × 20), which is what killed the 2026-10-12 production deploy while
+  // the same commit built clean in preview. The file is the latin-subset variable
+  // wght 400-700 woff2 Google itself serves, so `--font-unbounded` is unchanged.
+  // Named without the `[wght]` axis suffix Fredoka uses: brackets make next/font emit
+  // the CSS url and the preload link in different encodings, so the browser fetches the
+  // same 50 KB file twice.
+  src: "./fonts/Unbounded.woff2",
   variable: "--font-unbounded",
-  weight: ["400", "500", "600", "700"],
+  weight: "400 700",
+  display: "swap",
 });
 
 const geistMono = localFont({
