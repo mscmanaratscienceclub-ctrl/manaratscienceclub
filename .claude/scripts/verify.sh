@@ -109,6 +109,20 @@ echo "── Hygiene (hard rule #9) ──────────────�
 report WARN "console.log in source" "Remove before committing." "$(SRC 'console\.(log|debug)')"
 report WARN "TODO / FIXME marker" "Resolve, or move it to an issue." "$(SRC '(TODO|FIXME)')"
 
+echo "── Secrets and pinned hosts (hard rule #7, ADR-0042) ─────────"
+
+# A Supabase service-role JWT is `eyJ…\.eyJ…`; it once lived in a tracked script and
+# was only neutralised by rotating it. Editing a file does not un-leak a secret.
+report FAIL "JWT-shaped secret material in source" \
+  "Nothing that looks like a service-role key belongs in the tree. Use an env var." \
+  "$(grep -rEn 'eyJ[A-Za-z0-9_-]{20,}\.eyJ' src drizzle scripts 2>/dev/null | grep -v 'verify.sh')"
+
+# The project ref was hard-coded in two places, which is how a database migration
+# would silently leave the site minting URLs against the retired project.
+report FAIL "hard-coded Supabase project host" \
+  "Read NEXT_PUBLIC_SUPABASE_URL; a literal ref strands the site when the project moves." \
+  "$(grep -rEn 'https://[a-z0-9]{20}\.supabase\.co' src next.config.ts 2>/dev/null)"
+
 echo "──────────────────────────────────────────────────────────────"
 if [ "$fails" -gt 0 ]; then
   printf '%s\n' "${RED}${fails} FAIL${OFF} / ${YEL}${warns} WARN${OFF} — every FAIL must be fixed."

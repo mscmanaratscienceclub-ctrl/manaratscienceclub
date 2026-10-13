@@ -7,9 +7,18 @@
  * client and must stay server-side; it re-exports everything here.
  */
 
-const SUPABASE_PROJECT_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ??
-  "https://ipmdyrxfptdsulfhxjkb.supabase.co";
+/**
+ * The Supabase project host, or empty when it is not configured.
+ *
+ * There used to be a literal project ref as the fallback here. A silent fallback to
+ * a *stale* project is worse than no host at all: after the database moved to a new
+ * Supabase project the site would keep minting URLs against the retired one and
+ * every avatar would 404 without a single error being raised. `storagePublicUrl()`
+ * now fails loudly instead.
+ */
+const SUPABASE_PROJECT_URL = (
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
+).replace(/\/+$/, "");
 
 /**
  * Public base URL for all CDN-read media, without a trailing slash.
@@ -53,7 +62,27 @@ export const PDFS_BUCKET = "pdfs";
 export function storagePublicUrl(bucket: string, path: string): string {
   const key = encodeObjectKey(`${bucket}/${path}`);
   if (usesExternalMediaHost) return `${MEDIA_BASE_URL}/${key}`;
+  if (!SUPABASE_PROJECT_URL)
+    throw new Error(
+      "media host is not configured: set NEXT_PUBLIC_MEDIA_BASE_URL or NEXT_PUBLIC_SUPABASE_URL",
+    );
   return `${SUPABASE_PROJECT_URL}/storage/v1/object/public/${key}`;
+}
+
+/**
+ * Public URL for an object that lives in **Supabase** storage specifically.
+ *
+ * `/api/upload` puts bytes into Supabase, so it has to answer with a Supabase URL
+ * even when the rest of the site reads from the CDN host. This is the one call site
+ * that must not use `storagePublicUrl()` — that resolves to Tigris whenever
+ * `NEXT_PUBLIC_MEDIA_BASE_URL` is set, and the object it would point at exists only
+ * in Supabase. A fresh upload is ingress, so it is also not the egress the CDN
+ * offload was paid for.
+ */
+export function supabasePublicUrl(bucket: string, path: string): string {
+  if (!SUPABASE_PROJECT_URL)
+    throw new Error("media host is not configured: set NEXT_PUBLIC_SUPABASE_URL");
+  return `${SUPABASE_PROJECT_URL}/storage/v1/object/public/${encodeObjectKey(`${bucket}/${path}`)}`;
 }
 
 /**

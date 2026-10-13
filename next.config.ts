@@ -31,6 +31,29 @@ function externalMediaPatterns(host: string | undefined) {
   ];
 }
 
+/**
+ * The Supabase storage host, allow-listed from the same variable `src/lib/media.ts`
+ * reads.
+ *
+ * It used to be a literal project hostname, which is how a project migration would
+ * have silently left `next/image` refusing every avatar: the new project's host is
+ * not the one compiled into `next.config.ts`. Two pathnames, because
+ * `renderedImageUrl()` mints transform URLs as well as public object URLs, and a
+ * pattern that covers only `object` makes the optimizer reject a legacy original.
+ * Both stay scoped to `avatars`, so an outside probe cannot ask the CDN to resize
+ * an arbitrary object.
+ */
+function supabaseMediaPatterns(host: string | undefined) {
+  if (!host) return [];
+  const url = new URL(host);
+  const protocol = url.protocol.replace(/:$/, "") as "http" | "https";
+  return ["object", "render/image"].map((kind) => ({
+    protocol,
+    hostname: url.hostname,
+    pathname: `/storage/v1/${kind}/public/avatars/**`,
+  }));
+}
+
 const nextConfig: NextConfig = {
   async rewrites() {
     return [];
@@ -65,11 +88,7 @@ const nextConfig: NextConfig = {
     contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "ipmdyrxfptdsulfhxjkb.supabase.co",
-        pathname: "/storage/v1/object/public/avatars/**",
-      },
+      ...supabaseMediaPatterns(process.env.NEXT_PUBLIC_SUPABASE_URL),
       {
         protocol: "https",
         hostname: "images.unsplash.com",

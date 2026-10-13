@@ -1,6 +1,6 @@
 ---
 tags: [backend, database, wip]
-updated: 2026-08-18
+updated: 2026-10-13
 ---
 
 # Database — Supabase
@@ -68,6 +68,46 @@ skill covers `@supabase/ssr` in Next 16, where the key traps are: `getClaims()`
 not `getSession()` on the server, no code between `createServerClient` and
 `getClaims()`, and returning the response object unmodified. Note Next 16 renamed
 `middleware.ts` to `proxy.ts` — see [[routing]].
+
+## Migrating a Supabase project
+
+A project-to-project port is `pnpm db:port:*`, and it does **not** build the new schema
+from `drizzle/`. The files and the deployed database disagree — `0004` drops a table that
+is live, `0005` disables RLS on tables measured as enabled, `audit-2026-09-13-remediation.sql`
+was half-applied, and four tables exist in no file at all. `db:port:capture` asks the source
+catalog what it actually holds (`pg_get_constraintdef`, `pg_get_indexdef`, `pg_policy`,
+`pg_get_functiondef`, `pg_get_triggerdef`, `aclexplode`) and writes ordered DDL;
+`db:port:schema --check` rehearses the whole replay inside a transaction that is rolled
+back. ADR: [[decisions-log|ADR-0042]].
+
+Credentials live in gitignored `.env.port` under `PORT_*` names **only** — never
+`--env-file=.env`, because that file holds the production DSN, and never in argv, which is
+readable in `ps` and in build logs. Every script resolves the project ref from both ends and
+refuses a target that equals the live ref or the retired one.
+
+Three things that are not obvious and cost real debugging time:
+
+- **`postgres.js` re-serializes parameters by the type the *server* infers.** For
+  `insert into t values ($1)` that is the column's type, so date strings are re-parsed in
+  the machine's timezone (and truncated to milliseconds) and the string `'t'` becomes
+  `false`. `openPool()` in `scripts/db-port-lib.mjs` pins OIDs 16/114/1082/1114/1700/20 to
+  pass-through text. A SQL cast does not help — the bytes are already rewritten.
+- **`SET session_replication_role` is superuser-only**, and Supabase's `postgres` is not.
+  There is no way to suspend triggers during a load, so don't try: the registration trigger
+  no-ops when the code column is already populated, and leaving it on exercises the live
+  path.
+- **`stem_fest_registration_counters.last_number` must not land behind the highest number
+  already issued**, or the trigger mints a duplicate, the unique index rejects it, and every
+  later registration 500s. `db:port:verify` G3 checks it on both sides.
+
+`session` and `verification` rows are deliberately not copied: better-auth signs the session
+cookie with `BETTER_AUTH_SECRET`, which rotates at cutover, so the rows would buy nothing and
+carry live bearer tokens with them. `account.password` is a self-describing hash and keeps
+working.
+
+The cutover's last step is a **no-op**: run `pnpm db:port:data` again 24–72 h after the
+switch and it must change nothing. If it moves rows, something is still writing to the old
+project. Only then rotate the old service-role key (which also closes audit F1) and delete it.
 
 ## Related
 

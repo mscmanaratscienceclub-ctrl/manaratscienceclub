@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { headers } from "next/headers";
-import { supabase, AVATARS_BUCKET, storagePublicUrl } from "@/lib/supabase";
+import { supabase, AVATARS_BUCKET, supabasePublicUrl } from "@/lib/supabase";
 import { trackEvent } from "@/lib/analytics";
 
 export async function POST(request: NextRequest) {
@@ -61,7 +61,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 
-  const publicUrl = storagePublicUrl(AVATARS_BUCKET, fileName);
+  // The bytes were just written to Supabase, so the URL must name Supabase.
+  // `storagePublicUrl()` resolves to the CDN host whenever
+  // NEXT_PUBLIC_MEDIA_BASE_URL is set, and that object does not exist yet —
+  // nothing uploads to Tigris from here, so the response would 404.
+  const publicUrl = supabasePublicUrl(AVATARS_BUCKET, fileName);
 
 
   return NextResponse.json({ url: publicUrl });

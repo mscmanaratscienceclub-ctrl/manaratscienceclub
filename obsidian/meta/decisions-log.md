@@ -1,6 +1,6 @@
 ---
 tags: [meta, decision]
-updated: 2026-10-12
+updated: 2026-10-13
 ---
 
 # Decisions Log (ADRs)
@@ -17,7 +17,132 @@ Template: [[templates/adr-note]].
 
 ---
 
+## ADR-0042 — A Supabase project is ported by capturing the live catalog, not by replaying `drizzle/`
+
+**Status:** Accepted · 2026-10-13
+
+**Context.** The whole database had to move to a new Supabase project and the app cut
+over to it. The obvious plan — build the schema from `drizzle/`, copy the rows, repoint
+the env vars — was tested against the live database first, and the repository turned out
+not to describe it:
+
+- `0004_powerful_albert_cleary.sql:1` is `DROP TABLE "applications" CASCADE`, and the
+  deployed database **has** that table.
+- `0005_pink_sinister_six.sql:1-4` disables RLS on `"user"`, `"account"`, `"session"`,
+  `"verification"`. Measured on the source: **RLS is enabled on all 14 public tables**.
+  Replaying that file onto a new project would have exposed `email` and `account.password`
+  to `anon`, which holds `SELECT` on every table.
+- `audit-2026-09-13-remediation.sql:4` says **"NOT APPLIED YET"**, and it was half-applied:
+  `stem_fest_payment_sms_trx_idx`, `_status_idx` and
+  `campus_ambassador_registrations_created_at_idx` exist; `stem_fest_registrations_trx_idx`
+  and `posts_published_at_idx` do not.
+- `0002` and `0003` both add the same `posts.custom_author_*` columns, so the files cannot
+  be replayed in order at all.
+- Four tables — `applications`, `form_fields`, `form_settings`, `form_submissions` — exist
+  in **no** file and no `src/db/schema` module.
+- `drizzle/meta/0002_snapshot.json` is missing, so `drizzle-kit generate` diffs against an
+  incomplete history, and `pnpm db:migrate` is really `drizzle-kit push`, which cannot
+  express the registration trigger, the four functions, the eleven policies, the counters
+  `GRANT`, or the expression and partial indexes. ADR-0027 already records a push nearly
+  destroying `stem_fest_payment_sms_trx_idx`.
+
+**Decision.** The new project is built from **what the source database reports about
+itself**. Six scripts under `scripts/db-port-*.mjs`, sharing `db-port-lib.mjs`, all driven
+by `pnpm db:port:*`:
+
+| | |
+|---|---|
+| `db:port:capture` | reads the source catalog (`pg_attribute`, `pg_get_constraintdef`, `pg_get_indexdef`, `pg_policy`, `pg_get_functiondef`, `pg_get_triggerdef`, `aclexplode`, `pg_db_role_setting`, `storage.buckets`) into ordered DDL artifacts under gitignored `db-port/<run-id>/` |
+| `db:port:diff` | captures both ends and prints MATCH / DIFF per object class — the G1 structural gate |
+| `db:port:schema:check` | replays the whole artifact set **inside a transaction and rolls back**, so a bad statement is found without persisting anything |
+| `db:port:schema` | applies it in one transaction: tables → keys → RLS state → grants → indexes → functions → trigger → policies |
+| `db:port:data` | copies rows; `on conflict (pk) do update` plus a delete sweep, so the same run is the bulk load, the final delta, and (with `--reverse`) the rollback |
+| `db:port:verify` | G2 server-side row digests, G3 the registration-counter invariant, G4 functional probes |
+| `db:port:storage` | recreates the `avatars` and `pdfs` bucket rows through the Storage API |
+| `db:port:freeze` | revokes `insert` from `service_role` on the two public form tables for the cutover window |
+
+Rules that came out of this and are now binding:
+
+- **The file sequence is never the build path.** `drizzle/*.sql` is kept as provenance
+  only. Anything unconditional gets a script (ADR-0019), so this is re-runnable.
+- **Only `PORT_*` variables are read**, from a gitignored `.env.port`, never from argv.
+  `--env-file=.env` is deliberately not used: `.env` holds the **production** DSN, and the
+  guard in `db-port-lib.mjs` refuses any target whose project ref equals it.
+- **Values never pass through JavaScript's type parsers.** Columns are read as `col::text`
+  and re-entered as parameters, so the server's own input functions do the parsing, with
+  `timezone`/`datestyle` pinned to UTC on both ends. This exposed a real hazard in
+  `postgres.js`: it asks the server for each parameter's type, and for `insert into t
+  values ($1…)` the server answers with the **column** type, so the value is run through
+  the driver's serializer for that OID. `date.serialize` (`new Date(x).toISOString()`)
+  moved `2026-08-19 18:22:18.578` to `12:22:18.578` — the machine's +06:00 zone, truncated
+  to milliseconds — and `bool.serialize` (`x === true ? 't' : 'f'`) turned the string `'t'`
+  into **false for every boolean in every copied row**. `openPool` now overrides the
+  serializers and parsers for OIDs 16/114/1184/1082/1114/1700/20. A SQL cast does not fix
+  this; the bytes are rewritten client-side before the cast is considered.
+- **The registration-code trigger stays enabled during the load.**
+  `SET session_replication_role` is superuser-only and Supabase's `postgres` is not, so
+  there is no way to suspend it — and it is not needed: the function no-ops when
+  `registration_code` is already present, so copied rows keep the ID their participant was
+  told, and the bulk insert exercises the same path a live registration uses (ADR-0031).
+- **Sessions and OTPs are not copied.** better-auth signs the session cookie with
+  `BETTER_AUTH_SECRET`, which the cutover rotates — so browsers are logged out either way,
+  and copying `session` would only carry live bearer tokens including any
+  `impersonatedBy` session. `user` and `account` travel; `account.password` is a
+  self-describing hash, so passwords keep working.
+- **`stem_fest_registration_counters.last_number` is load-bearing.** If it lands behind the
+  highest number already issued, the trigger mints a duplicate, the unique index rejects
+  it, and every later registration 500s. G3 asserts `last_number >= max(issued)` per prefix
+  on both sides — measured: 20 prefixes, all consistent.
+- **No local `pnpm build`.** It opens the Supavisor pool at "Collecting page data" and has
+  a documented `CONNECT_TIMEOUT` failure mode. Vercel's deploy is the first compile against
+  the new pooler; `posts` has 0 rows, so the prerender surface is minimal.
+
+**Consequences.**
+
+Measured on the source and now reproduced exactly on the target: **14 tables, 30
+constraints, 7 secondary indexes, 11 policies, 4 functions, 1 trigger, 448 explicit grant
+rows, 0 sequences, 0 views, 0 event triggers**, and **1544 rows** across 12 ported tables —
+G2 digests byte-identical on all of them. All 11 policies are `RESTRICTIVE`, and
+`stem_fest_registrations` carries two overlapping pairs (`service role insert` and
+`stemfest service role insert`) because F6's dedup was never applied; they are reproduced
+as they are, deliberately — cutover day is not when behaviour changes. Tightening
+(`--normalize`, revoking the blanket `anon SELECT`) is owed as its own dated change.
+
+The two projects are in **different regions** — source `aws-1-ap-northeast-2`, target
+`aws-0-ap-northeast-1` — worth knowing because the pooler latency at "Collecting page data"
+changes with it.
+
+Storage has nothing to move: ADR-0041's `media:retire` left `pdfs` and `avatars` at **0
+objects**, verified on Tigris. Only the bucket rows are recreated. Three hard-coded project
+refs disappeared with this change (`src/lib/media.ts`, `next.config.ts`,
+`drizzle/setup-ambassador-table.mjs`, now deleted), and `verify.sh` gained two greps — a
+JWT-shaped literal and a hard-coded `https://<20-char>.supabase.co` host — so the same
+strand cannot recur. `/api/upload` also stops handing back a Tigris URL for bytes it wrote
+to Supabase, a bug that predates this work and would otherwise have moved with the project.
+
+The old project stays warm and untouched until a final `db:port:data` run is a **zero-change
+no-op** 24–72 h after cutover; that run is what proves nothing is still writing to it (a
+stale Vercel env, a preview deployment, the Android SMS forwarder). Only then rotate its
+service-role key — which also closes audit F1 — and only then delete it.
+
+Deliberate non-goal: `environment-variables.md` and `.claude/rules/api-env.md` describe a
+`src/env.ts` with `getServerEnv()` that **does not exist**; the code reads `process.env`
+directly. That drift is recorded, not fixed, here.
+
+**Open.** `db:port:storage` and the G4 probes need the new project's secret key, which is
+not yet in `.env.port`. The Vercel variable swap and deploy are the operator's step. The
+four orphan tables are ported but still owned by nothing — the F10 decision is owed.
+
+## Related
+
+[[backend/database-supabase]] · [[backend/supabase-audit-2026-09-13]] ·
+[[architecture/environment-variables]] · ADR-0041 · ADR-0031 · ADR-0027 · ADR-0019
+
+---
+
 ## ADR-0041 — Public media reads are served by Tigris; Supabase keeps the writes and the database
+
+
 
 **Status:** Accepted · 2026-10-12
 

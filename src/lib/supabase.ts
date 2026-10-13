@@ -36,6 +36,7 @@ export {
   contentImage,
   renderedImageUrl,
   storagePublicUrl,
+  supabasePublicUrl,
   avatarUrl,
   isOptimizedObjectUrl,
 } from "@/lib/media";

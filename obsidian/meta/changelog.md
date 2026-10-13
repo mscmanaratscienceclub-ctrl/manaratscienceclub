@@ -1,12 +1,111 @@
 ---
 tags: [meta, changelog]
-updated: 2026-10-12
+updated: 2026-10-13
 ---
 
 # Changelog
 
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
+
+## 2026-10-13 — Database ported to a new Supabase project by capturing the live catalog
+
+Everything moves to project `qrqurkqcetsneprfnofc` (Tokyo); the old one
+(`ipmdyrxfptdsulfhxjkb`, Seoul) stays warm until a final reconcile proves nothing is still
+writing to it. ADR: [[decisions-log|ADR-0042]].
+
+**The repository does not describe the deployed database**, and four proofs came out of
+building the new project from measurement instead of from `drizzle/`:
+
+- `0004` drops `applications`, which is live and has rows.
+- `0005` disables RLS on the four auth tables; measured truth is **RLS enabled on all 14
+  public tables**. Replaying the files would have handed `anon` a readable `email` and
+  `account.password`.
+- `audit-2026-09-13-remediation.sql` says NOT APPLIED YET and was **half-applied**: the SMS
+  `upper(transaction_id)` and status indexes exist, `stem_fest_registrations_trx_idx` and
+  the partial `posts_published_at_idx` do not.
+- Four tables (`applications`, `form_fields`, `form_settings`, `form_submissions`) exist in
+  no file and no schema module.
+
+Reproduced exactly: 14 tables, 30 constraints, 7 secondary indexes, 11 policies, 4
+functions, 1 trigger, 448 grant rows, and **1544 rows** across 12 tables — byte-identical
+per-table SHA-256 digests on both sides. 0 sequences, 0 views, 0 event triggers; nothing was
+assumed absent.
+
+- **Caught by the gates, not by reading:** `postgres.js` asks the server what type each
+  parameter is, and on an INSERT the server answers with the column type — so the driver
+  ran every value through that type's serializer. Dates were re-parsed in the machine's
+  +06:00 zone and truncated to milliseconds (`18:22:18.578` landed as `12:22:18.578`), and
+  the boolean serializer turned the string `'t'` into **false for every boolean in every
+  row**. `scripts/db-port-lib.mjs` now pins those OIDs to pass-through text.
+- `drizzle-kit push` is banned as a build path (ADR-0027); `SET session_replication_role`
+  is unavailable on Supabase, so the registration trigger stays enabled during the load and
+  the copy exercises the live code path.
+- `session`/`verification` are not copied — `BETTER_AUTH_SECRET` rotates, so the cookies are
+  invalid either way. Admins sign in again; passwords travel.
+- New scripts `pnpm db:port:capture | diff | schema:check | schema | data | verify | probe |
+  storage | freeze`, driven by a gitignored `.env.port` that only ever reads `PORT_*`.
+- Storage has nothing to move: `media:retire` already left both buckets at 0 objects
+  (ADR-0041). Only the `avatars`/`pdfs` rows are recreated. Three hard-coded project refs
+  are gone (`src/lib/media.ts`, `next.config.ts`, and `drizzle/setup-ambassador-table.mjs`,
+  deleted), and `.claude/scripts/verify.sh` now FAILs on a JWT-shaped literal or a literal
+  `*.supabase.co` host.
+- Fixed on the way: `/api/upload` wrote bytes to Supabase but returned the **Tigris** URL
+  for them, so fresh avatars 404'd. It now answers with `supabasePublicUrl()`.
+- **Open:** the new project's secret key is not yet in `.env.port`, so the bucket creation
+  and the PostgREST/storage probes (G4) have not run; the Vercel variable swap and deploy are
+  still the operator's step.
+
+## 2026-10-12 — CDN request budget cut, and the `next/font/google` build failure it exposed
+
+Roughly **60k Vercel CDN requests** were left against a **30-40k/day** burn — about a day
+and a half of runway where four were needed. Vercel bills requests, not bytes, so cache
+headers do nothing for this: only fewer HTTP requests per visit does.
+
+- **Measured first, on the live site through a browser.** `/` = 27 requests, **25 billed
+  same-origin**; `/stemfestreg` = 43, **40 billed**. Composition: 20-26 JS chunks, 2-3 font
+  files, **4 Vercel telemetry requests**, and the rest route prefetches. The telemetry is the
+  surprising part — `@vercel/analytics` and `@vercel/speed-insights` post to first-party paths
+  (`/<id>/script`, `/view`, `/vitals`), so every page view paid for them on the site's own
+  request meter.
+- **Removed both from `src/app/layout.tsx`.** Google Analytics stays (external host, unbilled
+  against this quota), so traffic reporting survives the cut.
+- **`prefetch={false}` on the site chrome and the heaviest CTAs** — nav, footer, hero, journal
+  rows/console, and the register page's choice cards. App Router prefetches every link in the
+  viewport, so one home page view was paying **11** RSC requests for `/events` and
+  `/stemfestreg` nobody had clicked, and registration **6**. This was the single biggest lever.
+- **`robots.ts` now disallows SEO data-miners** (Ahrefs, Semrush, MJ12, DotBot, PetalBot,
+  ZoomBot, Bytespider, DataForSeo, Sogou). Search engines and AI crawlers are deliberately
+  **not** blocked — answer-engine visibility is a stated goal of this site
+  ([[workflows/seo-aeo]]), so that trade belongs to the club, not to a default.
+- **Measured after, same method on the built site:** `/` = **23** billed requests with **0**
+  prefetches, `/stemfestreg` = **27** with **0**. Registration is down ~32% against what was
+  live. The floor now is the JS chunk count.
+
+**Then the deploy failed — production only, preview passed.** 20 errors, all of them
+`[next]/internal/font/google/unbounded_f1716237.module.css`: *"Module not found: Can't resolve
+'@vercel/turbopack-next/internal/font/google/font'"* / *"next/font/google queries have exactly
+one entry"*. Not a config drift: the failing CSS carried **5 subsets × 4 weights**, while
+`src/app/layout.tsx` declares `subsets: ["latin"]` — the build log's `Restored build cache from
+previous deployment` line is the cause. Editing `layout.tsx` re-resolved the font modules
+against an import map the restored cache no longer matched; preview builds cold, so it was
+fine. This is the same Turbopack failure class that killed Fredoka's build (ADR-0025-era,
+commit `4eb1f83`), so it got the same treatment.
+
+- **Unbounded is self-hosted now**: `src/app/fonts/Unbounded.woff2`, the latin-subset variable
+  wght 400-700 file Google itself serves (50,904 bytes), wired through `localFont` with the
+  same `--font-unbounded` variable, so no utility class or token changed.
+- **The filename has no `[wght]` axis suffix, on purpose.** With brackets, `next/font` emits the
+  `@font-face` url and the preload link in two different encodings (`Unbounded[wght]` and
+  `Unbounded%5Bwght%5D`), the browser treats them as separate resources, and the same 50 KB
+  downloads **twice** per view. Renaming it took the home page from 24 billed requests back to
+  23. Fredoka keeps its brackets only because it is `preload: false`, so the pair never forms.
+- **Verified:** `pnpm build`, `tsc --noEmit` and `pnpm lint` clean; on the served build the
+  `unbounded` face reports `400 700 loaded` and 24 `.font-voyage` elements compute to it. That
+  is typographic verification — no browser surface was available for a screenshot, so the
+  rendering has not been eyeballed.
+- If this failure class ever reappears for another face, **redeploy with "Ignore build cache"**
+  clears it immediately; self-hosting is what removes it permanently.
 
 ## 2026-10-12 — Public media reads move to Tigris behind one build-time env var
 

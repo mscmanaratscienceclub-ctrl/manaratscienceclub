@@ -32,6 +32,10 @@ yarn-error.log*
 # env files (can opt-in for commiting if needed)
 .env*
 
+# Supabase project-to-project port: DDL captured from the live database, row
+# digests, and the reconcile ledger. The artifacts contain real user rows.
+/db-port/
+
 # vercel
 .vercel
 
