@@ -10,6 +10,10 @@ import {
   resolveReferenceName,
 } from "@/lib/data/stemfest-registration";
 import {
+  registrationClosedError,
+  registrationIsClosed,
+} from "@/lib/data/registration-status";
+import {
   buildEntries,
   resolveSchoolName,
   stemfestRegistrationSchema,
@@ -39,6 +43,13 @@ export type StemfestSubmitResult =
 export async function submitStemfestRegistration(
   input: StemfestFormValues,
 ): Promise<StemfestSubmitResult> {
+  // Checked here rather than only in the page: `/stemfestreg` is on printed
+  // material, so a browser can still be holding a form that rendered before the
+  // closure. Nothing reaches the table once intake is closed.
+  if (registrationIsClosed) {
+    return { success: false, error: registrationClosedError };
+  }
+
   const parsed = stemfestRegistrationSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: "Please check the form and try again." };

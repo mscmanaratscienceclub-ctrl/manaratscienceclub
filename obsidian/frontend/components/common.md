@@ -110,12 +110,20 @@ async component must mirror its final layout with one of these
 | Component | File | Placement |
 |-----------|------|-----------|
 | `<LegalShell>` | `legal-shell.tsx` | Page shell for `/terms` and `/privacy-policy` |
+| `<RegistrationClosedNotice>` | `registration-closed-notice.tsx` | Whole of `/register`, `/stemfestreg` and `/volunteer` while `registrationIsClosed` is on |
 | `<RegistrationExtendedBanner>` | `registration-extended-banner.tsx` | First child of `(routes)/(site)/layout.tsx`, above the sticky `top-0 z-50` header |
 
-`<RegistrationExtendedBanner>` is the announcement strip for the extended registration
-window, so every `(site)` page carries it while `(auth)`, `(admin)` and `(cms)` do not.
-All copy comes from `stemfestExtensionNotice` (`src/lib/data/stemfest-registration.ts`);
-`deadline` renders a date line only once the club fixes one. It deliberately carries **no
+`<RegistrationClosedNotice>` renders the `<h1>` of a closed registration page, so those
+three pages export metadata and nothing else. Copy comes from `registrationClosedNotice`
+(`src/lib/data/registration-status.ts`). The forms it replaces stay in the tree
+un-referenced, so reopening is a revert of the pages plus `registrationIsClosed = false`.
+
+`<RegistrationExtendedBanner>` is the announcement strip for the registration window, so
+every `(site)` page carries it while `(auth)`, `(admin)` and `(cms)` do not. It reads
+`stemfestExtensionNotice` (`src/lib/data/stemfest-registration.ts`) while intake is open and
+`registrationClosedBanner` once `registrationIsClosed` is set — a site-wide promise of open
+registration cannot sit above a form whose action refuses the insert. `deadline` renders a
+date line only while open and only once the club fixes one. It deliberately carries **no
 heading element** — the strip precedes every page's `<h1>` in the document outline, so an
 `<h2>` here would sit above every page title; it is an `<aside aria-label>` of `<p>`s.
 Server Component, static, no motion. See [[html-semantics]].

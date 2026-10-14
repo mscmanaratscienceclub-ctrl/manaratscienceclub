@@ -6,6 +6,10 @@ import {
   type SubmitResult,
 } from "@/lib/supabase-admin";
 import {
+  registrationClosedError,
+  registrationIsClosed,
+} from "@/lib/data/registration-status";
+import {
   volunteerFormSchema,
   type VolunteerFormValues,
 } from "./volunteer-validate";
@@ -17,6 +21,12 @@ import {
 export async function submitVolunteerForm(
   input: VolunteerFormValues
 ): Promise<SubmitResult> {
+  // Server-side gate, for the same reason as the STEM Fest action: an open tab
+  // can still hold a form that rendered before intake closed.
+  if (registrationIsClosed) {
+    return { success: false, error: registrationClosedError };
+  }
+
   const parsed = volunteerFormSchema.safeParse(input);
   if (!parsed.success) {
     return { success: false, error: "Please check the form and try again." };

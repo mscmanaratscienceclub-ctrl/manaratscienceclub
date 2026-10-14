@@ -1,12 +1,36 @@
 ---
 tags: [meta, changelog]
-updated: 2026-10-13
+updated: 2026-10-14
 ---
 
 # Changelog
 
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
+
+## 2026-10-14 — Intake closed: `/register`, `/stemfestreg` and `/volunteer` state it
+
+The club stopped accepting entries, so the two submit paths are shut at the action as
+well as in the UI. `/stemfestreg` is on printed material and the hero CTA, which means a
+browser can reach it without ever passing through the chooser — a copy-only change on
+`/register` would have kept taking paid registrations.
+
+- **One flag: `registrationIsClosed`** in `src/lib/data/registration-status.ts`, read by
+  all three pages and by both actions (`submitStemfestRegistration`,
+  `submitVolunteerForm`). Flipping it to `false` reopens every surface at once; the
+  actions refuse before touching Supabase, so no row reaches
+  `stem_fest_registrations` or `volunteer_registrations`.
+- **`<RegistrationClosedNotice>`** (`src/components/site/registration-closed-notice.tsx`)
+  replaces the chooser and both forms. The forms, their validators and
+  `src/lib/data/register-choices.ts` stay in the tree unreferenced so a reopening is a
+  revert, not a rebuild.
+- **Entry points are left in place** — nav, hero, footer, `/rules`, `/syllabus`,
+  `/details`, `resources.ts` and the sitemap all still link, and now land on the notice.
+  Page titles/descriptions say closed so search stops promising an open form.
+- **The site-wide strip follows the flag.** `RegistrationExtendedBanner` rendered
+  “Registration extended … still time to pick your class and events” above every page,
+  which contradicts a refused insert; it now reads “Registration closed” while the flag
+  is on, and the `deadline` chip is suppressed.
 
 ## 2026-10-13 — The two-day run sheet is published on `/details`
 
