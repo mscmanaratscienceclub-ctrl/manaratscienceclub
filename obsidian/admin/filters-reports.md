@@ -1,16 +1,16 @@
 ---
 tags: [admin, stable]
-updated: 2026-10-06
+updated: 2026-10-15
 ---
 
 # Admin filters & printed reports
 
-The admin panel has four tables — Campus Ambassador, Science Competition
-(STEM Fest), Volunteer and SMS Logs — plus a printable report for each. All five
-surfaces read **one contract**: `src/lib/admin/filters.ts`. That module decides
-what can be filtered, how a filter is written into the URL, and what the printed
-report contains; the pages parse from it, the filter bar renders from it and the
-report route honours it.
+The admin panel has five tables — Campus Ambassador, Science Competition
+(STEM Fest), Attendance, Volunteer and SMS Logs — plus a printable report for
+each. All of them read **one contract**: `src/lib/admin/filters.ts`. That
+module decides what can be filtered, how a filter is written into the URL, and
+what the printed report contains; the pages parse from it, the filter bar renders
+from it and the report route honours it.
 
 > [!important] Why one module
 > A table's filters, its PDF export and its empty-state copy used to be three
@@ -30,9 +30,26 @@ Components *and* client leaves, so it must never read `env`, the database or
 | `id` | Route | Table component | Rows come from |
 |------|-------|-----------------|----------------|
 | `ambassador` | `/admin/campus-ambassador` | `registrations-table.tsx` | `searchAmbassadorRegistrations` |
-| `stemfest` | `/admin/science-competition` | `science-competition-table.tsx` | `searchStemfestRegistrations` |
+| `stemfest` | `/admin/science-competition` | `science-competition-table.tsx` | `searchStemfestRegistrations`, or this browser's cache (ADR-0044) |
+| `attendance` | `/admin/attendance` | `attendance-table.tsx` | `searchAttendance`, or this browser's cache (ADR-0044) |
 | `volunteer` | `/admin/volunteer` | `volunteer-registrations-table.tsx` | `searchVolunteerRegistrations` |
-| `sms` | `/admin/sms-logs` | `sms-log-table.tsx` | `getSmsLogs` |
+| `sms` | `/admin/sms-logs` | `sms-log-table.tsx` | `getSmsLogs`, or this browser's cache (ADR-0044) |
+
+Only the three marked above keep a cached copy, and only for the two days that need
+it: the other two tables query every time, exactly as they always did.
+
+`attendance` is the interesting case: **the same rows as `stemfest`, a different
+cache.** It reads `stem_fest_registrations` too, but its snapshot holds six fields
+per participant — name, ID, class, tick, submission moment, and the school the
+search box sweeps — so a fest laptop caching the sheet is not also holding every
+email address, phone number and TrxID. Its own probe cursor is
+`max(attendance_marked_at)`, which is *why* that column exists: a tick moves no
+other timestamp, and two desks marking one gate have to learn about each other's
+marks. One minute is the worst-case lag on someone else's write, and the chip says
+so rather than hiding it. See [[decisions-log]] (ADR-0045).
+
+Its three filters and four printed columns are the minimum a door needs; every row
+links to `/admin/science-competition?q=<registration ID>` for the rest.
 
 Each source also carries the copy that used to be scattered across pages:
 `reportTitle`, `reportNote`, `searchPlaceholder`, `empty.{filtered,unfiltered}`,
@@ -97,11 +114,52 @@ Date bounds convert through `ADMIN_TIME_ZONE` (`Asia/Dhaka`) because the tables
 store `timestamptz`. A bare date bound would be read as UTC and would split a
 Dhaka calendar day at 6am local, so "registrations from 14 September" would
 quietly mean 13 Sep 18:00 → 14 Sep 18:00. See `dayRange` in
-`src/lib/actions/registrations.ts`.
+`src/db/queries/admin-filters.ts`.
 
 Fields marked `primary: true` render in the always-visible row; the rest sit
 behind **More filters**, which opens itself whenever a hidden filter is active so
 a chip is never the only evidence of a filter that is narrowing the list.
+
+## Filter kinds → SQL and JavaScript
+
+The table above is now a **contract with two implementations**. SQL answers a query
+for the panel and for every printed report; `src/lib/admin/local-query.ts` answers the
+same query over the copy a browser holds, so a search on the two fest tables costs no
+round trip (ADR-0044). The SQL is the authority. Anything that makes the local answer
+differ from the database's is a bug in the local one, however attractive the difference.
+
+So a new filter field, operator or sort is **two edits**, in `admin-filters.ts` and in
+`local-query.ts`, and `pnpm verify:local-query` is what makes that a check rather than a
+hope. It runs the real builders against the live database for ~50 states and compares
+total, page, the exact ordered id list, all eight STEM Fest figures and the three SMS
+tallies with the matcher's answer.
+
+Three places the two are *not* equivalent by instinct:
+
+- **The row carries the column, not the cell.** SQL compares `class-9` and the stored
+  `status` text; the table prints "Class 9" and a narrowed option. Hence `raw` on a
+  cached row, and hence a search for "Class 9" finding nothing on either side.
+- **SQL's `WHERE` is three-valued.** `NULL NOT ILIKE '%x%'` is NULL, and a `WHERE` reads
+  NULL as false, so a `not` filter *excludes* a row whose column is absent. JavaScript's
+  `!value.includes(x)` includes it. Live on SMS `sender_number`; every local comparator
+  checks for absence first and returns false.
+- **Ordering is pinned, not inherited.** This database collates as `en_US.UTF-8`, so a
+  bare `ORDER BY name` compares by glibc's table while the browser has only ICU's — and
+  the two disagree about punctuation, case and diacritics. `orderFor` therefore spells
+  `lower(name) collate "C"` then `name collate "C"`, and **every branch ends on the
+  primary key**: an `ORDER BY` with ties leaves those rows in heap order, which no cache
+  can reproduce, so a row could otherwise show up on two pages or on neither. The
+  `local-query.ts` comparators are the same four keys in the same order, and the harness
+  asserts the pin directly.
+
+| `kind` | SQL (`admin-filters.ts`) | JavaScript (`local-query.ts`) |
+|--------|--------------------------|------------------------------|
+| `text` | `ILIKE '%v%'`, wildcards escaped | `includes()` on two lower-cased strings |
+| `select` | `lower(col) = lower(v)` | `===` on lower-cased, with the NULL rule |
+| `date` | `>= day_start AND < (to+1)` | the row's Dhaka day, compared as `YYYY-MM-DD` |
+| `number` | `>= min` / `<= max` | `Number(amount)`, NULL excluded by both bounds |
+| `payment` | `coalesce(payment_decision, matched SMS)` | the row's `status`, resolved in SQL at download |
+| sort | `orderFor` + `collate "C"` + `id` | the same keys, by code point — never `localeCompare` |
 
 ## Operators
 
@@ -201,6 +259,9 @@ is gone; nothing expands a segment into its events any more.
 | | `from`, `to` | date | Submission range — primary |
 | | `segment` | select | The fest's **events**, from `stemfestEvents` in `<optgroup>`s by segment — primary, operators. Label reads "Event"; the key stays `segment` |
 | | `transactionId` | text | Behind More filters |
+| `attendance` | `attendance` | select | `present` · `absent` — primary. `booleanMatch` on the stored bit; a row nobody has reached is an `absent` one |
+| | `class` | select | From `stemfestClasses` — primary |
+| | `school` | text | Primary, operators |
 | `sms` | `status` | select | `matched` · `unmatched` · `ignored` — primary |
 | | `sender` | text | Primary |
 | | `from`, `to` | date | `receivedAt` range — primary |
@@ -227,6 +288,7 @@ list, so a mismatch shows up as a blank column on paper, not as a compile error.
 | `ambassador` | `type`, `name`, `class`, `school`, `phone`, `email`, `gender`, `firstTime`, `facebook`, `instagram`, `submitted` |
 | `volunteer` | `name`, `classSection`, `roll`, `shift`, `studentCode`, `personalPhone`, `parentsPhone`, `submitted` |
 | `stemfest` | `name`, `class`, `school`, `segments`, `amountToSend`, `transactionId`, `paymentNumber`, `payment`, `submitted` |
+| `attendance` | `registrationCode`, `name`, `class`, `school`, `attendance` |
 | `sms` | `receivedAt`, `sender`, `transactionId`, `amount`, `senderNumber`, `status`, `message` |
 
 Formatting is done server-side and in a fixed timezone, because a printout is the
@@ -237,6 +299,10 @@ one artefact nobody can scroll to double-check:
   an empty answer
 - booleans → `Yes` / `No` via `yesNo`
 - the STEM Fest `payment` column → `Verified` / `Pending`
+- the `attendance` column → `Present` / `Absent`, from `attendanceOption()`, so a
+  printed word is the word the switch beside it showed
+- the `attendance` sheet's `class` column → the label (`Class 9`), not the stored
+  id, because that sheet is the one export a volunteer carries to a gate
 - the STEM Fest `amountToSend` column → `formatBdt(row.totalFee)`, or `—` for a
   row filed before that column existed
 
@@ -427,10 +493,12 @@ the column widths, and that `৳` and Bengali text survive.
 
 ## Extending
 
-**A new filter** — add a field to the source's `filters` array, then make the
-matching WHERE builder in `src/lib/actions/registrations.ts` handle the id.
-Nothing else changes: the filter bar renders it, `parseAdminQuery` validates it,
-and the chip, the empty-state copy and the report's filter list all follow.
+**A new filter** — add a field to the source's `filters` array, then handle the id in the
+matching WHERE builder in `src/db/queries/admin-filters.ts`, **and** in its twin in
+`src/lib/admin/local-query.ts` if the source is one of the two the browser caches. Nothing
+else changes: the filter bar renders it, `parseAdminQuery` validates it, and the chip, the
+empty-state copy and the report's filter list all follow. `pnpm verify:local-query` then
+tells you whether the two agree.
 
 **A new report column** — add `{ id, label }` to `reportColumns` *and* the key to
 the mapper in `getAdminReportRows`. Both, in the same commit. Add `width` when the
@@ -451,5 +519,13 @@ and a real zero must not look the same to an admin.
 ## Related
 
 [[decisions-log]] (ADR-0029, ADR-0026, ADR-0038 for the brief; ADR-0036 and
-ADR-0037 for the panel's accent and type layer) · [[design-system]] ·
-[[component-conventions]] · [[database-supabase]] · [[sms-forwarder]]
+ADR-0037 for the panel's accent and type layer; **ADR-0043** for the offline
+per-bracket reports; **ADR-0044** for answering the two fest tables from a browser
+cache) · [[design-system]] · [[component-conventions]] ·
+[[database-supabase]] · [[sms-forwarder]]
+
+**Not this path:** `pnpm reports:brackets` (`scripts/bracket-reports/`) prints one report
+and one roster PDF *per bracket* — each event's category, all four segments — by reading
+the whole registrations table once and sorting rows by the category letters inside the
+stored `segments` prose. The panel has no bracket filter, and that generator deliberately
+lives outside `src/`; it does not use the print route or the export dialog described here.

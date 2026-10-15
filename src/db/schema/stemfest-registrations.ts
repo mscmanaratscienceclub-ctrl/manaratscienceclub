@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   integer,
   pgTable,
@@ -74,6 +75,25 @@ export const stemfestRegistrations = pgTable(
     paymentDecision: text("payment_decision", {
       enum: ["pending", "verified", "rejected"],
     }),
+    /**
+     * Whether an admin marked this participant present at the fest desk. One bit,
+     * not a per-day record, and `false` covers both "absent" and "nobody has
+     * reached this row yet" — the desk's only question is who is here. Added by
+     * `drizzle/add_stemfest_attendance.sql`; read and written only through
+     * `/admin/attendance`.
+     */
+    attendance: boolean("attendance").notNull().default(false),
+    /**
+     * When the attendance switch last moved, **in either direction**.
+     *
+     * This is not an audit column — it is the browser cache's change cursor. The
+     * sheet's freshness probe can spot a new registration (`max(created_at)`) but
+     * not a tick, because a tick moves no other timestamp; `max()` over this column
+     * is what brings a mark made at the other desk into this browser within a
+     * minute. `setStemfestAttendance` therefore sets it on the way back to absent
+     * too.
+     */
+    attendanceMarkedAt: timestamp("attendance_marked_at", { withTimezone: true }),
     paymentDecidedAt: timestamp("payment_decided_at", { withTimezone: true }),
     /** Admin email that made the decision. Empty for an SMS-derived status. */
     paymentDecidedBy: text("payment_decided_by"),

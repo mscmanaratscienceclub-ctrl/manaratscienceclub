@@ -51,11 +51,19 @@ import {
   stemfestClasses,
   stemfestEvents,
 } from "@/lib/data/stemfest-registration";
-import { stemfestPaymentStatusOptions } from "@/lib/admin/statuses";
+import {
+  stemfestAttendanceOptions,
+  stemfestPaymentStatusOptions,
+} from "@/lib/admin/statuses";
 
 // ── Sources ──────────────────────────────────────────────────────────────────
 
-export type AdminSourceId = "ambassador" | "volunteer" | "stemfest" | "sms";
+export type AdminSourceId =
+  | "ambassador"
+  | "volunteer"
+  | "stemfest"
+  | "attendance"
+  | "sms";
 
 export type AdminFilterKind = "select" | "text" | "date" | "number";
 
@@ -171,6 +179,27 @@ export const FILTER_PAGE_PARAM = "page";
  * may only export async functions.
  */
 export const REPORT_ROW_LIMIT = 2_000;
+
+/**
+ * Rows on one table page.
+ *
+ * It lives here, in the contract module, for the same reason `REPORT_ROW_LIMIT`
+ * does: the query layer that pages a list and the client-side matcher that pages a
+ * cached one have to agree on the number, and a `"use server"` module cannot export
+ * a constant for the other side to import. Twenty-five is what every table has
+ * always shown.
+ */
+export const PAGE_SIZE = 25;
+
+/** A page number the URL is allowed to say, floored and never below one. */
+export function clampPage(page: number): number {
+  return Number.isFinite(page) && page > 1 ? Math.floor(page) : 1;
+}
+
+/** How many pages `total` rows fill — at least one, so an empty list still has a page. */
+export function pageCount(total: number): number {
+  return Math.max(1, Math.ceil(total / PAGE_SIZE));
+}
 
 /**
  * Every source's default, and the sort value `buildAdminHref` leaves out of the
@@ -345,7 +374,7 @@ export const stemfestSource: AdminSourceConfig = {
   reportTitle: "STEM Fest Registrations",
   reportNote:
     "Registrations from the STEM Fest event form, with bKash payment status.",
-  searchPlaceholder: "Search by name, class, school, segments, or TrxID…",
+  searchPlaceholder: "Search by ID, name, class, school, segments, or TrxID…",
   empty: {
     filtered: "No registrations match the active filters.",
     unfiltered: "No STEM Fest registrations yet.",
@@ -426,8 +455,76 @@ export const stemfestSource: AdminSourceConfig = {
   ],
 };
 
-export const smsSource: AdminSourceConfig = {
-  id: "sms",
+/**
+ * The attendance sheet — the same registrations, read at the desk.
+ *
+ * Deliberately narrower than `stemfestSource`: three filters and four printed
+ * columns, because a volunteer working the entrance needs a name, an ID, a class
+ * and a box to tick, not a payment history. The full row is one click away on the
+ * table itself (`/admin/science-competition?q=<registration ID>`), which is the
+ * whole reason this source exists beside the other one rather than as more columns
+ * on it.
+ *
+ * It shares the registrations table with `stemfestSource` and so its filter
+ * vocabulary (`class` means the same stored id here), so a link can carry a picked
+ * class between the two pages — but the `attendance` field only exists here, and
+ * `payment`, `segment` and `transactionId` only exist there.
+ */
+export const attendanceSource: AdminSourceConfig = {
+  id: "attendance",
+  path: "/admin/attendance",
+  label: "Attendance",
+  reportTitle: "STEM Fest Attendance Sheet",
+  reportNote:
+    "Every STEM Fest registration with what the fest desk marked for it. A row nobody reached prints as Absent.",
+  searchPlaceholder: "Search by name, registration ID, class, or school…",
+  empty: {
+    filtered: "No participants match the active filters.",
+    unfiltered: "No STEM Fest registrations to mark yet.",
+  },
+  noun: { one: "participant", many: "participants" },
+  listNote: "from the STEM Fest registration list.",
+  filters: [
+    {
+      id: "attendance",
+      label: "Attendance",
+      kind: "select",
+      primary: true,
+      options: stemfestAttendanceOptions.map(({ value, label }) => ({
+        value,
+        label,
+      })),
+    },
+    {
+      id: "class",
+      label: "Class",
+      kind: "select",
+      primary: true,
+      options: stemfestClasses.map((entry) => ({
+        value: entry.id,
+        label: entry.label,
+      })),
+    },
+    {
+      id: "school",
+      label: "School / college",
+      kind: "text",
+      placeholder: "Contains…",
+      primary: true,
+    },
+  ],
+  sort: sortNewestFirst,
+  defaultSort: DEFAULT_SORT,
+  reportColumns: [
+    { id: "registrationCode", label: "ID" },
+    { id: "name", label: "Student", width: 22 },
+    { id: "class", label: "Class" },
+    { id: "school", label: "School / college", width: 30 },
+    { id: "attendance", label: "Present" },
+  ],
+};
+
+export const smsSource: AdminSourceConfig = {  id: "sms",
   path: "/admin/sms-logs",
   label: "SMS Logs",
   reportTitle: "Forwarded Payment SMS",
@@ -481,6 +578,7 @@ export const adminSources: Record<AdminSourceId, AdminSourceConfig> = {
   ambassador: ambassadorSource,
   volunteer: volunteerSource,
   stemfest: stemfestSource,
+  attendance: attendanceSource,
   sms: smsSource,
 };
 
@@ -704,6 +802,47 @@ export function parseAdminQuery(
   const page = Number.isFinite(parsedPage) && parsedPage > 1 ? parsedPage : 1;
 
   return { query, values, sort, page };
+}
+
+// ── Decoded filter values ────────────────────────────────────────────────────
+
+/** One filter's value, with the operator the admin chose taken off it. */
+export interface FilterMatch {
+  operator: AdminFilterOperator;
+  value: string;
+}
+
+/**
+ * Every active filter of a source, decoded once per query build.
+ *
+ * Unknown values are dropped rather than passed on: a filter whose value this build
+ * no longer recognises — a field that used to take free text, a hand-edited URL —
+ * narrows nothing instead of becoming a comparison against a value no option offers.
+ *
+ * This lives here rather than in the query layer because two very different readers
+ * have to decode a state identically: `src/lib/actions/registrations.ts`, which turns
+ * each match into SQL, and `src/lib/admin/local-query.ts`, which turns the same match
+ * into a comparison over the browser's cached rows. The operator rides on the stored
+ * value itself, so there is exactly one place that decides what a `!` or `=` prefix
+ * means — and a filter can then never narrow one way on the server and another in the
+ * cache.
+ */
+export function filterMatches(
+  source: AdminSourceConfig,
+  state: AdminQueryState,
+): Record<string, FilterMatch> {
+  const matches: Record<string, FilterMatch> = {};
+
+  for (const field of source.filters) {
+    const raw = state.values[field.id];
+    if (!raw) continue;
+    const reading = readFilterValue(field, raw);
+    if (reading) {
+      matches[field.id] = { operator: reading.operator, value: reading.value };
+    }
+  }
+
+  return matches;
 }
 
 /**

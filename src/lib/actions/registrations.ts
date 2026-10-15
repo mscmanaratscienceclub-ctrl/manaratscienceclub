@@ -19,25 +19,18 @@ import {
   asc,
   desc,
   eq,
-  ilike,
-  not,
-  or,
+  gt,
   sql,
   type AnyColumn,
   type SQL,
 } from "drizzle-orm";
 import {
   ADMIN_TIME_ZONE,
+  PAGE_SIZE,
   REPORT_ROW_LIMIT,
-  ambassadorSource,
-  readFilterValue,
-  smsSource,
-  stemfestSource,
-  volunteerSource,
-  type AdminFilterOperator,
+  clampPage,
+  pageCount,
   type AdminQueryState,
-  type AdminSortId,
-  type AdminSourceConfig,
   type AdminSourceId,
 } from "@/lib/admin/filters";
 import {
@@ -56,8 +49,11 @@ import {
 } from "@/lib/admin/bulk-email";
 import {
   adminRowIdSchema,
+  attendanceOption,
+  ATTENDANCE_PRESENT_VALUE,
   contactEmailSchema,
   isSmsLogStatus,
+  isStemfestAttendance,
   isStemfestPaymentStatus,
   smsLogStatusOptions,
   statusOption,
@@ -66,14 +62,46 @@ import {
   type StemfestPaymentStatus,
 } from "@/lib/admin/statuses";
 import {
+  SNAPSHOT_DELTA_LIMIT,
+  SNAPSHOT_VERSION,
+  toIso,
+  toAttendanceSnapshotRow,
+  toSmsSnapshotRow,
+  toStemfestSnapshotRow,
+  type AttendanceSnapshot,
+  type AttendanceSnapshotRow,
+  type AttendanceTally,
+  type SmsSnapshot,
+  type SmsSnapshotRow,
+  type SmsTallies,
+  type SnapshotDelta,
+  type SnapshotProbe,
+  type StemfestSnapshot,
+  type StemfestSnapshotRow,
+} from "@/lib/admin/snapshot";
+import {
   stemfestEffectivePaymentStatus,
   stemfestPaymentAmount,
   stemfestPaymentFilter,
 } from "@/db/queries/stemfest-payment";
 import {
+  ambassadorWhere,
+  attendanceCountSelection,
+  attendanceProbeSelection,
+  attendanceSelection,
+  attendanceWhere,
+  countRows,
+  orderFor,
+  smsTallySelection,
+  smsWhere,
+  stemfestAdminSelection,
+  stemfestStatsSelection,
+  stemfestWhere,
+  volunteerWhere,
+} from "@/db/queries/admin-filters";
+import {
   formatBdt,
   getStemfestClassLabel,
-  getStemfestEvent,
   getStemfestSegment,
   manaratSchoolLabel,
   manaratSchoolLikePattern,
@@ -179,361 +207,6 @@ function parseInput<T>(schema: z.ZodType<T>, input: unknown): T {
   return parsed.data;
 }
 
-const PAGE_SIZE = 25;
-
-/**
- * Escapes LIKE/ILIKE wildcards so a literal `%`, `_`, or `\` typed in the search
- * box matches itself instead of acting as a wildcard. Postgres' default LIKE
- * escape character is the backslash.
- */
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (match) => `\\${match}`);
-}
-
-function clampPage(page: number): number {
-  return Number.isFinite(page) && page > 1 ? Math.floor(page) : 1;
-}
-
-function pageCount(total: number): number {
-  return Math.max(1, Math.ceil(total / PAGE_SIZE));
-}
-
-/** Trims a filter value, treating a whitespace-only value as absent. */
-function term(value: string | undefined): string | undefined {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
-}
-
-/**
- * One filter's value, with the operator the admin chose taken off it.
- *
- * The operator rides on the stored value itself (`src/lib/admin/filters.ts`), so
- * every comparison below reads its match through `filterMatches` rather than
- * touching `state.values` directly — there is then exactly one place that decides
- * what a `!` or `=` prefix means.
- */
-interface FilterMatch {
-  operator: AdminFilterOperator;
-  value: string;
-}
-
-/**
- * Every active filter of a source, decoded once per query build.
- *
- * Unknown values are dropped rather than passed on: a filter whose value this
- * build no longer recognises — a field that used to take free text, a hand-edited
- * URL — narrows nothing instead of reaching Postgres as a comparison against a
- * value no option offers.
- */
-function filterMatches(
-  source: AdminSourceConfig,
-  state: AdminQueryState,
-): Record<string, FilterMatch> {
-  const matches: Record<string, FilterMatch> = {};
-
-  for (const field of source.filters) {
-    const raw = state.values[field.id];
-    if (!raw) continue;
-    const reading = readFilterValue(field, raw);
-    if (reading) {
-      matches[field.id] = { operator: reading.operator, value: reading.value };
-    }
-  }
-
-  return matches;
-}
-
-/**
- * The `kind: "text"` comparisons — contains (`similar`), exactly (`is`) and the
- * negation of the field's default (`not`).
- *
- * Wildcards are escaped on every branch, so a literal `%`, `_` or `\` typed into a
- * filter matches itself. `is` passes the value with no wildcards at all, which is
- * `ILIKE`'s case-insensitive equality — the same comparison a `select` makes.
- */
-function textMatch(
-  column: AnyColumn,
-  match: FilterMatch | undefined,
-): SQL | undefined {
-  if (!match) return undefined;
-  const needle = escapeLike(match.value);
-
-  switch (match.operator) {
-    case "similar":
-      return ilike(column, `%${needle}%`);
-    case "is":
-      return ilike(column, needle);
-    case "not":
-      return sql`${column} not ilike ${`%${needle}%`}`;
-  }
-}
-
-/** The `kind: "select"` comparisons — case-insensitive equality, or its negation. */
-function selectMatch(
-  column: AnyColumn,
-  match: FilterMatch | undefined,
-): SQL | undefined {
-  if (!match) return undefined;
-  const needle = match.value.toLowerCase();
-  return match.operator === "not"
-    ? sql`lower(${column}) <> ${needle}`
-    : sql`lower(${column}) = ${needle}`;
-}
-
-/** The search box: one `OR` across every column that form's search should reach. */
-function containsAny(columns: AnyColumn[], query: string): SQL | undefined {
-  const needle = term(query);
-  if (!needle) return undefined;
-  const pattern = `%${escapeLike(needle)}%`;
-  return or(...columns.map((column) => ilike(column, pattern)));
-}
-
-/**
- * The `kind: "date"` comparison — an inclusive day range on a `timestamptz`.
- *
- * Written as a plain range on the column (`>= start`, `< the day after the end`)
- * rather than as `column::date between …` for two reasons: the range can use the
- * existing `(created_at desc)` indexes whereas an expression on the column cannot,
- * and "14 September" has to mean the 14th *in Dhaka*, which is what an admin
- * reading this panel expects. Comparing against a bare date would use UTC and
- * split the local day at 6am.
- */
-function dayRange(
-  column: AnyColumn,
-  from: string | undefined,
-  to: string | undefined,
-): SQL[] {
-  const bounds: SQL[] = [];
-  const start = term(from);
-  const end = term(to);
-
-  if (start) {
-    bounds.push(
-      sql`${column} >= (${start}::timestamp at time zone ${ADMIN_TIME_ZONE})`,
-    );
-  }
-  if (end) {
-    bounds.push(
-      sql`${column} < ((${end}::date + 1)::timestamp at time zone ${ADMIN_TIME_ZONE})`,
-    );
-  }
-
-  return bounds;
-}
-
-/** The `kind: "number"` comparison — a numeric bound on an amount. */
-function amountBound(
-  column: AnyColumn,
-  value: string | undefined,
-  direction: "min" | "max",
-): SQL | undefined {
-  const bound = term(value);
-  if (!bound) return undefined;
-  return direction === "min"
-    ? sql`${column} >= ${bound}::numeric`
-    : sql`${column} <= ${bound}::numeric`;
-}
-
-/** A boolean column selected by a named choice rather than by `true`/`false`. */
-function booleanMatch(
-  column: AnyColumn,
-  match: FilterMatch | undefined,
-  trueValue: string,
-): SQL | undefined {
-  if (!match) return undefined;
-  const chosen = match.value === trueValue;
-  // "Is not first-time CA" is "returning", not a missing answer — the column is
-  // `not null`, so the negated choice is the other option.
-  return eq(column, match.operator === "not" ? !chosen : chosen);
-}
-
-/**
- * The `segment` filter: one event of the fest.
- *
- * A registration's `segments` column holds the event names its entries describe
- * (`describeEntry`), never a segment name, so the option — an event id — is
- * resolved to its name and the row text is searched for it. `not` keeps the rows
- * that entered something else. No two catalogue event names are a substring of
- * another, which `pnpm db:verify` asserts, so matching one name cannot pick up
- * another event's rows.
- */
-function segmentMatch(
-  column: AnyColumn,
-  match: FilterMatch | undefined,
-): SQL | undefined {
-  if (!match) return undefined;
-  const name = getStemfestEvent(match.value)?.name;
-  if (!name) return undefined;
-  const entered = ilike(column, `%${escapeLike(name)}%`);
-  return match.operator === "not" ? not(entered) : entered;
-}
-
-/**
- * Sort vocabulary → `ORDER BY`. An unrecognised combination falls back to
- * newest-first, so a hand-edited `?sort=` can never reach the database as
- * anything but a supported order. Alphabetical and amount sorts keep a
- * newest-first tiebreak so equal keys still come back in a meaningful order.
- */
-interface SortColumns {
-  timestamp: AnyColumn;
-  name?: AnyColumn;
-  amount?: AnyColumn;
-}
-
-function orderFor(sort: AdminSortId, columns: SortColumns): SQL[] {
-  switch (sort) {
-    case "oldest":
-      return [asc(columns.timestamp)];
-    case "name-asc":
-      if (columns.name) return [asc(columns.name), desc(columns.timestamp)];
-      break;
-    case "name-desc":
-      if (columns.name) return [desc(columns.name), desc(columns.timestamp)];
-      break;
-    case "amount-asc":
-      if (columns.amount) return [sql`${columns.amount} asc nulls last`];
-      break;
-    case "amount-desc":
-      if (columns.amount) return [sql`${columns.amount} desc nulls last`];
-      break;
-    case "newest":
-      break;
-  }
-
-  return [desc(columns.timestamp)];
-}
-
-// ── Per-source filters ───────────────────────────────────────────────────────
-//
-// One builder per source, shared by the paged list and the printed report, so a
-// filter can never mean one thing on screen and another in the export.
-
-function ambassadorWhere(state: AdminQueryState): SQL | undefined {
-  const t = campusAmbassadorRegistrations;
-  const m = filterMatches(ambassadorSource, state);
-
-  return and(
-    containsAny(
-      [t.name, t.school, t.class, t.phone, t.email, t.type, t.experience],
-      state.query,
-    ),
-    selectMatch(t.type, m.type),
-    selectMatch(t.gender, m.gender),
-    booleanMatch(t.firstTimeCa, m.firstTime, "first-time"),
-    ...dayRange(t.createdAt, m.from?.value, m.to?.value),
-    textMatch(t.class, m.class),
-    textMatch(t.school, m.school),
-  );
-}
-
-function volunteerWhere(state: AdminQueryState): SQL | undefined {
-  const t = volunteerRegistrations;
-  const m = filterMatches(volunteerSource, state);
-
-  return and(
-    containsAny(
-      [
-        t.fullName,
-        t.classSection,
-        t.roll,
-        t.shift,
-        t.studentCode,
-        t.personalPhone,
-        t.parentsPhone,
-      ],
-      state.query,
-    ),
-    selectMatch(t.shift, m.shift),
-    ...dayRange(t.createdAt, m.from?.value, m.to?.value),
-    textMatch(t.classSection, m.classSection),
-    textMatch(t.roll, m.roll),
-    textMatch(t.studentCode, m.studentCode),
-    textMatch(t.attendanceWeek, m.attendanceWeek),
-    textMatch(t.parentsComfort, m.parentsComfort),
-    textMatch(t.campusHesitation, m.campusHesitation),
-  );
-}
-
-/**
- * The STEM Fest filter set.
- *
- * `payment` compares the **effective** status — an admin's stored decision, or
- * the forwarded-SMS match when no admin has ruled — through the fragments in
- * `src/db/queries/stemfest-payment.ts`. Those fragments are shared with the table's
- * status pill, the stat cards, the verification action and the printed report, so
- * the four can never disagree about what a row's payment status is.
- */
-function stemfestWhere(state: AdminQueryState): SQL | undefined {
-  const t = stemfestRegistrations;
-  const m = filterMatches(stemfestSource, state);
-
-  // Narrowed before it reaches SQL, so a hand-edited `?payment=` cannot reach the
-  // database as a comparison against a value no option offers.
-  const paymentValue = m.payment?.value;
-  const paymentFilter =
-    paymentValue && isStemfestPaymentStatus(paymentValue)
-      ? stemfestPaymentFilter(paymentValue)
-      : undefined;
-  const payment =
-    paymentFilter && m.payment?.operator === "not"
-      ? not(paymentFilter)
-      : paymentFilter;
-
-  return and(
-    containsAny(
-      [t.name, t.class, t.school, t.segments, t.transactionId, t.paymentNumber],
-      state.query,
-    ),
-    payment,
-    selectMatch(t.class, m.class),
-    textMatch(t.school, m.school),
-    ...dayRange(t.createdAt, m.from?.value, m.to?.value),
-    segmentMatch(t.segments, m.segment),
-    textMatch(t.transactionId, m.transactionId),
-  );
-}
-
-function smsWhere(state: AdminQueryState): SQL | undefined {
-  const t = stemfestPaymentSms;
-  const m = filterMatches(smsSource, state);
-
-  return and(
-    containsAny(
-      [t.sender, t.rawMessage, t.transactionId, t.senderNumber, t.status],
-      state.query,
-    ),
-    selectMatch(t.status, m.status),
-    textMatch(t.sender, m.sender),
-    ...dayRange(t.receivedAt, m.from?.value, m.to?.value),
-    textMatch(t.senderNumber, m.senderNumber),
-    amountBound(t.amount, m.minAmount?.value, "min"),
-    amountBound(t.amount, m.maxAmount?.value, "max"),
-  );
-}
-
-/**
- * `count(*)` for the current filter.
- *
- * Counts and their page rows are issued as two **sequential** statements, never
- * through `Promise.all`. That is what keeps every query on its own pooled
- * connection: stacking them onto one connection is what makes the Supavisor
- * pooler lose a response and hang the request forever (see `src/db/index.ts`).
- * The count goes first so a hand-edited out-of-range `?page=` still reports a
- * real total rather than an empty page's `undefined`.
- */
-async function countRows(
-  tx: DbTransaction,
-  table: PgTable,
-  where: SQL | undefined,
-): Promise<number> {
-  const [row] = await tx
-    .select({ total: sql<number>`count(*)::int` })
-    .from(table)
-    .where(where);
-
-  return row?.total ?? 0;
-}
-
 export interface AmbassadorSearchResult {
   rows: CampusAmbassadorRegistration[];
   total: number;
@@ -565,7 +238,7 @@ export async function searchAmbassadorRegistrations(
       .select()
       .from(t)
       .where(where)
-      .orderBy(...orderFor(state.sort, { timestamp: t.createdAt, name: t.name }))
+      .orderBy(...orderFor(state.sort, { timestamp: t.createdAt, id: t.id, name: t.name }))
       .limit(PAGE_SIZE)
       .offset((page - 1) * PAGE_SIZE);
 
@@ -597,7 +270,7 @@ export async function searchVolunteerRegistrations(
       .from(t)
       .where(where)
       .orderBy(
-        ...orderFor(state.sort, { timestamp: t.createdAt, name: t.fullName }),
+        ...orderFor(state.sort, { timestamp: t.createdAt, id: t.id, name: t.fullName }),
       )
       .limit(PAGE_SIZE)
       .offset((page - 1) * PAGE_SIZE);
@@ -675,35 +348,92 @@ export async function searchStemfestRegistrations(
     const total = await countRows(tx, t, where);
     const page = Math.min(requested, pageCount(total));
     const rows = await tx
-      .select({
-        id: t.id,
-        registrationCode: t.registrationCode,
-        name: t.name,
-        class: t.class,
-        school: t.school,
-        segments: t.segments,
-        reference: t.reference,
-        totalFee: t.totalFee,
-        transactionId: t.transactionId,
-        paymentNumber: t.paymentNumber,
-        email: t.email,
-        createdAt: t.createdAt,
-        status: stemfestEffectivePaymentStatus(),
-        decision: t.paymentDecision,
-        decidedAt: t.paymentDecidedAt,
-        decidedBy: t.paymentDecidedBy,
-        emailSentAt: t.paymentEmailSentAt,
-        amount: stemfestPaymentAmount(),
-      })
+      .select(stemfestAdminSelection())
       .from(t)
       .where(where)
-      .orderBy(...orderFor(state.sort, { timestamp: t.createdAt, name: t.name }))
+      .orderBy(...orderFor(state.sort, { timestamp: t.createdAt, id: t.id, name: t.name }))
       .limit(PAGE_SIZE)
       .offset((page - 1) * PAGE_SIZE);
 
     return {
       rows,
       total,
+      page,
+      totalPages: pageCount(total),
+    };
+  });
+}
+
+export interface StemfestAttendanceRow {
+  id: string;
+  /** `<GENDER><CLASS><NNN>` — what the participant was told, and what the desk reads. */
+  registrationCode: string;
+  name: string;
+  /** The stored class id (`class-9`); the sheet prints its label. */
+  class: string;
+  school: string;
+  /** The stored bit: marked present at the desk, or not. */
+  attendance: boolean;
+  /** Sorted and paged by; printed nowhere on the sheet. */
+  createdAt: Date;
+}
+
+export interface AttendanceSearchResult {
+  rows: StemfestAttendanceRow[];
+  total: number;
+  /**
+   * Marked present out of **every** registration, not out of what is on screen.
+   *
+   * Whole-table on purpose: the cached copy recomputes the same two figures over its
+   * whole list, and a headline that meant "of the filtered rows" on the server and
+   * "of everything" once the browser took over would be the card-vs-pill drift
+   * ADR-0044 names as the one thing a cached panel must not do.
+   */
+  tally: AttendanceTally;
+  page: number;
+  totalPages: number;
+}
+
+/**
+ * One page of the attendance sheet.
+ *
+ * A separate read from `searchStemfestRegistrations` rather than a projection of
+ * it: the sheet selects the columns a desk can act on, so payment, TrxID and email
+ * never cross the entrance with the name they belong to.
+ */
+export async function searchAttendance(
+  state: AdminQueryState,
+): Promise<AttendanceSearchResult> {
+  await requireAdmin();
+  const t = stemfestRegistrations;
+  const requested = clampPage(state.page);
+  const where = attendanceWhere(state);
+
+  return withDbTimeout("searchAttendance", async (tx) => {
+    const [counts] = await tx
+      .select(attendanceCountSelection())
+      .from(t)
+      .where(where);
+
+    const total = counts?.total ?? 0;
+    const page = Math.min(requested, pageCount(total));
+
+    // Sequential, never `Promise.all` — and the second statement carries no WHERE,
+    // because the two figures beside the heading are whole-table ones.
+    const [whole] = await tx.select(attendanceProbeSelection()).from(t);
+
+    const rows = await tx
+      .select(attendanceSelection())
+      .from(t)
+      .where(where)
+      .orderBy(...orderFor(state.sort, { timestamp: t.createdAt, id: t.id, name: t.name }))
+      .limit(PAGE_SIZE)
+      .offset((page - 1) * PAGE_SIZE);
+
+    return {
+      rows,
+      total,
+      tally: { present: whole?.present ?? 0, total: whole?.count ?? 0 },
       page,
       totalPages: pageCount(total),
     };
@@ -737,45 +467,233 @@ export interface StemfestStats {
   amountToCollect: string | null;
 }
 
+/**
+ * An aggregate row over an empty table: every `count` is a real zero, and both sums
+ * are `null` — which the panel draws as an em dash, because "nothing was asked for"
+ * and "no row carries a figure" are different statements.
+ */
+function normalizeStemfestStats(row: {
+  total: number | null;
+  thisWeek: number | null;
+  uniqueSchools: number | null;
+  verifiedCount: number | null;
+  pendingCount: number | null;
+  rejectedCount: number | null;
+  amountCollected: string | null;
+  amountToCollect: string | null;
+} | undefined): StemfestStats {
+  return {
+    total: row?.total ?? 0,
+    thisWeek: row?.thisWeek ?? 0,
+    uniqueSchools: row?.uniqueSchools ?? 0,
+    verifiedCount: row?.verifiedCount ?? 0,
+    pendingCount: row?.pendingCount ?? 0,
+    rejectedCount: row?.rejectedCount ?? 0,
+    amountCollected: row?.amountCollected ?? null,
+    amountToCollect: row?.amountToCollect ?? null,
+  };
+}
+
 export async function getStemfestStats(): Promise<StemfestStats> {
   await requireAdmin();
   const t = stemfestRegistrations;
 
   return withDbTimeout("getStemfestStats", async (tx) => {
-    const [row] = await tx
-      .select({
-        total: sql<number>`count(*)::int`,
-        thisWeek: sql<number>`count(*) filter (where ${t.createdAt} >= now() - interval '7 days')::int`,
-        // Manarat spellings collapse to one name (see `manaratSchoolLabel`), so the
-        // host school counts once rather than once per way a participant typed it.
-        uniqueSchools: sql<number>`count(distinct case when ${t.school} ilike ${manaratSchoolLikePattern} then ${manaratSchoolLabel} else lower(btrim(${t.school})) end)::int`,
-        // The same definition the status pill and the `payment=verified` filter
-        // use, so the card cannot promise a number the table below it contradicts.
-        // It counted matched SMS messages before, which drifted from both as soon
-        // as an admin verified a payment by hand (audit: card vs. pill mismatch).
-        verifiedCount: sql<number>`count(*) filter (where ${stemfestEffectivePaymentStatus()} = 'verified')::int`,
-        pendingCount: sql<number>`count(*) filter (where ${stemfestEffectivePaymentStatus()} = 'pending')::int`,
-        rejectedCount: sql<number>`count(*) filter (where ${stemfestEffectivePaymentStatus()} = 'rejected')::int`,
-        // What the club collected, summed over verified rows. This uses the
-        // registration's own `total_fee` — the amount the club asked for and
-        // accepted — rather than the forwarded-SMS amount, which has been known to
-        // parse to one uniform figure. Same source the receipt quotes.
-        amountCollected: sql<string | null>`sum(${t.totalFee}) filter (where ${stemfestEffectivePaymentStatus()} = 'verified')::text`,
-        // Every row, verified or not: the club asked for this money, so it is what
-        // the panel compares `amountCollected` against.
-        amountToCollect: sql<string | null>`sum(${t.totalFee})::text`,
-      })
-      .from(t);
+    const [row] = await tx.select(stemfestStatsSelection()).from(t);
+
+    return normalizeStemfestStats(row);
+  });
+}
+
+// ── Browser snapshots ────────────────────────────────────────────────────────
+//
+// The whole list, read once so a fest desk can search it without a round trip per
+// keystroke. The rows, the effective payment status and the figures are exactly the
+// paged table's — nothing narrows them, and the ceiling is `REPORT_ROW_LIMIT` with
+// `truncated` saying so rather than a list quietly short of rows.
+
+/**
+ * The newest `created_at`, and the newest admin write, as the cursors a delta reads.
+ *
+ * Neither table has an `updated_at`, so appends are detected by `created_at` and the
+ * one edit that must not be missed — an admin's decision, or a confirmation sent — by
+ * the two timestamps those writes set. `greatest` ignores NULLs, so a row with only
+ * one of them still reports it.
+ */
+function stemfestProbeSelection() {
+  const t = stemfestRegistrations;
+
+  return {
+    count: sql<number>`count(*)::int`,
+    cursor: sql<Date | null>`max(${t.createdAt})::timestamptz`,
+    decidedCursor: sql<Date | null>`max(greatest(${t.paymentDecidedAt}, ${t.paymentEmailSentAt}))::timestamptz`,
+  };
+}
+
+/** One probe row into the wire shape. A `null` cursor means the table is empty. */
+function toProbe(
+  row:
+    | { count: number | null; cursor: Date | null; decidedCursor?: Date | null }
+    | undefined,
+): SnapshotProbe {
+  return {
+    count: row?.count ?? 0,
+    cursor: row?.cursor ? toIso(row.cursor) : null,
+    decidedCursor: row?.decidedCursor ? toIso(row.decidedCursor) : null,
+  };
+}
+
+export async function probeStemfestSnapshot(): Promise<SnapshotProbe> {
+  await requireAdmin();
+  const t = stemfestRegistrations;
+
+  return withDbTimeout("probeStemfestSnapshot", async (tx) => {
+    const [row] = await tx.select(stemfestProbeSelection()).from(t);
+    return toProbe(row);
+  });
+}
+
+export async function getStemfestSnapshot(): Promise<StemfestSnapshot> {
+  const admin = await requireAdmin();
+  const t = stemfestRegistrations;
+
+  return withDbTimeout("getStemfestSnapshot", async (tx) => {
+    // One row past the ceiling is how truncation is detected: 2 001 come back, the
+    // newest 2 000 are kept, and the payload says the list is a slice.
+    const found = await tx
+      .select(stemfestAdminSelection())
+      .from(t)
+      .orderBy(desc(t.createdAt))
+      .limit(REPORT_ROW_LIMIT + 1);
+
+    // Sequential, never `Promise.all` — two statements pipelined onto one pooled
+    // connection is what wedges Supavisor (`src/db/query.ts`). Same transaction, so
+    // the rows, the figures and the cursor all describe one instant.
+    const [statsRow] = await tx.select(stemfestStatsSelection()).from(t);
+    const [probeRow] = await tx.select(stemfestProbeSelection()).from(t);
+
+    const truncated = found.length > REPORT_ROW_LIMIT;
+    const rows = truncated ? found.slice(0, REPORT_ROW_LIMIT) : found;
 
     return {
-      total: row?.total ?? 0,
-      thisWeek: row?.thisWeek ?? 0,
-      uniqueSchools: row?.uniqueSchools ?? 0,
-      verifiedCount: row?.verifiedCount ?? 0,
-      pendingCount: row?.pendingCount ?? 0,
-      rejectedCount: row?.rejectedCount ?? 0,
-      amountCollected: row?.amountCollected ?? null,
-      amountToCollect: row?.amountToCollect ?? null,
+      v: SNAPSHOT_VERSION,
+      source: "stemfest",
+      admin: admin.email,
+      generatedAt: new Date().toISOString(),
+      ...toProbe(probeRow),
+      truncated,
+      stats: normalizeStemfestStats(statsRow),
+      rows: rows.map(toStemfestSnapshotRow),
+    };
+  });
+}
+
+/** Rows filed after `since`, oldest first so the cache can append them in order. */
+export async function stemfestDeltaSince(
+  since: Date,
+): Promise<SnapshotDelta<StemfestSnapshotRow>> {
+  await requireAdmin();
+  const t = stemfestRegistrations;
+
+  return withDbTimeout("stemfestDeltaSince", async (tx) => {
+    const found = await tx
+      .select(stemfestAdminSelection())
+      .from(t)
+      .where(gt(t.createdAt, since))
+      .orderBy(asc(t.createdAt))
+      .limit(SNAPSHOT_DELTA_LIMIT + 1);
+
+    const [probeRow] = await tx.select(stemfestProbeSelection()).from(t);
+    const truncated = found.length > SNAPSHOT_DELTA_LIMIT;
+
+    return {
+      generatedAt: new Date().toISOString(),
+      probe: toProbe(probeRow),
+      truncated,
+      rows: (truncated ? found.slice(0, SNAPSHOT_DELTA_LIMIT) : found).map(
+        toStemfestSnapshotRow,
+      ),
+    };
+  });
+}
+
+// ── The attendance sheet's snapshot ──────────────────────────────────────────
+//
+// The same table as the registrations snapshot above, read narrower: the sheet
+// caches five fields per participant — a name, an ID, a class, a tick, and the
+// submission moment it sorts by — so what sits in a fest laptop is not an email
+// address, a phone number or a TrxID. Same freshness rules, same ceiling, same
+// per-admin stamp.
+
+/** The whole sheet as one download: the rows, the two figures, and the cursors. */
+export async function getAttendanceSnapshot(): Promise<AttendanceSnapshot> {
+  const admin = await requireAdmin();
+  const t = stemfestRegistrations;
+
+  return withDbTimeout("getAttendanceSnapshot", async (tx) => {
+    // One row past the ceiling is how truncation is detected: 2 001 come back, the
+    // newest 2 000 are kept, and the payload says the list is a slice.
+    const found = await tx
+      .select(attendanceSelection())
+      .from(t)
+      .orderBy(desc(t.createdAt))
+      .limit(REPORT_ROW_LIMIT + 1);
+
+    // Sequential, never `Promise.all`, and in the same transaction — so the rows and
+    // the figures describe one instant rather than two readings of a moving table.
+    const [probeRow] = await tx.select(attendanceProbeSelection()).from(t);
+
+    const truncated = found.length > REPORT_ROW_LIMIT;
+    const rows = truncated ? found.slice(0, REPORT_ROW_LIMIT) : found;
+
+    return {
+      v: SNAPSHOT_VERSION,
+      source: "attendance",
+      admin: admin.email,
+      generatedAt: new Date().toISOString(),
+      ...toProbe(probeRow),
+      truncated,
+      tally: { present: probeRow?.present ?? 0, total: probeRow?.count ?? 0 },
+      rows: rows.map(toAttendanceSnapshotRow),
+    };
+  });
+}
+
+export async function probeAttendanceSnapshot(): Promise<SnapshotProbe> {
+  await requireAdmin();
+  const t = stemfestRegistrations;
+
+  return withDbTimeout("probeAttendanceSnapshot", async (tx) => {
+    const [row] = await tx.select(attendanceProbeSelection()).from(t);
+    return toProbe(row);
+  });
+}
+
+/** Rows filed after `since`, oldest first so the cache can append them in order. */
+export async function attendanceDeltaSince(
+  since: Date,
+): Promise<SnapshotDelta<AttendanceSnapshotRow>> {
+  await requireAdmin();
+  const t = stemfestRegistrations;
+
+  return withDbTimeout("attendanceDeltaSince", async (tx) => {
+    const found = await tx
+      .select(attendanceSelection())
+      .from(t)
+      .where(gt(t.createdAt, since))
+      .orderBy(asc(t.createdAt))
+      .limit(SNAPSHOT_DELTA_LIMIT + 1);
+
+    const [probeRow] = await tx.select(attendanceProbeSelection()).from(t);
+    const truncated = found.length > SNAPSHOT_DELTA_LIMIT;
+
+    return {
+      generatedAt: new Date().toISOString(),
+      probe: toProbe(probeRow),
+      truncated,
+      rows: (truncated ? found.slice(0, SNAPSHOT_DELTA_LIMIT) : found).map(
+        toAttendanceSnapshotRow,
+      ),
     };
   });
 }
@@ -1087,6 +1005,24 @@ export interface SmsLogsResult {
   ignoredCount: number;
 }
 
+/**
+ * The three status tallies the section's stat cards print, normalised.
+ *
+ * The selection itself lives in `src/db/queries/admin-filters.ts`, beside the rest of
+ * the SQL the parity harness has to read.
+ */
+function normalizeSmsTallies(row: {
+  matched: number | null;
+  unmatched: number | null;
+  ignored: number | null;
+} | undefined): SmsTallies {
+  return {
+    matched: row?.matched ?? 0,
+    unmatched: row?.unmatched ?? 0,
+    ignored: row?.ignored ?? 0,
+  };
+}
+
 /** One page of forwarded SMS matching `state`. */
 export async function getSmsLogs(state: AdminQueryState): Promise<SmsLogsResult> {
   await requireAdmin();
@@ -1102,30 +1038,116 @@ export async function getSmsLogs(state: AdminQueryState): Promise<SmsLogsResult>
       .from(t)
       .where(where)
       .orderBy(
-        ...orderFor(state.sort, { timestamp: t.receivedAt, amount: t.amount }),
+        ...orderFor(state.sort, { timestamp: t.receivedAt, id: t.id, amount: t.amount }),
       )
       .limit(PAGE_SIZE)
       .offset((page - 1) * PAGE_SIZE);
 
-    // One statement for the three status tallies instead of three round trips,
-    // and issued *after* the page rows rather than alongside them so nothing is
-    // ever pipelined onto a pooled connection.
-    const [statusCounts] = await tx
-      .select({
-        matched: sql<number>`count(*) filter (where ${t.status} = 'matched')::int`,
-        unmatched: sql<number>`count(*) filter (where ${t.status} = 'unmatched')::int`,
-        ignored: sql<number>`count(*) filter (where ${t.status} = 'ignored')::int`,
-      })
-      .from(t);
+    const [statusCounts] = await tx.select(smsTallySelection()).from(t);
+    const tallies = normalizeSmsTallies(statusCounts);
 
     return {
       rows,
       total,
       page,
       totalPages: pageCount(total),
-      matchedCount: statusCounts?.matched ?? 0,
-      unmatchedCount: statusCounts?.unmatched ?? 0,
-      ignoredCount: statusCounts?.ignored ?? 0,
+      matchedCount: tallies.matched,
+      unmatchedCount: tallies.unmatched,
+      ignoredCount: tallies.ignored,
+    };
+  });
+}
+
+// ── Browser snapshots: SMS log ───────────────────────────────────────────────
+//
+// The same whole-list read as the STEM Fest one above, over the forwarded-payment
+// log. The cursor here is `created_at` — when the webhook *stored* the message —
+// rather than `received_at`, which is the message's own timestamp and can arrive out
+// of order; a delta keyed on it would miss an older message stored after the cursor.
+
+function smsProbeSelection() {
+  const t = stemfestPaymentSms;
+
+  return {
+    count: sql<number>`count(*)::int`,
+    cursor: sql<Date | null>`max(${t.createdAt})::timestamptz`,
+  };
+}
+
+/**
+ * The SMS log's probe. `decidedCursor` is always `null`: nothing an admin does to a
+ * forwarded message — matching it, ignoring it — writes a timestamp, so those edits
+ * are invisible to a delta and are only picked up by a manual refresh.
+ */
+function toSmsProbe(row: { count: number | null; cursor: Date | null } | undefined) {
+  return { ...toProbe(row), decidedCursor: null };
+}
+
+export async function probeSmsSnapshot(): Promise<SnapshotProbe> {
+  await requireAdmin();
+  const t = stemfestPaymentSms;
+
+  return withDbTimeout("probeSmsSnapshot", async (tx) => {
+    const [row] = await tx.select(smsProbeSelection()).from(t);
+    return toSmsProbe(row);
+  });
+}
+
+export async function getSmsSnapshot(): Promise<SmsSnapshot> {
+  const admin = await requireAdmin();
+  const t = stemfestPaymentSms;
+
+  return withDbTimeout("getSmsSnapshot", async (tx) => {
+    const found = await tx
+      .select()
+      .from(t)
+      .orderBy(desc(t.receivedAt))
+      .limit(REPORT_ROW_LIMIT + 1);
+
+    const [tallyRow] = await tx.select(smsTallySelection()).from(t);
+    const [probeRow] = await tx.select(smsProbeSelection()).from(t);
+
+    const truncated = found.length > REPORT_ROW_LIMIT;
+    const rows = truncated ? found.slice(0, REPORT_ROW_LIMIT) : found;
+
+    return {
+      v: SNAPSHOT_VERSION,
+      source: "sms",
+      admin: admin.email,
+      generatedAt: new Date().toISOString(),
+      ...toSmsProbe(probeRow),
+      truncated,
+      tallies: normalizeSmsTallies(tallyRow),
+      rows: rows.map(toSmsSnapshotRow),
+    };
+  });
+}
+
+/** Messages stored after `since`, oldest first so the cache can append them in order. */
+export async function smsDeltaSince(
+  since: Date,
+): Promise<SnapshotDelta<SmsSnapshotRow>> {
+  await requireAdmin();
+  const t = stemfestPaymentSms;
+
+  return withDbTimeout("smsDeltaSince", async (tx) => {
+    const found = await tx
+      .select()
+      .from(t)
+      .where(gt(t.createdAt, since))
+      .orderBy(asc(t.createdAt))
+      .limit(SNAPSHOT_DELTA_LIMIT + 1);
+
+    const [probeRow] = await tx.select(smsProbeSelection()).from(t);
+    const truncated = found.length > SNAPSHOT_DELTA_LIMIT;
+
+    return {
+      generatedAt: new Date().toISOString(),
+      probe: toSmsProbe(probeRow),
+      truncated,
+      rows: (truncated ? found.slice(0, SNAPSHOT_DELTA_LIMIT) : found).map(
+        toSmsSnapshotRow,
+      ),
     };
   });
 }
@@ -1466,7 +1488,7 @@ export async function getAdminReportRows(
           .from(t)
           .where(where)
           .orderBy(
-            ...orderFor(state.sort, { timestamp: t.createdAt, name: t.name }),
+            ...orderFor(state.sort, { timestamp: t.createdAt, id: t.id, name: t.name }),
           )
           .limit(REPORT_ROW_LIMIT);
 
@@ -1499,7 +1521,7 @@ export async function getAdminReportRows(
           .from(t)
           .where(where)
           .orderBy(
-            ...orderFor(state.sort, { timestamp: t.createdAt, name: t.fullName }),
+            ...orderFor(state.sort, { timestamp: t.createdAt, id: t.id, name: t.fullName }),
           )
           .limit(REPORT_ROW_LIMIT);
 
@@ -1540,7 +1562,7 @@ export async function getAdminReportRows(
           .from(t)
           .where(where)
           .orderBy(
-            ...orderFor(state.sort, { timestamp: t.createdAt, name: t.name }),
+            ...orderFor(state.sort, { timestamp: t.createdAt, id: t.id, name: t.name }),
           )
           .limit(REPORT_ROW_LIMIT);
 
@@ -1569,6 +1591,35 @@ export async function getAdminReportRows(
         };
       }
 
+      case "attendance": {
+        const t = stemfestRegistrations;
+        const where = attendanceWhere(state);
+        const total = await countRows(tx, t, where);
+        const rows = await tx
+          .select(attendanceSelection())
+          .from(t)
+          .where(where)
+          .orderBy(
+            ...orderFor(state.sort, { timestamp: t.createdAt, id: t.id, name: t.name }),
+          )
+          .limit(REPORT_ROW_LIMIT);
+
+        return {
+          total,
+          truncated: total > rows.length,
+          rows: rows.map((row) => ({
+            registrationCode: reportText(row.registrationCode),
+            name: reportText(row.name),
+            // The label, not the stored id: this is the one export a volunteer
+            // carries to a gate, and nobody decodes `class-9` off a sheet.
+            class: reportText(getStemfestClassLabel(row.class)),
+            school: reportText(row.school),
+            // The same two words the switch and its filter menu read.
+            attendance: attendanceOption(row.attendance).label,
+          })),
+        };
+      }
+
       case "sms": {
         const t = stemfestPaymentSms;
         const where = smsWhere(state);
@@ -1578,7 +1629,7 @@ export async function getAdminReportRows(
           .from(t)
           .where(where)
           .orderBy(
-            ...orderFor(state.sort, { timestamp: t.receivedAt, amount: t.amount }),
+            ...orderFor(state.sort, { timestamp: t.receivedAt, id: t.id, amount: t.amount }),
           )
           .limit(REPORT_ROW_LIMIT);
 
@@ -1969,6 +2020,63 @@ export async function setStemfestContactEmail(
         value === ""
           ? `Contact email cleared for ${updated.name}.`
           : `Contact email for ${updated.name} saved as ${value}.`,
+    };
+  });
+}
+
+/**
+ * Marks a participant present at the fest desk, or puts the tick back.
+ *
+ * The value arrives as the filter's word (`present` / `absent`) rather than a
+ * boolean, because a queued write is replayed verbatim out of IndexedDB and the
+ * panel's whole write vocabulary is those two words.
+ *
+ * It is idempotent on purpose: the sheet fires this on every flick, so a double
+ * submit and a retry after a lost response both land on the same bit. Nothing else
+ * on the row moves — attendance says nothing about whether someone paid, and the
+ * panel reads the two columns together rather than deriving one from the other.
+ *
+ * `attendance_marked_at` moves **either** way. It is not an audit column but the
+ * browser cache's change cursor, and a mark taken *back* has to be as visible to
+ * another desk's probe as one made.
+ */
+export async function setStemfestAttendance(
+  rowId: string,
+  attendance: string,
+): Promise<AdminStatusActionResult> {
+  return statusAction(async () => {
+    await requireAdmin();
+    const id = parseInput(adminRowIdSchema, rowId);
+    const word = parseInput(z.string("That mark could not be read."), attendance).trim();
+
+    if (!isStemfestAttendance(word)) {
+      throw new StatusRefusal(
+        "That is not an attendance mark this panel knows. Refresh the sheet and try again.",
+      );
+    }
+
+    const present = word === ATTENDANCE_PRESENT_VALUE;
+    const t = stemfestRegistrations;
+
+    const updated = await withDbTimeout("setStemfestAttendance", async (tx) => {
+      const [row] = await tx
+        .update(t)
+        .set({ attendance: present, attendanceMarkedAt: new Date() })
+        .where(eq(t.id, id))
+        .returning({ name: t.name });
+
+      if (!row) {
+        throw new StatusRefusal(
+          "That registration is no longer there. Refresh the sheet and try again.",
+        );
+      }
+
+      return row;
+    });
+
+    return {
+      ok: true,
+      message: `${updated.name} marked ${attendanceOption(present).label.toLowerCase()}.`,
     };
   });
 }

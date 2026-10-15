@@ -25,18 +25,31 @@ import RangeSegments, { TREND_RANGE_PARAM } from "@/components/admin/range-segme
 import RegistrationsTable, {
   type RegistrationRow,
 } from "@/app/(routes)/(admin)/admin/campus-ambassador/registrations-table";
-import ScienceCompetitionTable, {
-  type StemfestRow,
-} from "@/app/(routes)/(admin)/admin/science-competition/science-competition-table";
-import SmsLogTable, {
-  type SmsLogRow,
-} from "@/app/(routes)/(admin)/admin/sms-logs/sms-log-table";
+import ScienceCompetitionTable from "@/app/(routes)/(admin)/admin/science-competition/science-competition-table";
+import SmsLogTable from "@/app/(routes)/(admin)/admin/sms-logs/sms-log-table";
 import VolunteerRegistrationsTable, {
   type VolunteerRow,
 } from "@/app/(routes)/(admin)/admin/volunteer/volunteer-registrations-table";
+import AttendanceTable from "@/app/(routes)/(admin)/admin/attendance/attendance-table";
+import {
+  StemfestListProvider,
+} from "@/components/admin/stemfest-list";
+import {
+  SmsListProvider,
+} from "@/components/admin/sms-list";
+import {
+  AttendanceListProvider,
+} from "@/components/admin/attendance-list";
+import { localSmsTallies, localStemfestStats } from "@/lib/admin/local-query";
 import { SECTION_ACCENT, adminAccentStyle } from "@/lib/admin/accents";
+import type {
+  AttendanceSnapshotRow,
+  SmsSnapshotRow,
+  StemfestSnapshotRow,
+} from "@/lib/admin/snapshot";
 import {
   ambassadorSource,
+  attendanceSource,
   buildAdminHref,
   describeFilters,
   filterOperatorLabel,
@@ -60,7 +73,7 @@ import { stemfestNoReferenceLabel } from "@/lib/data/stemfest-registration";
  * A local-only surface for checking the admin chrome at a real phone width.
  *
  * Every element below is the shipping component — the same `AdminShell` the
- * `(admin)` layout renders, and the same five data tables and two charts the pages
+ * `(admin)` layout renders, and the same data tables and two charts the pages
  * render — fed fixture rows instead of database ones. `/admin` itself cannot be
  * opened without an admin session, and the only database this checkout can reach is
  * production, so writing a session there to look at a layout is not an option. The
@@ -106,7 +119,7 @@ const AMBASSADOR_ROWS: RegistrationRow[] = [
   createdAt: new Date(Date.UTC(2026, 8, 18 + index)).toISOString(),
 }));
 
-const STEMFEST_ROWS: StemfestRow[] = [
+const STEMFEST_ROWS: StemfestSnapshotRow[] = [
   "M9014",
   "M9015",
   "F1016",
@@ -130,6 +143,9 @@ const STEMFEST_ROWS: StemfestRow[] = [
   emailSentAt: index === 0 ? new Date(Date.UTC(2026, 8, 20)).toISOString() : null,
   amount: index === 0 ? "৳1,450.00" : null,
   createdAt: new Date(Date.UTC(2026, 8, 17 + index)).toISOString(),
+  // Compared, never rendered. The preview never queries a cache, but a cached row is
+  // this shape and the components under test are given real ones.
+  raw: { class: "class-9" },
 }));
 
 const VOLUNTEER_ROWS: VolunteerRow[] = ["Volunteer One", "Volunteer Two"].map(
@@ -153,7 +169,22 @@ const VOLUNTEER_ROWS: VolunteerRow[] = ["Volunteer One", "Volunteer Two"].map(
   }),
 );
 
-const SMS_ROWS: SmsLogRow[] = ["DIL9QJMSOF", "DIM6QL9MSU"].map(
+const ATTENDANCE_ROWS: AttendanceSnapshotRow[] = ["M9014", "M9015", "F1016"].map(
+  (registrationCode, index) => ({
+    id: `at-${index}`,
+    registrationCode,
+    name: ["Ayesha Rahman", "Tanvir Hossain", "Nusrat Jahan"][index],
+    classLabel: registrationCode.startsWith("F") ? "Class 10" : "Class 9",
+    attendance: index === 0,
+    createdAt: new Date(Date.UTC(2026, 8, 21 + index)).toISOString(),
+    raw: {
+      class: registrationCode.startsWith("F") ? "class-10" : "class-9",
+      school: "Manarat Dhaka International School & College",
+    },
+  }),
+);
+
+const SMS_ROWS: SmsSnapshotRow[] = ["DIL9QJMSOF", "DIM6QL9MSU"].map(
   (transactionId, index) => ({
     id: `sms-${index}`,
     sender: "bKash",
@@ -164,6 +195,7 @@ const SMS_ROWS: SmsLogRow[] = ["DIL9QJMSOF", "DIM6QL9MSU"].map(
     status: index === 0 ? "matched" : "unmatched",
     matchedRegistrationId: index === 0 ? "sf-0" : null,
     receivedAt: new Date(Date.UTC(2026, 8, 20, 10, index)).toISOString(),
+    raw: { status: index === 0 ? "matched" : "unmatched" },
   }),
 );
 
@@ -418,7 +450,7 @@ export default async function AdminPreviewPage({
 
         <section className="flex flex-col gap-5">
           <h2 className="font-space-display text-2xl leading-tight font-medium tracking-tight text-admin-ink">
-            The five data tables
+            The data tables
           </h2>
 
           <RegistrationsTable
@@ -430,14 +462,24 @@ export default async function AdminPreviewPage({
             totalPages={3}
           />
 
-          <ScienceCompetitionTable
+          {/*
+            Both cached tables go through their provider, because that is how the real
+            pages mount them and a chrome checked outside the tree it ships in is not
+            the same chrome. `useAdminEmail()` is `null` here, so the provider never
+            reads or writes this browser's cache and the tables stay on the server path
+            — which is the path a preview of fixture rows should be on.
+          */}
+          <StemfestListProvider
             source={stemfestSource}
             state={{ ...emptyState, sort: stemfestSource.defaultSort }}
             registrations={STEMFEST_ROWS}
             total={STEMFEST_ROWS.length}
             page={1}
             totalPages={4}
-          />
+            stats={localStemfestStats(STEMFEST_ROWS, new Date().toISOString())}
+          >
+            <ScienceCompetitionTable />
+          </StemfestListProvider>
 
           <VolunteerRegistrationsTable
             source={volunteerSource}
@@ -448,14 +490,34 @@ export default async function AdminPreviewPage({
             totalPages={2}
           />
 
-          <SmsLogTable
+          {/* The sheet goes through its provider too, for the same reason the other
+              two do: that is how the real page mounts it. `useAdminEmail()` is `null`
+              here, so it never touches this browser's cache, and its switch is
+              harmless — the write asks for an admin session before it touches a row,
+              and a preview has none. */}
+          <AttendanceListProvider
+            source={attendanceSource}
+            state={{ ...emptyState, sort: attendanceSource.defaultSort }}
+            participants={ATTENDANCE_ROWS}
+            total={ATTENDANCE_ROWS.length}
+            page={1}
+            totalPages={2}
+            tally={{ present: 1, total: ATTENDANCE_ROWS.length }}
+          >
+            <AttendanceTable />
+          </AttendanceListProvider>
+
+          <SmsListProvider
             source={smsSource}
             state={{ ...emptyState, sort: smsSource.defaultSort }}
-            rows={SMS_ROWS}
+            messages={SMS_ROWS}
             total={SMS_ROWS.length}
             page={1}
             totalPages={2}
-          />
+            tallies={localSmsTallies(SMS_ROWS)}
+          >
+            <SmsLogTable />
+          </SmsListProvider>
         </section>
       </div>
     </AdminShell>

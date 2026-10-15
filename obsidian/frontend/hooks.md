@@ -50,6 +50,9 @@ motion/smooth-scroll layer — see [[admin/filters-reports]].
 | Hook | File | Role |
 |------|------|------|
 | `useAdminFilters` | `use-admin-filters.ts` | Drives search, every filter, the sort and pagination through the URL — see below |
+| `useSnapshotCache` | `use-snapshot-cache.ts` | Downloads, files, freshens and holds one table's browser cache — ADR-0044, see below |
+| `useLocalStemfestTable` / `useLocalSmsTable` | `use-local-admin-table.ts` | Answer a query from that cache, or fall back to the server's page — see below |
+| `useOptimisticWrites` | `use-optimistic-action.ts` | The write queue: patch now, send in the background, retry, roll back — see below |
 | `useDebouncedValue` | `use-debounce.ts` | Returns `value` after it stops changing for `delay` ms (default 350) — debounces the admin search so one query fires, not one per keystroke |
 | `useReducedMotion` | `use-reduced-motion.ts` | Honour `prefers-reduced-motion` — required by hard rule #1 before any animation |
 
@@ -92,6 +95,61 @@ it builds is the whole of what it needs to know.
   from the in-flight state, so it also includes a filter still being fetched. It is
   a *state*, not a finished link, because the export dialog decides the columns and
   the format on top of it; only the dialog can put all three together.
+- **Where the answer comes from is one optional argument.** `transport` (an
+  `AdminQueryTransport`) is handed the state instead of the router, and the address
+  bar is written through `window.history.pushState` / `replaceState`, which Next keeps
+  in sync with `useSearchParams`. The submit stays inside the same
+  `startTransition`, so `isPending` still flips and settles and every invariant above
+  survives unchanged — including `exportState`, which still reports exactly what is on
+  screen. Everything in this hook is about the URL; none of it is about where the rows
+  come from, which is why adding a cache needed a seam rather than a rewrite.
+
+### The cached-table trio — `use-snapshot-cache`, `use-local-admin-table`, `use-optimistic-action`
+
+Three hooks, one per question, because they fail differently. Together they let
+`/admin/science-competition`, `/admin/sms-logs` and `/admin/attendance` search, filter,
+sort and paginate with **zero requests**, and still let a write through to the database
+(ADR-0044; the sheet joined with ADR-0045).
+
+```ts
+const cache = useSnapshotCache<StemfestSnapshot>("stemfest"); // do I have the rows?
+const table = useLocalStemfestTable({ source, state, registrations, total, page, totalPages, stats });
+const writes = useOptimisticWrites({ source: "stemfest", patchRow: table.patchRow });
+```
+
+**`useSnapshotCache(source)`** owns the download. It starts at
+`requestIdleCallback(timeout: 1500)` so it never competes with hydration; one
+`inflight` Map per source dedupes a remount; it warms the *other* cached table if that
+copy is over a minute old; it retries a failed download on a 30 s → 2 min → 10 min ladder
+rather than hammering a dead pooler; and it polls every 60 s while visible (300 s hidden,
+paused offline) to append new rows and refetch when the count shrinks or another admin has
+decided something. `revision` moves **only** when the whole copy is replaced — a delta
+append is the cache learning, not the matcher being wrong.
+
+**`useLocalStemfestTable` / `useLocalSmsTable`** wrap a shared core that owns the *applied*
+state, the handoff guard and the `transport`. Local mode takes over only after the local
+query, run over the pristine download for the state the server just rendered, returns the
+same total and the same ordered ids — which turns a matcher bug into a slow panel instead of
+a wrong one. Navigations are adopted by comparing hrefs, so a document load, Back, a pasted
+link or a `<Link>` all re-anchor the state while a soft commit does not. With no cache the
+props come back verbatim and `transport` is `undefined`: **the fallback is the pre-existing
+code path, which is why there is no feature flag.** Both hooks also recompute the figures
+beside their table (eight stat cards, three tallies) from the cached rows, because a
+decision made locally must not be contradicted by a card printed from before it.
+
+**`useOptimisticWrites`** is the queue. It patches the row that is on screen — the cached
+list, or the server's page in the seconds before a cache exists — files the write in
+IndexedDB, then sends it outside any transition. Only a *network-level* failure retries
+(jittered 1/4/12/30/60 s, gated on `navigator.onLine`, flushed on `online` and on the tab
+becoming visible); a 200 with `ok: false` is a refusal, so the patch rolls back and the
+server's own sentence is shown. `resendStemfestPaymentEmail` is `onceOnly`: it emails, so
+after a reload it reads "Not saved · retry manually" and waits for a second click. It is
+disabled entirely when `useAdminEmail()` is `null`, which is what keeps `/admin-preview`
+from firing real writes — the picker still visibly works there, because that is what a
+design surface is for.
+
+Nothing in the trio runs without a signed-in admin, and nothing in it survives sign-out or
+a 401 except the queued writes — see `src/lib/admin/idb.ts`.
 
 ## Adding a hook
 

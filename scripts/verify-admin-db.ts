@@ -19,7 +19,7 @@ import { volunteerRegistrations } from "../src/db/schema/volunteer-registrations
 import { stemfestRegistrations } from "../src/db/schema/stemfest-registrations";
 import { stemfestPaymentSms } from "../src/db/schema/stemfest-payment-sms";
 import { stemfestEffectivePaymentStatus } from "../src/db/queries/stemfest-payment";
-import { ADMIN_TIME_ZONE } from "../src/lib/admin/filters";
+import { ADMIN_TIME_ZONE, PAGE_SIZE } from "../src/lib/admin/filters";
 import {
   BRIEF_TREND_DAYS,
   BRIEF_WINDOW_DAYS,
@@ -40,7 +40,6 @@ import {
   stemfestSegments,
 } from "../src/lib/data/stemfest-registration";
 
-const PAGE_SIZE = 25;
 let failures = 0;
 
 setTimeout(() => {

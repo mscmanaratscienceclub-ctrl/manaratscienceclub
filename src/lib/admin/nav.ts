@@ -12,6 +12,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
+  ClipboardCheck,
   ExternalLink,
   FlaskConical,
   GraduationCap,
@@ -83,6 +84,24 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
         icon: FlaskConical,
         exact: false,
         keywords: ["stem fest", "stemfest", "registrations", "payments", "bkash"],
+      },
+      {
+        // The same roster read at the door, so it wears the same hue: the panel has
+        // six brand colours and all six are spent on a section each.
+        href: "/admin/attendance",
+        label: "Attendance",
+        accent: SECTION_ACCENT.scienceCompetition,
+        icon: ClipboardCheck,
+        exact: false,
+        keywords: [
+          "present",
+          "roll call",
+          "check in",
+          "desk",
+          "gate",
+          "who came",
+          "attendance sheet",
+        ],
       },
       {
         href: "/admin/sms-logs",

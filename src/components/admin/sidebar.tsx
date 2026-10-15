@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { signOut } from "@/lib/auth/client";
 import { trackEvent, resetAnalytics } from "@/lib/analytics";
+import { clearAdminCache } from "@/lib/admin/idb";
 import { adminAccentStyle, SECTION_ACCENT } from "@/lib/admin/accents";
 import { ADMIN_ACTIONS, ADMIN_NAV_GROUPS, type AdminNavEntry } from "@/lib/admin/nav";
 import { cn } from "@/lib/utils";
@@ -104,6 +105,12 @@ export default function AdminSidebar({
   }, []);
 
   async function handleSignOut() {
+    // Before the session is even asked to end, not after: a fest laptop is handed to
+    // the next person, and what must go with this sign-out is the participant list this
+    // browser downloaded and any change it had not yet managed to send. Signing out is
+    // the point at which that data has no owner left who is allowed to see it.
+    await clearAdminCache();
+
     await signOut({
       fetchOptions: {
         onSuccess: () => {

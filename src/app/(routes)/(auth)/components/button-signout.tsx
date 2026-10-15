@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { signOut } from "@/lib/auth/client";
 import { resetAnalytics } from "@/lib/analytics";
+import { clearAdminCache } from "@/lib/admin/idb";
 
 export default function SignOutButton() {
   const [isPending, setIsPending] = useState(false);
@@ -13,6 +14,9 @@ export default function SignOutButton() {
   const onSignOut = async () => {
     setIsPending(true);
     try {
+      // Same rule as the panel's own sign-out: no participant list and no unsent
+      // change survives the session that was allowed to hold them.
+      await clearAdminCache();
       await signOut({
         fetchOptions: {
           onSuccess: () => {

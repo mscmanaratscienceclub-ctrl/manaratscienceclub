@@ -28,10 +28,20 @@ export default function PageHeader({
   action,
   className,
 }: {
-  /** Small uppercase overline, e.g. `Form responses`. */
+  /**
+   * Small uppercase overline, e.g. `Form responses`.
+   */
   eyebrow?: string;
   title: string;
-  description?: string;
+  /**
+   * The line under the title.
+   *
+   * A node rather than a string because the two cached tables print a row count here,
+   * and a count that comes from a Server Component's props goes stale the instant the
+   * browser starts answering — so the sentence is a client leaf that reads the same
+   * state as the list below it.
+   */
+  description?: React.ReactNode;
   /** Monochrome mark beside the overline. */
   icon: LucideIcon;
   /** Right-aligned slot, e.g. the export/print actions. */

@@ -1,7 +1,7 @@
 /**
  * The statuses an admin can set by hand, and the copy that describes them.
  *
- * Two records in the panel carry an editable status, and they mean different
+ * Three records in the panel carry an editable status, and they mean different
  * things:
  *
  * - **STEM Fest payment** (`stem_fest_registrations.payment_decision`) — the
@@ -14,6 +14,10 @@
  * - **Forwarded SMS** (`stem_fest_payment_sms.status`) — which registration a
  *   message was reconciled against, which the admin corrects when the matcher got
  *   it wrong (or right before the registration existed).
+ * - **Attendance** (`stem_fest_registrations.attendance`) — whether a participant
+ *   reached the fest desk. One stored bit, so the two readings below are the whole
+ *   vocabulary: `absent` is also "nobody has marked this row", which is what a
+ *   roll-call sheet means by an empty box.
  *
  * Plain data and pure functions: imported by Server Actions *and* by client
  * leaves, so it must never read `env`, the database or `next/headers`.
@@ -33,6 +37,16 @@ export type StemfestPaymentStatus = (typeof STEMFEST_PAYMENT_STATUSES)[number];
 export const SMS_LOG_STATUSES = ["matched", "unmatched", "ignored"] as const;
 
 export type SmsLogStatus = (typeof SMS_LOG_STATUSES)[number];
+
+/**
+ * The two readings of the attendance switch, spelled as the filter's URL vocabulary
+ * rather than as `true`/`false` so `?attendance=present` reads in an address bar.
+ * `booleanMatch` maps a chosen value back onto the stored bit.
+ */
+export const STEMFEST_ATTENDANCE_VALUES = ["present", "absent"] as const;
+
+export type StemfestAttendanceValue =
+  (typeof STEMFEST_ATTENDANCE_VALUES)[number];
 
 /** How an effective `verified` was arrived at. */
 export const STEMFEST_VERIFICATION_SOURCES = ["sms", "manual"] as const;
@@ -104,6 +118,36 @@ export const smsLogStatusOptions: AdminStatusOption<SmsLogStatus>[] = [
 ];
 
 /**
+ * Attendance, declared as two objects rather than looked up out of an array: the
+ * switch knows which one it is showing without a search that cannot fail, and the
+ * filter menu gets the same two in order.
+ */
+const presentOption: AdminStatusOption<StemfestAttendanceValue> = {
+  value: "present",
+  label: "Present",
+  description: "An admin marked this participant in at the fest desk.",
+  tone: "bg-admin-positive-bg text-admin-positive-ink",
+};
+
+const absentOption: AdminStatusOption<StemfestAttendanceValue> = {
+  value: "absent",
+  label: "Absent",
+  description:
+    "Not marked present — either they did not come, or nobody has reached this row yet.",
+  tone: "bg-admin-neutral-bg text-admin-neutral-ink",
+};
+
+export const stemfestAttendanceOptions: AdminStatusOption<StemfestAttendanceValue>[] =
+  [presentOption, absentOption];
+
+/** The reading a stored bit carries into the switch, the pill and the report. */
+export function attendanceOption(
+  attended: boolean,
+): AdminStatusOption<StemfestAttendanceValue> {
+  return attended ? presentOption : absentOption;
+}
+
+/**
  * What every status-editing Server Action answers with.
  *
  * A result object rather than a throw, because React redacts an error thrown out
@@ -125,6 +169,21 @@ export function isStemfestPaymentStatus(
 export function isSmsLogStatus(value: string): value is SmsLogStatus {
   return (SMS_LOG_STATUSES as readonly string[]).includes(value);
 }
+
+export function isStemfestAttendance(
+  value: string,
+): value is StemfestAttendanceValue {
+  return (STEMFEST_ATTENDANCE_VALUES as readonly string[]).includes(value);
+}
+
+/**
+ * The word that means `true` in the stored bit.
+ *
+ * Named because two very different readers must agree on it: `booleanMatch` in the
+ * query layer, and the switch's write, which sends the word rather than the bit so a
+ * queued change can be replayed verbatim from IndexedDB.
+ */
+export const ATTENDANCE_PRESENT_VALUE: StemfestAttendanceValue = "present";
 
 /** The option behind a stored value, or `null` for one this build does not know. */
 export function statusOption<TValue extends string>(

@@ -1,12 +1,157 @@
 ---
 tags: [meta, changelog]
-updated: 2026-10-14
+updated: 2026-10-15
 ---
 
 # Changelog
 
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
+
+## 2026-10-15 — An attendance sheet for the fest desk at `/admin/attendance`
+
+The door needed a list: a name, an ID, a class, and one tick. `stem_fest_registrations` gained
+`attendance boolean not null default false` plus `attendance_marked_at`
+(`drizzle/add_stemfest_attendance.sql`) and the panel a fifth source over the same rows.
+See ADR-0045.
+
+- **The sheet** — `admin/attendance/page.tsx` + `attendance-table.tsx`: five columns (ID, Name,
+  Class, a `role="switch"` toggle with a Present/Absent word beside it rather than a colour alone,
+  and a link to the full row), three filters (`attendance`, `class`, `school`), and the shared
+  `FilterBar` / `Pagination` / `AdminEmptyState`. Every row's **All info** link is
+  `/admin/science-competition?q=<registration ID>`, so nothing the desk might need was removed
+  without leaving a one-click path back to it.
+- **It is the third cached table** — ADR-0044's path, so a search, a filter, a sort and a page
+  change cost zero requests, and a tick made during an outage is queued in IndexedDB and sent when
+  the connection returns. Its snapshot is its **own**, narrower one: six fields per participant
+  (name, ID, class, tick, the submission moment it sorts by, the school its search box sweeps), so
+  caching the sheet does not put every email address, phone number and TrxID on a fest laptop.
+- **`attendance_marked_at` is what makes caching it honest.** Two desks mark one gate, and a tick
+  moves no other column on the row — so the probe compares `max(attendance_marked_at)` once a
+  minute and refetches the whole copy when it moves, and the write sets it **both** ways. Worst
+  case for another desk's mark is a minute, which the chip states.
+- **The contract** — `attendanceSource` in `filters.ts`; `attendanceWhere`, `attendanceSelection`,
+  `attendanceCountSelection` and `attendanceProbeSelection` in
+  `src/db/queries/admin-filters.ts`; `searchAttendance`, `setStemfestAttendance`,
+  `getAttendanceSnapshot`, `probeAttendanceSnapshot` and `attendanceDeltaSince` in
+  `registrations.ts`; an `attendance` case in `getAdminReportRows`, so the printed sheet and the
+  `.xlsx` honour the same filters; `attendanceOption()` in `statuses.ts`; `AttendanceListProvider`
+  and `useLocalAttendanceTable`; a rail and command-palette entry in `nav.ts`.
+- **The parity proof extended**, because caching without it is not allowed here:
+  `scripts/verify-local-query.ts` gained `attendanceCases` + the tally case, covering the
+  `not present` branch where SQL flips the *target* rather than the result, and the school the
+  row carries but never prints.
+- **`/admin-preview`** renders it through its provider — that is where the switch's optimistic
+  patch was checked, a preview having no session to write with.
+- **Migration**: re-run `drizzle/add_stemfest_attendance.sql`. `attendance` is already live; the
+  amended file adds the missing `attendance_marked_at`, and the sheet's snapshot download fails on
+  it until then. Idempotent.
+- Verified: `verify.sh` 0 FAIL, `tsc --noEmit` and `pnpm lint` clean, `pnpm build` clean with
+  `/admin/attendance` registered dynamic, and the sheet walked in a browser through the preview
+  route. `pnpm verify:local-query` has **not** been run — it needs the cursor column present.
+
+## 2026-10-15 — The two fest tables answer from a browser cache; writes are optimistic
+
+For the two fest days the venue's wifi is the slow part, not Postgres. Every interaction in
+the panel cost a round trip — an async Server Component that queries during render,
+`getServerSession()` bypasing better-auth's cookie cache so each navigation pays two session
+reads, and `goToPage` tearing the tree down through `loading.tsx`. Against ~800 registrations
+and ~750 messages, that is latency spent for nothing. Now `/admin/science-competition` and
+`/admin/sms-logs` download the list once and answer a search, a filter, a sort and a page
+change from IndexedDB with **zero requests**; the other four surfaces are untouched.
+See ADR-0044.
+
+- **Transport** — `src/app/api/admin/snapshot/[kind]/route.ts`: a guarded route handler, not
+  a server action (an action cannot carry `Cache-Control`, answer a cheap probe, or return
+  401/504 as *statuses*). Three modes on one path — full, `?probe=1`, `?since=<iso>`.
+  `force-dynamic`, `no-store`, `requireAdmin()` in the read as well as the route. Six new
+  reads in `registrations.ts`; a snapshot row is a rendered row **plus `raw`**, because SQL
+  compares `class-9` while the cell prints "Class 9".
+- **Cache** — `src/lib/admin/{snapshot,snapshot-client,idb}.ts`. Hand-rolled IndexedDB (no
+  dependency for ~150 lines): `snapshots` + `pending`, version-checked, stamped per admin,
+  12 h expiry, cleared on sign-out and on any 401. `toStemfestSnapshotRow` /
+  `toSmsSnapshotRow` moved out of the two `page.tsx` files so the server render and the
+  cached copy are built by one function.
+- **The matcher** — `src/lib/admin/local-query.ts`, a second implementation of the filter
+  contract, proved by **`pnpm verify:local-query`** (61 checks): the real
+  `stemfestWhere`/`smsWhere`/`orderFor`/`countRows`/stats selections run against the live
+  database, compared for total, page, the exact ordered id list, all eight figures and the
+  three tallies. It caught three divergences before this shipped — the column-vs-cell trap,
+  SQL's three-valued NULL (a `not` filter *excludes* a NULL column), and ordering.
+- **Ordering is pinned, permanently.** This database collates as `en_US.UTF-8`, so a bare
+  `ORDER BY name` asks glibc's table while the browser has only ICU's. `orderFor` now spells
+  `lower(name) collate "C"` then `name collate "C"`, and **every branch ends on the primary
+  key** — an `ORDER BY` with ties leaves those rows in heap order, which no cache can
+  reproduce, so a row could otherwise land on two pages or on neither. 16 of the first 61
+  parity checks failed for exactly these two reasons.
+- **Shared SQL moved** to `src/db/queries/admin-filters.ts` (the WHERE builders, `orderFor`,
+  `countRows`, `stemfestAdminSelection`, and now both stats selections) so the harness can
+  import the *real* predicates; `filterMatches` moved into `filters.ts` so SQL and the
+  matcher decode a state through one definition. A `"use server"` module cannot export any of
+  it — the same reason `stemfest-payment.ts` exists.
+- **Wiring** — one seam, `transport?: AdminQueryTransport` in `use-admin-filters.ts`; the
+  controller in `use-{snapshot-cache,local-admin-table}.ts`; one client provider per table
+  (`components/admin/{stemfest,sms}-list.tsx`) so the heading's sentence, the stat board, the
+  chips, the rows and the pager cannot describe different lists. `PageHeader.description`
+  widened to `ReactNode`. The four `router.refresh()` calls are gone.
+- **Writes** — `src/lib/admin/pending-writes.ts` + `use-optimistic-action.ts`: patch the row
+  on screen immediately, send in the background, retry only *network* failures (jittered
+  1/4/12/30/60 s, gated on `navigator.onLine`, flushed on reconnect and on the tab becoming
+  visible), roll back on a refusal and show the server's sentence. `PendingBadge` per field,
+  `PendingPill` per page. `resendStemfestPaymentEmail` is `onceOnly` — it emails, so after a
+  reload it waits for a second click instead of mailing again. A confirmed SMS status change
+  drops the registrations cache rather than guessing at it.
+- **Freshness** — a 60 s probe (300 s hidden, paused offline): appends by `created_at`,
+  refetch when the count shrinks or another admin has decided something
+  (`greatest(payment_decided_at, payment_email_sent_at)`). Not Realtime: a held socket per
+  desk buys nothing a small probe does not.
+- **New UI** — `cache-chip.tsx` (incl. `PendingPill`), `pending-badge.tsx`,
+  `session-expired-notice.tsx`, `admin-identity.tsx`, `stemfest-stat-cards.tsx`,
+  `sms-stat-cards.tsx`. `AdminEmailProvider` sits in the `(admin)` layout rather than in
+  `AdminShell`, so `/admin-preview` reads `null` and can neither touch a real participant
+  list nor fire a real write.
+- **No new dependencies**, so `tech-stack.md` gains nothing. Nothing is cached for the
+  ambassador, volunteer, dashboard, reports or bulk-email paths.
+
+**Verified:** `pnpm lint`, `tsc --noEmit`, `pnpm build`, `pnpm db:verify` (all pass),
+`pnpm verify:local-query` (61/61), `verify.sh` 0 FAIL, and `/admin-preview` in a browser —
+both cached tables render, an optimistic edit flips the row with no request leaving the
+browser, and the preview cannot dispatch a write. **Not yet done:** the Slow-3G / Offline
+walkthrough while signed in, which needs an admin session against what is the production
+database. Do it on the laptop that will be at the desk before the fest.
+
+## 2026-10-14 — Bracket reports: a detailed report and a PDF roster for every event × category
+
+The club needs the fest's paperwork: who is sitting in Mathematics Category A (Class 3–4)
+on the 16th, and the same for every other bracket. **`pnpm reports:brackets`**
+(`scripts/bracket-reports/`) writes `reports/brackets-<date>/` — 24 bracket reports and PDFs,
+4 segment pages, a fest overview and a README index. See ADR-0043.
+
+- **Brackets are derived, never retyped.** The 24 come from `stemfestEvents[].categories` in
+  the registration catalogue, so a report's class band and letter are what `/stemfestreg`
+  accepts. Day-brief, prize pool and run-sheet window come from `/details`' own derived data.
+- **Categories are read back out of the `segments` prose.** There is no category column.
+  Entry boundaries are located by catalogue event name rather than by comma, so a team name
+  containing a comma cannot split an entry. The run reconciles itself: 1,195 bracket entries
+  + 1 unplaced = every entry the 804 registrations list, and the one that names
+  `Computer Science · Junior` — a letter the catalogue no longer offers — is printed in the
+  README rather than dropped.
+- **Server-side PDF stayed out of the app.** The reverted admin export was not restored:
+  the composers live under `scripts/bracket-reports/pdf/` and draw on the committed
+  primitives in `src/lib/admin/pdf/` through three re-export shims. `src/` is untouched.
+- **Payment figures use the panel's own definition** — a stored admin decision wins, else a
+  matched forwarded bKash SMS — and money is *attributed* per entry (Olympiads tier ৳400 then
+  ৳350; teams ৳1,500/৳2,000; E-sports ৳200 a title), scaled to what was charged where the
+  two disagree, with the disagreement reported.
+- **Three findings the reports surface by rule**, not by hand: 13 outstanding entries carry a
+  TrxID the forwarder can never match (a wallet number in the TrxID box, or a character short
+  of ten — every one of the 738 forwarded messages is ten alphanumeric characters); 8 TrxIDs
+  are shared between registrations; 2 entries sit in a band that no longer admits their class.
+  Team-mates' details are collected by the form but never stored, so a team roster is one line
+  per team.
+- **Output is gitignored** (`/reports/`) — names, phones, emails, bKash references.
+  `node scripts/verify-bracket-pdfs.mjs` audits all 29 PDFs: every text placement inside the
+  print margins, page counts 1–12, no page showing less than it places.
 
 ## 2026-10-14 — Intake closed: `/register`, `/stemfestreg` and `/volunteer` state it
 

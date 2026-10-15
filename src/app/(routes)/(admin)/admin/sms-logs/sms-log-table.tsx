@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useState } from "react";
 import {
   BadgeCheck,
   ChevronDown,
@@ -11,24 +9,12 @@ import {
   MessageSquareText,
   Trash2,
 } from "lucide-react";
-import { setSmsLogStatus } from "@/lib/actions/registrations";
-import {
-  smsLogStatusOptions,
-  statusOption,
-  type AdminStatusActionResult,
-  type SmsLogStatus,
-} from "@/lib/admin/statuses";
-import {
-  activeFilterCount,
-  emptyStateLabel,
-  type AdminQueryState,
-  type AdminSourceConfig,
-} from "@/lib/admin/filters";
-import { useAdminFilters } from "@/lib/hooks/use-admin-filters";
-import { cn } from "@/lib/utils";
+
 import AdminEmptyState from "@/components/admin/admin-empty-state";
 import FilterBar from "@/components/admin/filter-bar";
 import Pagination from "@/components/admin/pagination";
+import PendingBadge from "@/components/admin/pending-badge";
+import SessionExpiredNotice from "@/components/admin/session-expired-notice";
 import {
   adminControl,
   adminDetailLabel,
@@ -38,19 +24,18 @@ import {
   adminTag,
   adminTh,
 } from "@/components/admin/styles";
+import { activeFilterCount, emptyStateLabel } from "@/lib/admin/filters";
+import { planSmsStatus } from "@/lib/admin/pending-writes";
+import type { SmsSnapshotRow } from "@/lib/admin/snapshot";
+import {
+  isSmsLogStatus,
+  smsLogStatusOptions,
+  statusOption,
+  type SmsLogStatus,
+} from "@/lib/admin/statuses";
+import { useSmsList } from "@/components/admin/sms-list";
+import { cn } from "@/lib/utils";
 import { adminRowDisclosure } from "@/components/admin/row-disclosure";
-
-export interface SmsLogRow {
-  id: string;
-  sender: string;
-  rawMessage: string;
-  transactionId: string | null;
-  amount: string | null;
-  senderNumber: string | null;
-  status: SmsLogStatus;
-  matchedRegistrationId: string | null;
-  receivedAt: string;
-}
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -77,93 +62,6 @@ const STATUS_ICONS: Record<SmsLogStatus, typeof Clock> = {
   ignored: Trash2,
 };
 
-/**
- * Shows a status action's answer, and keeps a genuine fault from vanishing.
- *
- * The actions answer with a sentence for anything the admin can act on (a row that
- * has gone, an unknown value), so reaching the `catch` means the database or the
- * session broke — which React would otherwise swallow into an unexplained failed
- * transition.
- */
-async function runAction(
-  action: () => Promise<AdminStatusActionResult>,
-): Promise<void> {
-  try {
-    const result = await action();
-    if (result.ok) toast.success(result.message);
-    else toast.error(result.message);
-  } catch {
-    toast.error("That change could not be saved. Refresh the table and try again.");
-  }
-}
-
-/**
- * The reconciliation status of a forwarded message, and the picker that corrects it.
- *
- * Editing this is how an admin fixes the matcher: a message that arrived before its
- * registration, or a mistyped TrxID. Only `matched` keeps a link to a registration —
- * marking a message `ignored` or `unmatched` unlinks it, which un-verifies any
- * registration whose only evidence that message was. The toast says so rather than
- * leaving the admin to notice it in another table.
- */
-function SmsStatusCell({ row }: { row: SmsLogRow }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const option = statusOption(smsLogStatusOptions, row.status);
-  const Icon = STATUS_ICONS[row.status];
-
-  function apply(next: string) {
-    if (next === row.status) return;
-
-    startTransition(() =>
-      runAction(async () => {
-        const result = await setSmsLogStatus(row.id, next);
-        if (result.ok) router.refresh();
-        return result;
-      }),
-    );
-  }
-
-  return (
-    <div
-      className="flex items-center gap-2"
-      // The row itself expands on click; a control inside it must not.
-      onClick={(event) => event.stopPropagation()}
-    >
-      <span
-        title={option?.description}
-        className={cn(
-          adminTag,
-          option?.tone ?? "bg-admin-neutral-bg text-admin-neutral-ink",
-        )}
-      >
-        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-        {option?.label ?? row.status}
-      </span>
-
-      <label className="sr-only" htmlFor={`sms-status-${row.id}`}>
-        Status of the message from {row.sender}
-      </label>
-      <select
-        id={`sms-status-${row.id}`}
-        value={row.status}
-        disabled={isPending}
-        onChange={(event) => apply(event.target.value)}
-        className={cn(
-          cn(adminControl, "w-auto px-2 py-1 text-xs"),
-          isPending && "cursor-not-allowed opacity-50",
-        )}
-      >
-        {smsLogStatusOptions.map((entry) => (
-          <option key={entry.value} value={entry.value}>
-            {entry.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
 const COLUMNS = [
   "Received",
   "Sender",
@@ -174,90 +72,86 @@ const COLUMNS = [
   "Message",
 ];
 
-interface SmsLogTableProps {
-  source: AdminSourceConfig;
-  state: AdminQueryState;
-  rows: SmsLogRow[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
-
-export default function SmsLogTable({
-  source,
-  state,
-  rows,
-  total,
-  page,
-  totalPages,
-}: SmsLogTableProps) {
+/**
+ * The forwarded-payment SMS log.
+ *
+ * Like the registrations table, it takes no props: the list, the pagination and the
+ * empty-state sentence all read the one controller the provider above them owns, which
+ * is what keeps a search answered from this browser from being described by the server's
+ * row count.
+ */
+export default function SmsLogTable() {
+  const { source, state, messages, total, page, totalPages, controls, cache, writes } =
+    useSmsList();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const controls = useAdminFilters({
-    basePath: source.path,
-    state,
-  });
   const filtering = activeFilterCount(source, state) > 0;
 
   return (
-    <div className={adminPanel}>
-      <FilterBar source={source} state={state} controls={controls} />
+    <>
+      {/* Outside the panel rather than inside it: the strip is about the session, not
+          about this list's own chrome, and the page's flex gap spaces it correctly. */}
+      {cache.signedOut && <SessionExpiredNotice unsaved={writes.unsaved.length} />}
 
-      <div
-        className={cn(
-          "transition-opacity",
-          controls.isPending && "pointer-events-none opacity-50",
-        )}
-      >
-        {rows.length === 0 ? (
-          <AdminEmptyState
-            icon={MessageSquareText}
-            label={emptyStateLabel(source, state)}
-            onClearAll={filtering ? controls.clearAll : undefined}
+      <div className={adminPanel}>
+        <FilterBar source={source} state={state} controls={controls} />
+
+        <div
+          className={cn(
+            "transition-opacity",
+            controls.isPending && "pointer-events-none opacity-50",
+          )}
+        >
+          {messages.length === 0 ? (
+            <AdminEmptyState
+              icon={MessageSquareText}
+              label={emptyStateLabel(source, state)}
+              onClearAll={filtering ? controls.clearAll : undefined}
+            />
+          ) : (
+            <div className={adminTableScroller}>
+              {/* `min-w` is what makes the container above scroll at all: a
+                  `w-full` table shrinks to fit instead of overflowing. */}
+              <table className="w-full min-w-[64rem]">
+                <thead>
+                  <tr className="border-b border-admin-line text-left">
+                    <th className="w-8 bg-admin-accent-soft px-3 py-3" aria-label="Expand" />
+                    {COLUMNS.map((label) => (
+                      <th
+                        key={label}
+                        className={adminTh}
+                      >
+                        {label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-admin-line">
+                  {messages.map((row) => {
+                    const expanded = expandedId === row.id;
+                    return (
+                      <LogRow
+                        key={row.id}
+                        row={row}
+                        expanded={expanded}
+                        onToggle={() => setExpandedId(expanded ? null : row.id)}
+                      />
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {total > 0 && (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPage={controls.goToPage}
           />
-        ) : (
-          <div className={adminTableScroller}>
-            {/* `min-w` is what makes the container above scroll at all: a
-                `w-full` table shrinks to fit instead of overflowing. */}
-            <table className="w-full min-w-[64rem]">
-              <thead>
-                <tr className="border-b border-admin-line text-left">
-                  <th className="w-8 bg-admin-accent-soft px-3 py-3" aria-label="Expand" />
-                  {COLUMNS.map((label) => (
-                    <th
-                      key={label}
-                      className={adminTh}
-                    >
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-admin-line">
-                {rows.map((row) => {
-                  const expanded = expandedId === row.id;
-                  return (
-                    <LogRow
-                      key={row.id}
-                      row={row}
-                      expanded={expanded}
-                      onToggle={() => setExpandedId(expanded ? null : row.id)}
-                    />
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
         )}
       </div>
-
-      {total > 0 && (
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          onPage={controls.goToPage}
-        />
-      )}
-    </div>
+    </>
   );
 }
 
@@ -266,7 +160,7 @@ function LogRow({
   expanded,
   onToggle,
 }: {
-  row: SmsLogRow;
+  row: SmsSnapshotRow;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -356,5 +250,72 @@ function LogRow({
         </tr>
       )}
     </>
+  );
+}
+
+/**
+ * The reconciliation status of a forwarded message, and the picker that corrects it.
+ *
+ * Editing this is how an admin fixes the matcher: a message that arrived before its
+ * registration, or a mistyped TrxID. Only `matched` keeps a link to a registration —
+ * marking a message `ignored` or `unmatched` unlinks it, which un-verifies any
+ * registration whose only evidence that message was. The toast says so rather than
+ * leaving the admin to notice it in another table.
+ *
+ * That cross-table effect is why an confirmed change here drops the registrations
+ * table's cached copy: the two lists are never on screen at once, so the honest answer
+ * is to re-download the one that depends on this one rather than to leave it looking
+ * right and reading stale.
+ */
+function SmsStatusCell({ row }: { row: SmsSnapshotRow }) {
+  const { writes } = useSmsList();
+  const option = statusOption(smsLogStatusOptions, row.status);
+  const Icon = STATUS_ICONS[row.status];
+
+  function apply(next: string) {
+    if (!isSmsLogStatus(next) || next === row.status) return;
+    writes.run({
+      rowId: row.id,
+      action: "setSmsLogStatus",
+      args: [row.id, next],
+      plan: planSmsStatus(row, next),
+    });
+  }
+
+  return (
+    <div
+      className="flex flex-wrap items-center gap-2"
+      // The row itself expands on click; a control inside it must not.
+      onClick={(event) => event.stopPropagation()}
+    >
+      <span
+        title={option?.description}
+        className={cn(
+          adminTag,
+          option?.tone ?? "bg-admin-neutral-bg text-admin-neutral-ink",
+        )}
+      >
+        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+        {option?.label ?? row.status}
+      </span>
+
+      <label className="sr-only" htmlFor={`sms-status-${row.id}`}>
+        Status of the message from {row.sender}
+      </label>
+      <select
+        id={`sms-status-${row.id}`}
+        value={row.status}
+        onChange={(event) => apply(event.target.value)}
+        className={cn(adminControl, "w-auto px-2 py-1 text-xs")}
+      >
+        {smsLogStatusOptions.map((entry) => (
+          <option key={entry.value} value={entry.value}>
+            {entry.label}
+          </option>
+        ))}
+      </select>
+
+      <PendingBadge write={writes.writeFor(row.id, "status")} onRetry={writes.retryNow} />
+    </div>
   );
 }

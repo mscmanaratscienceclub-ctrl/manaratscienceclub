@@ -49,3 +49,7 @@ next-env.d.ts
 
 # throwaway email render workspace
 /.email-preview
+
+# Generated bracket reports — participants' names, phone numbers and bKash
+# references. Written by `pnpm reports:brackets`; artefacts, not a commit.
+/reports/

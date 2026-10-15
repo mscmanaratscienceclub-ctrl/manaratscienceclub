@@ -19,6 +19,7 @@
     "db:migrate": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:verify": "node scripts/verify-admin-db.run.mjs",
+    "verify:local-query": "node scripts/verify-local-query.run.mjs",
     "db:audit": "node --env-file=.env scripts/db-arch-audit.mjs",
     "db:port:capture": "node scripts/db-port-capture.mjs",
     "db:port:diff": "node scripts/db-port-capture.mjs --diff",
@@ -37,7 +38,9 @@
     "db:port:freeze": "node scripts/db-port-freeze.mjs",
     "db:port:unfreeze": "node scripts/db-port-freeze.mjs --unfreeze",
     "export:verify": "node scripts/verify-excel-export.run.mjs",
-    "pdf:verify": "node scripts/verify-pdf-export.run.mjs"
+    "pdf:verify": "node scripts/verify-pdf-export.run.mjs",
+    "reports:brackets": "node scripts/bracket-reports.run.mjs",
+    "reports:schools": "node scripts/schools-report.run.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

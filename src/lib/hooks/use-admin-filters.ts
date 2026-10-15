@@ -10,6 +10,24 @@ import {
 } from "@/lib/admin/filters";
 import { useDebouncedValue } from "./use-debounce";
 
+/**
+ * Where a filter change goes to be answered.
+ *
+ * The default is the router: a navigation re-renders the Server Component and the
+ * list arrives from Postgres. A table holding a cached copy of itself supplies one of
+ * these instead and answers from the browser — same URL, same state, no round trip
+ * (`obsidian/meta/decisions-log.md`, ADR-0044).
+ *
+ * The seam is deliberately one method. Everything this hook does — the two-stage
+ * search, `urlState` / `inFlight` / `owed`, the dedupe, `exportState` — is about the
+ * *URL*, not about where the rows come from, so injecting a transport leaves all of it
+ * untouched.
+ */
+export interface AdminQueryTransport {
+  /** Answer `next` locally. Called inside the navigation's transition. */
+  submit(next: AdminQueryState, mode: "push" | "replace"): void;
+}
+
 /** Everything a filter bar, a table and its pagination need to change the URL. */
 export interface AdminFilterControls {
   /** Controlled value for the search box — live, i.e. *not* yet sent to the server. */
@@ -76,13 +94,25 @@ export interface AdminFilterControls {
  * `exportState` reports `urlState` for the same reason a navigation derives from
  * it: exporting the moment a filter was picked must not export the list from
  * before it.
+ *
+ * ## Where the answer comes from
+ *
+ * `transport` decides that, and nothing else here does. Without one, `navigate`
+ * asks the router and the Server Component re-queries. With one, `navigate` hands the
+ * state to the transport and writes the same href through `window.history` — which
+ * Next keeps in step with `useSearchParams`, so the address bar, a pasted link and
+ * the export dialog all still describe what is on screen. The submit stays inside the
+ * transition, so `isPending` still flips and settles and every invariant above holds.
  */
 export function useAdminFilters({
   basePath,
   state,
+  transport,
 }: {
   basePath: string;
   state: AdminQueryState;
+  /** Answer changes from a browser cache instead of the server. */
+  transport?: AdminQueryTransport;
 }): AdminFilterControls {
   const router = useRouter();
   const [search, setSearch] = useState(state.query);
@@ -113,6 +143,12 @@ export function useAdminFilters({
 
   const searchRef = useRef(search);
   searchRef.current = search;
+
+  // Read through a ref so `navigate` keeps one identity for the whole life of the
+  // hook: a transport that appears once the cache lands must not rebuild every
+  // callback below it, and one that disappears must take effect immediately.
+  const transportRef = useRef(transport);
+  transportRef.current = transport;
 
   /**
    * The state a change should be applied to: what the address bar says, falling
@@ -149,6 +185,16 @@ export function useAdminFilters({
       urlState.current = next;
       inFlight.current = next;
       startTransition(() => {
+        const local = transportRef.current;
+        if (local) {
+          // Answered from the browser. There is no navigation to write the address
+          // bar, so this writes it — the documented `window.history` form, which
+          // Next keeps in step with `useSearchParams`.
+          local.submit(next, mode);
+          if (mode === "push") window.history.pushState(null, "", href);
+          else window.history.replaceState(null, "", href);
+          return;
+        }
         if (mode === "push") router.push(href, { scroll: false });
         else router.replace(href, { scroll: false });
       });

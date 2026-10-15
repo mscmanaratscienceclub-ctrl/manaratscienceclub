@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
 import {
   BadgeCheck,
   ChevronDown,
@@ -12,32 +10,13 @@ import {
   Trophy,
   XCircle,
 } from "lucide-react";
-import {
-  resendStemfestPaymentEmail,
-  setStemfestContactEmail,
-  setStemfestPaymentStatus,
-} from "@/lib/actions/registrations";
-import {
-  activeFilterCount,
-  emptyStateLabel,
-  type AdminQueryState,
-  type AdminSourceConfig,
-} from "@/lib/admin/filters";
-import {
-  stemfestPaymentStatusOptions,
-  statusOption,
-  type AdminStatusActionResult,
-  type StemfestPaymentStatus,
-} from "@/lib/admin/statuses";
-import {
-  CURRENCY_SYMBOL,
-  formatBdt,
-} from "@/lib/data/stemfest-registration";
-import { useAdminFilters } from "@/lib/hooks/use-admin-filters";
-import { cn } from "@/lib/utils";
+
+import { useAdminEmail } from "@/components/admin/admin-identity";
 import AdminEmptyState from "@/components/admin/admin-empty-state";
 import FilterBar from "@/components/admin/filter-bar";
 import Pagination from "@/components/admin/pagination";
+import PendingBadge from "@/components/admin/pending-badge";
+import SessionExpiredNotice from "@/components/admin/session-expired-notice";
 import {
   adminButton,
   adminButtonPrimary,
@@ -50,43 +29,23 @@ import {
   adminTag,
   adminTh,
 } from "@/components/admin/styles";
+import { activeFilterCount, emptyStateLabel } from "@/lib/admin/filters";
+import {
+  planStemfestEmail,
+  planStemfestResend,
+  planStemfestStatus,
+} from "@/lib/admin/pending-writes";
+import type { StemfestRow } from "@/lib/admin/snapshot";
+import {
+  isStemfestPaymentStatus,
+  stemfestPaymentStatusOptions,
+  statusOption,
+  type StemfestPaymentStatus,
+} from "@/lib/admin/statuses";
+import { CURRENCY_SYMBOL, formatBdt } from "@/lib/data/stemfest-registration";
+import { useStemfestList } from "@/components/admin/stemfest-list";
+import { cn } from "@/lib/utils";
 import { adminRowDisclosure } from "@/components/admin/row-disclosure";
-
-export interface StemfestRow {
-  id: string;
-  /** `<GENDER><CLASS><NNN>`, minted by the insert trigger — the participant-facing ID. */
-  registrationCode: string;
-  name: string;
-  classLabel: string;
-  school: string;
-  segments: string;
-  /**
-   * Who referred the participant. `null` for a row filed before the question
-   * existed, and for "not referred by anyone" — both render as an em dash.
-   */
-  reference: string | null;
-  /**
-   * What the participant was told to send, in BDT. `null` for a row filed before
-   * the column existed — the amount cannot be recovered from `segments`, so those
-   * read as an em dash rather than a guess.
-   */
-  totalFee: number | null;
-  transactionId: string;
-  paymentNumber: string;
-  /** Nullable: rows collected before the form asked for an address have none. */
-  email: string | null;
-  /** The effective status — the stored decision, else the forwarded-SMS match. */
-  status: StemfestPaymentStatus;
-  /** The stored decision, or `null` while the status is still SMS-derived. */
-  decision: StemfestPaymentStatus | null;
-  decidedAt: string | null;
-  /** Admin email that decided, or `null` for an SMS-derived status. */
-  decidedBy: string | null;
-  emailSentAt: string | null;
-  /** Amount a forwarded SMS reported, as text; `null` when no message carried one. */
-  amount: string | null;
-  createdAt: string;
-}
 
 /** A pill's icon, chosen per status rather than by colour. */
 const STATUS_ICONS: Record<StemfestPaymentStatus, typeof Clock> = {
@@ -111,27 +70,6 @@ function Absent() {
   return <span className="text-admin-muted">—</span>;
 }
 
-/**
- * Shows a status action's answer, and keeps a genuine fault from vanishing.
- *
- * The actions answer with a sentence for anything the admin can act on (a missing
- * email, a row that has gone), so reaching the `catch` means the database or the
- * session broke — which React would otherwise swallow into an unexplained failed
- * transition. Nothing here is logged to the console: the action has already
- * reported the detail server-side.
- */
-async function runAction(
-  action: () => Promise<AdminStatusActionResult>,
-): Promise<void> {
-  try {
-    const result = await action();
-    if (result.ok) toast.success(result.message);
-    else toast.error(result.message);
-  } catch {
-    toast.error("That change could not be saved. Refresh the page and try again.");
-  }
-}
-
 const COLUMNS = [
   "ID",
   "Name",
@@ -149,91 +87,87 @@ const COLUMNS = [
   "Submitted",
 ];
 
-interface ScienceCompetitionTableProps {
-  source: AdminSourceConfig;
-  state: AdminQueryState;
-  registrations: StemfestRow[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
-
-export default function ScienceCompetitionTable({
-  source,
-  state,
-  registrations,
-  total,
-  page,
-  totalPages,
-}: ScienceCompetitionTableProps) {
+/**
+ * The registrations table.
+ *
+ * It takes no props. The list it shows is answered either by the Server Component's
+ * page or by this browser's cached copy of the whole table, and only the provider above
+ * it knows which — so everything here, down to the empty-state sentence and the page
+ * number, reads that one state rather than a set of props that could be describing the
+ * list from before the last filter was picked.
+ */
+export default function ScienceCompetitionTable() {
+  const { source, state, registrations, total, page, totalPages, controls, cache, writes } =
+    useStemfestList();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const controls = useAdminFilters({
-    basePath: source.path,
-    state,
-  });
   const filtering = activeFilterCount(source, state) > 0;
 
   return (
-    <div className={adminPanel}>
-      <FilterBar source={source} state={state} controls={controls} />
+    <>
+      {/* Outside the panel rather than inside it: the strip is about the session, not
+          about this list's own chrome, and the page's flex gap spaces it correctly. */}
+      {cache.signedOut && <SessionExpiredNotice unsaved={writes.unsaved.length} />}
 
-      <div
-        className={cn(
-          "transition-opacity",
-          controls.isPending && "pointer-events-none opacity-50",
-        )}
-      >
-        {registrations.length === 0 ? (
-          <AdminEmptyState
-            icon={Trophy}
-            label={emptyStateLabel(source, state)}
-            onClearAll={filtering ? controls.clearAll : undefined}
+      <div className={adminPanel}>
+        <FilterBar source={source} state={state} controls={controls} />
+
+        <div
+          className={cn(
+            "transition-opacity",
+            controls.isPending && "pointer-events-none opacity-50",
+          )}
+        >
+          {registrations.length === 0 ? (
+            <AdminEmptyState
+              icon={Trophy}
+              label={emptyStateLabel(source, state)}
+              onClearAll={filtering ? controls.clearAll : undefined}
+            />
+          ) : (
+            <div className={adminTableScroller}>
+              {/* Twelve columns: `min-w` is what makes the container above scroll at
+                  all, since a `w-full` table shrinks rather than overflowing. */}
+              <table className="w-full min-w-[78rem]">
+                <thead>
+                  <tr className="border-b border-admin-line text-left">
+                    <th className="w-8 bg-admin-accent-soft px-3 py-3" aria-label="Expand" />
+                    {COLUMNS.map((label) => (
+                      <th
+                        key={label}
+                        className={adminTh}
+                      >
+                        {label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-admin-line">
+                  {registrations.map((row) => {
+                    const expanded = expandedId === row.id;
+                    return (
+                      <RegistrationRow
+                        key={row.id}
+                        row={row}
+                        expanded={expanded}
+                        onToggle={() => setExpandedId(expanded ? null : row.id)}
+                      />
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {total > 0 && (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPage={controls.goToPage}
           />
-        ) : (
-          <div className={adminTableScroller}>
-            {/* Twelve columns: `min-w` is what makes the container above scroll at
-                all, since a `w-full` table shrinks rather than overflowing. */}
-            <table className="w-full min-w-[78rem]">
-              <thead>
-                <tr className="border-b border-admin-line text-left">
-                  <th className="w-8 bg-admin-accent-soft px-3 py-3" aria-label="Expand" />
-                  {COLUMNS.map((label) => (
-                    <th
-                      key={label}
-                      className={adminTh}
-                    >
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-admin-line">
-                {registrations.map((row) => {
-                  const expanded = expandedId === row.id;
-                  return (
-                    <RegistrationRow
-                      key={row.id}
-                      row={row}
-                      expanded={expanded}
-                      onToggle={() => setExpandedId(expanded ? null : row.id)}
-
-                    />
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
         )}
       </div>
-
-      {total > 0 && (
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          onPage={controls.goToPage}
-        />
-      )}
-    </div>
+    </>
   );
 }
 
@@ -246,6 +180,7 @@ function RegistrationRow({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  const admin = useAdminEmail();
   const fields = [
     { label: "Registration ID", value: row.registrationCode },
     { label: "Full Name", value: row.name },
@@ -262,7 +197,7 @@ function RegistrationRow({
     { label: "Payment Number", value: row.paymentNumber },
     { label: "Transaction ID", value: row.transactionId },
     { label: "Amount forwarded", value: forwardedAmount(row.amount) },
-    { label: "How this status was reached", value: decisionNote(row) },
+    { label: "How this status was reached", value: decisionNote(row, admin) },
     { label: "Decided", value: formatMoment(row.decidedAt) },
     { label: "Decided by", value: row.decidedBy },
     {
@@ -356,7 +291,7 @@ function RegistrationRow({
   );
 }
 
-/** A moment as the admin reads it, or `null` for \"never happened\". */
+/** A moment as the admin reads it, or `null` for "never happened". */
 function formatMoment(value: string | null): string | null {
   return value ? dateTimeFormatter.format(new Date(value)) : null;
 }
@@ -382,8 +317,12 @@ function forwardedAmount(amount: string | null): string | null {
 /**
  * What the status shown rests on — the question an admin actually asks when a
  * payment reads Verified and nobody remembers approving it.
+ *
+ * Naming who decided matters on a fest day more than usual: two desks work the same
+ * list, and a status that flips under one of them without a name beside it reads as
+ * the other desk losing their change.
  */
-function decisionNote(row: StemfestRow): string {
+function decisionNote(row: StemfestRow, admin: string | null): string {
   if (row.decision === null) {
     return row.status === "verified"
       ? "Verified from the forwarded SMS log: a matched bKash message carries this TrxID. No admin decision on record yet."
@@ -393,6 +332,10 @@ function decisionNote(row: StemfestRow): string {
   const label =
     statusOption(stemfestPaymentStatusOptions, row.decision)?.label ??
     row.decision;
+
+  if (row.decidedBy && admin && row.decidedBy !== admin) {
+    return `Recorded as ${label} by ${row.decidedBy}. An admin decision outranks the SMS log, so a late or re-read message cannot change it.`;
+  }
 
   return `Recorded by an admin as ${label}. An admin decision outranks the SMS log, so a late or re-read message cannot change it.`;
 }
@@ -406,28 +349,32 @@ function decisionNote(row: StemfestRow): string {
  * log — including a deliberate Pending. A status that came from the log therefore
  * still needs the confirmation sent by hand, which is why that button sits with the
  * address rather than here.
+ *
+ * The write is optimistic: the pill changes with the click, and the badge beside it
+ * says whether the server has agreed yet. The picker stays enabled through it, because
+ * an admin who changes their mind mid-fest is normal and a second choice simply
+ * replaces the first in the queue.
  */
 function PaymentStatusCell({ row }: { row: StemfestRow }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const { writes } = useStemfestList();
+  const admin = useAdminEmail();
   const option = statusOption(stemfestPaymentStatusOptions, row.status);
   const Icon = STATUS_ICONS[row.status];
 
   function apply(next: string) {
-    if (next === row.status) return;
+    if (!isStemfestPaymentStatus(next) || next === row.status) return;
 
-    startTransition(() =>
-      runAction(async () => {
-        const result = await setStemfestPaymentStatus(row.id, next);
-        if (result.ok) router.refresh();
-        return result;
-      }),
-    );
+    writes.run({
+      rowId: row.id,
+      action: "setStemfestPaymentStatus",
+      args: [row.id, next],
+      plan: planStemfestStatus(row, next, admin ?? "", new Date().toISOString()),
+    });
   }
 
   return (
     <div
-      className="flex items-center gap-2"
+      className="flex flex-wrap items-center gap-2"
       // The row itself expands on click; a control inside it must not.
       onClick={(event) => event.stopPropagation()}
     >
@@ -448,12 +395,8 @@ function PaymentStatusCell({ row }: { row: StemfestRow }) {
       <select
         id={`payment-status-${row.id}`}
         value={row.status}
-        disabled={isPending}
         onChange={(event) => apply(event.target.value)}
-        className={cn(
-          cn(adminControl, "w-auto px-2 py-1 text-xs"),
-          isPending && "cursor-not-allowed opacity-50",
-        )}
+        className={cn(adminControl, "w-auto px-2 py-1 text-xs")}
       >
         {stemfestPaymentStatusOptions.map((entry) => (
           <option key={entry.value} value={entry.value}>
@@ -461,10 +404,11 @@ function PaymentStatusCell({ row }: { row: StemfestRow }) {
           </option>
         ))}
       </select>
+
+      <PendingBadge write={writes.writeFor(row.id, "status")} onRetry={writes.retryNow} />
     </div>
   );
 }
-
 
 /**
  * Whether the participant's verification (payment confirmation) email has gone out.
@@ -527,33 +471,43 @@ function describeConfirmation(row: StemfestRow): string {
  * none, and an address taken over the phone is wrong often enough to matter. The
  * resend exists because a first message bounces: an admin should not have to ask a
  * participant to register again to receive their receipt.
+ *
+ * The address is optimistic like the status. The *sending* is not: nothing is claimed
+ * about a receipt until the server says it went out, and after a reload the queued
+ * send waits for a second click rather than mailing again by itself.
  */
 function ConfirmationSettings({ row }: { row: StemfestRow }) {
-  const router = useRouter();
+  const { writes } = useStemfestList();
   const [email, setEmail] = useState(row.email ?? "");
-  const [isSaving, startSaving] = useTransition();
-  const [isSending, startSending] = useTransition();
   const canSend = row.status === "verified";
+
+  // The draft follows the row when the row moves under it — a save that the server
+  // refused rolls the value back, and the field should show that rather than keep
+  // showing the address it was told to save.
+  useEffect(() => {
+    setEmail(row.email ?? "");
+  }, [row.email]);
 
   function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    startSaving(() =>
-      runAction(async () => {
-        const result = await setStemfestContactEmail(row.id, email.trim());
-        if (result.ok) router.refresh();
-        return result;
-      }),
-    );
+    const value = email.trim();
+    if (value === (row.email ?? "")) return;
+
+    writes.run({
+      rowId: row.id,
+      action: "setStemfestContactEmail",
+      args: [row.id, value],
+      plan: planStemfestEmail(row, value),
+    });
   }
 
   function resend() {
-    startSending(() =>
-      runAction(async () => {
-        const result = await resendStemfestPaymentEmail(row.id);
-        if (result.ok) router.refresh();
-        return result;
-      }),
-    );
+    writes.run({
+      rowId: row.id,
+      action: "resendStemfestPaymentEmail",
+      args: [row.id, ""],
+      plan: planStemfestResend(row, new Date().toISOString()),
+    });
   }
 
   return (
@@ -584,38 +538,37 @@ function ConfirmationSettings({ row }: { row: StemfestRow }) {
             placeholder="participant@example.com"
             autoComplete="off"
             spellCheck={false}
-            disabled={isSaving}
-            className={cn(
-              adminControl,
-              isSaving && "cursor-not-allowed opacity-50",
-            )}
+            className={adminControl}
           />
+          <PendingBadge write={writes.writeFor(row.id, "email")} onRetry={writes.retryNow} />
         </div>
 
-        <button
-          type="submit"
-          disabled={isSaving}
-          className={cn(
-            adminButton,
-            isSaving && "cursor-not-allowed opacity-50",
-          )}
-        >
+        <button type="submit" className={adminButton}>
           Save address
         </button>
 
         <button
           type="button"
           onClick={resend}
-          disabled={isSending || !canSend}
-          title={canSend ? undefined : "Only a verified payment has a confirmation to send."}
+          disabled={!canSend}
+          title={
+            canSend
+              ? "Sends the receipt again. A change that is not saved yet waits for you to press this twice."
+              : "Only a verified payment has a confirmation to send."
+          }
           className={cn(
             adminButtonPrimary,
-            (isSending || !canSend) && "cursor-not-allowed opacity-50",
+            !canSend && "cursor-not-allowed opacity-50",
           )}
         >
           <Send className="h-4 w-4" aria-hidden="true" />
-          {isSending ? "Sending…" : "Send confirmation"}
+          Send confirmation
         </button>
+
+        <PendingBadge
+          write={writes.writeFor(row.id, "emailSentAt")}
+          onRetry={writes.retryNow}
+        />
       </form>
 
       <p className="mt-2 font-space-body text-xs text-admin-muted">
@@ -624,4 +577,3 @@ function ConfirmationSettings({ row }: { row: StemfestRow }) {
     </section>
   );
 }
-
