@@ -3,7 +3,7 @@ import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
 import Providers from "@/providers";
-import { Cormorant_Garamond, DM_Sans, Rubik } from "next/font/google";
+import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import { cn } from "@/lib/utils";
 
 /**
@@ -29,10 +29,18 @@ const fredoka = localFont({
   display: "swap",
   preload: false,
 });
-const rubik = Rubik({
-  subsets: ["latin"],
+const rubik = localFont({
+  // Self-hosted for the same reason as Fredoka and Unbounded, and the third time
+  // the same fault has stopped a deploy: Turbopack's `next/font/google` import map
+  // fails on this font in a restored-cache Vercel build — "queries have exactly one
+  // entry", once per weight per subset, 36 errors for a six-weight request. The
+  // file is the latin-subset variable wght 300-900 woff2 Google itself serves, so
+  // `--font-rubik` and every `font-body` consumer are untouched. Named without the
+  // `[wght]` suffix for the reason Unbounded's note gives.
+  src: "./fonts/Rubik.woff2",
   variable: "--font-rubik",
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: "300 900",
+  display: "swap",
   preload: false,
 });
 const cormorant = Cormorant_Garamond({

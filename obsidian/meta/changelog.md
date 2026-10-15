@@ -8,6 +8,30 @@ updated: 2026-10-15
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
 
+## 2026-10-15 — Rubik self-hosted: the third face to break a restored-cache Vercel build
+
+The deploy of `0d916f4` failed with 36 × `Module not found: Can't resolve
+'@vercel/turbopack-next/internal/font/google/font'`, all of them
+`internal/font/google/rubik_*.module.css`, and the build log's first line says why:
+`Restored build cache from previous deployment`. Turbopack's `next/font/google` import
+map fails on a Google face in that state — the same fault that killed Fredoka's build
+(`4eb1f83`) and the 2026-10-12 production deploy (`781d20d`, Unbounded).
+
+- **Fix, same shape as the other two** — `src/app/fonts/Rubik.woff2` is the latin-subset
+  variable wght 300–900 file Google itself serves (35 KB, down from six static weights ×
+  six subsets), and `layout.tsx` declares it with `localFont`. `--font-rubik` is
+  unchanged, so `--font-body` and every `font-body` consumer need nothing.
+  `preload: false` kept: Rubik paints on CMS routes only.
+- **Named without a `[wght]` suffix**, for the reason Unbounded's comment gives —
+  brackets make the CSS url and the preload link encode differently and the browser
+  fetches the same file twice.
+- **Still exposed**: DM Sans and Cormorant Garamond remain `next/font/google`, so either
+  can be the next restored-cache failure. The pattern to follow is in
+  [[design-system]]'s font table.
+- Verified: `pnpm build` compiles with the local face, the woff2 is emitted to
+  `.next/static/media/`, and in a browser `document.fonts.load('600 16px rubik')` settles
+  `loaded` with metrics distinct from the fallback.
+
 ## 2026-10-15 — An attendance sheet for the fest desk at `/admin/attendance`
 
 The door needed a list: a name, an ID, a class, and one tick. `stem_fest_registrations` gained

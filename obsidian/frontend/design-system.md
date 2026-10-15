@@ -1,6 +1,6 @@
 ---
 tags: [frontend, design-system, stable]
-updated: 2026-10-06
+updated: 2026-10-15
 ---
 
 # Design System — Tailwind v4
@@ -194,9 +194,18 @@ reaches the JSX as a `font-*` utility, never as a raw family name:
 | **DM Sans** | `--font-dm-sans` | `font-space-body`, and `--font-sans` | Body copy everywhere — the site's default face |
 | **Unbounded** (local woff2) | `--font-unbounded` | `font-voyage` | Public headings. Self-hosted since 2026-10-12: as a `next/font/google` face it broke the production build on a restored Turbopack cache — same failure Fredoka had, see [[decisions-log]] and [[changelog]] |
 | **Cormorant Garamond** | `--font-cormorant` | `font-space-display` | Admin figures, `/stemfestreg`, `/volunteer` |
-| **Rubik** | `--font-rubik` | `font-body` | CMS only |
+| **Rubik** (local woff2) | `--font-rubik` | `font-body` | CMS only. Self-hosted since 2026-10-15 — the **third** face to break a production deploy the same way (Fredoka, Unbounded, Rubik): Turbopack's `next/font/google` import map fails on a restored Vercel build cache with "queries have exactly one entry", once per weight per subset |
 | **Fredoka** (local woff2) | `--font-fredoka` | `font-display` | CMS only |
 | **Geist Mono** (local woff) | `--font-geist-mono` | `font-mono` | Admin panel (`[data-admin]` recomposes it; the variable is on `<body>`, so `:root` cannot see it) |
+
+**The two faces still on `next/font/google` are the remaining risk.** DM Sans and
+Cormorant Garamond can fail a restored-cache build the way the other three did, and
+the failure only shows up on the production deploy — the same commit builds clean
+locally and in preview. Self-hosting is the known fix: drop the latin-subset variable
+woff2 Google itself serves into `src/app/fonts/`, name it **without** a `[wght]`
+suffix (brackets make `next/font` emit the CSS url and the preload link in different
+encodings, so the file is fetched twice), and keep the CSS variable identical so
+nothing downstream changes.
 
 **Only DM Sans and Unbounded are preloaded.** The other four carry
 `preload: false`: a public pageview used to request all seven font files and
