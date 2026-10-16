@@ -100,7 +100,7 @@ export default function EmailPreviewModal({
             <iframe
               title={`Email preview for ${preview.sample.name}`}
               srcDoc={preview.html}
-              className="h-[60vh] min-h-[480px] w-full border-0 bg-transparent"
+              className="h-[60dvh] min-h-[480px] w-full border-0 bg-transparent"
               sandbox=""
             />
           </div>

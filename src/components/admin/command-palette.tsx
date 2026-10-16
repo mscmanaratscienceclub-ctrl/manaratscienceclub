@@ -176,7 +176,7 @@ export default function CommandPalette({
                 id="palette-results"
                 role="listbox"
                 aria-label="Panel sections"
-                className="max-h-[min(22rem,50vh)] overflow-y-auto p-2"
+                className="max-h-[min(22rem,50dvh)] overflow-y-auto p-2"
               >
                 {results.map((item, index) => {
                   const selected = index === cursor;

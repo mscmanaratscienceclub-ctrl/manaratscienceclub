@@ -21,7 +21,8 @@ import {
 } from "@/lib/admin/exports";
 import AutoPrint from "@/components/admin/auto-print";
 import ReportPrintButton from "@/components/admin/report-print-button";
-import { adminLabel, adminTh } from "@/components/admin/styles";
+import { adminLabel, adminReportScroller, adminTh } from "@/components/admin/styles";
+import { cn } from "@/lib/utils";
 
 /** Fixed timezone so the stamp matches the day filters above it. */
 const generatedFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -108,7 +109,7 @@ export default async function AdminReportPage({
     >
       <div
         data-print="chrome"
-        className="mb-6 flex items-center justify-between gap-4"
+        className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3"
       >
         <Link
           href={source.path}
@@ -127,19 +128,23 @@ export default async function AdminReportPage({
         report that changes colour when it is saved is two documents, not one.
       */}
       <header className="border-b-4 border-manara-teal pb-5">
-        <div className="flex items-start justify-between gap-6">
-          <div>
+        {/* Stacked on a phone, side by side from `md`, and pinned side by side on
+            paper: the masthead's `min-w-0` and size steps are screen rules, while
+            the unlayered `@media print` block in `globals.css` keeps owning the
+            stamp's rule, padding and alignment on A4. */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6 print:flex-row">
+          <div className="min-w-0">
             <p className="font-space-body text-2xs font-semibold tracking-[0.16em] text-manara-teal uppercase">
               {siteConfig.name} · Admin export
             </p>
-            <h1 className="mt-2 font-space-display text-4xl leading-tight font-medium tracking-[-0.02em] text-admin-ink">
+            <h1 className="mt-2 font-space-display text-2xl leading-tight font-medium tracking-[-0.02em] text-admin-ink md:text-4xl">
               {source.reportTitle}
             </h1>
             <p className="mt-2 max-w-xl font-space-body text-sm leading-relaxed text-admin-muted">
               {source.reportNote}
             </p>
           </div>
-          <div className="shrink-0 border-l border-admin-line pl-5 text-right">
+          <div className="border-t border-admin-line pt-3 text-left md:shrink-0 md:border-t-0 md:border-l md:pt-0 md:pl-5 md:text-right print:border-l print:border-t-0 print:pl-5 print:pt-0 print:text-right">
             <p className={adminLabel}>Generated</p>
             <p className="mt-1 font-mono text-sm text-admin-ink">{generated}</p>
           </div>
@@ -196,35 +201,42 @@ export default async function AdminReportPage({
         </p>
       )}
 
-      <table className="w-full border-collapse text-left">
-        <caption className="sr-only">
-          {source.reportTitle} matching the filters listed above.
-        </caption>
-        <thead>
-          <tr className="border-b border-admin-line">
-            {columns.map((column) => (
-              <th
-                key={column.id}
-                scope="col"
-                className={`${adminTh} px-2 ${alignClass(column)}`}
-              >
-                {column.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {report.rows.map((row, index) => (
-            <tr key={index} className="border-b border-admin-line align-top">
+      {/* Eleven columns of report will not fit a phone, and a report that widens the
+          whole page instead of its own table takes the masthead and the back link
+          with it. The scroller holds the overflow inside the table; `min-w` is what
+          makes it scroll rather than squash, and it is sized under the desktop box so
+          a wide screen still gets no scrollbar. Paper unwinds both. */}
+      <div className={adminReportScroller}>
+        <table className="w-full min-w-[50rem] border-collapse text-left print:min-w-0">
+          <caption className="sr-only">
+            {source.reportTitle} matching the filters listed above.
+          </caption>
+          <thead>
+            <tr className="border-b border-admin-line">
               {columns.map((column) => (
-                <td key={column.id} className={cellClass(column)}>
-                  {row[column.id] ?? ""}
-                </td>
+                <th
+                  key={column.id}
+                  scope="col"
+                  className={cn(adminTh, "px-2", alignClass(column))}
+                >
+                  {column.label}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {report.rows.map((row, index) => (
+              <tr key={index} className="border-b border-admin-line align-top">
+                {columns.map((column) => (
+                  <td key={column.id} className={cellClass(column)}>
+                    {row[column.id] ?? ""}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {report.rows.length === 0 && (
         <p className="py-10 text-center font-space-body text-admin-muted">

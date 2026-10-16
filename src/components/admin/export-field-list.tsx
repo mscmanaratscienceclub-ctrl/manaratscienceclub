@@ -70,7 +70,7 @@ export default function ExportFieldList({
               <label
                 htmlFor={inputId}
                 className={cn(
-                  "flex cursor-pointer items-center gap-2.5 rounded-[6px] px-2 py-1.5 transition-colors hover:bg-admin-sunken",
+                  "flex min-h-10 cursor-pointer items-center gap-2.5 rounded-[6px] px-2 py-2.5 transition-colors hover:bg-admin-sunken",
                   checked && "bg-admin-sunken",
                 )}
               >

@@ -81,8 +81,10 @@ export default function UsersTable({ users }: UsersTableProps) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-manara-teal/10 shadow-subtle">
-      <table className="w-full text-left font-body">
+    <div className="relative overflow-x-auto rounded-2xl border border-manara-teal/10 shadow-subtle">
+      {/* `min-w` is what makes the box above scroll at all: a bare `w-full` table
+          squashes its four columns into the width of a phone instead. */}
+      <table className="w-full min-w-[42rem] text-left font-body">
         <thead>
           <tr className="border-b border-manara-teal/10 bg-cream/60">
             <th className="px-6 py-4 text-sm font-semibold text-ink/70">

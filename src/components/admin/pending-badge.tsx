@@ -67,7 +67,7 @@ export default function PendingBadge({
           type="button"
           onClick={() => onRetry(write.key)}
           aria-label={`Send ${write.label} again`}
-          className="-mr-1 rounded-full px-1 font-space-body text-2xs font-semibold underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-admin-ink"
+          className="-mr-1 inline-flex min-h-6 items-center rounded-full px-1.5 font-space-body text-2xs font-semibold underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-admin-ink"
         >
           Retry
         </button>

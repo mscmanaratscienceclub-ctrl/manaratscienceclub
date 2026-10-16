@@ -18,7 +18,7 @@ export default function Pagination({ page, totalPages, onPage }: PaginationProps
   const nextDisabled = page >= totalPages;
 
   return (
-    <div className="flex items-center justify-between border-t border-admin-line bg-admin-accent-soft/40 px-6 py-4">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-admin-line bg-admin-accent-soft/40 px-4 py-4 sm:px-6">
       <p className="font-space-body text-sm text-admin-muted">
         Page <span className="font-medium text-admin-accent-ink tabular-nums">{page}</span> of{" "}
         <span className="tabular-nums">{totalPages}</span>
@@ -62,7 +62,7 @@ function PaginationButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className={cn(adminButton, "px-3 py-1.5 text-xs")}
+      className={cn(adminButton, "min-h-10 px-4 py-2 text-xs")}
     >
       {children}
     </button>

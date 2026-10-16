@@ -72,8 +72,10 @@ export default function PostsTable({ posts }: { posts: Post[] }) {
 
   return (
     <div className="overflow-hidden rounded-2xl bg-surface shadow-subtle">
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div className="relative overflow-x-auto">
+        {/* `min-w` is what makes the box above scroll at all: a bare `w-full` table
+            squashes its five columns into the width of a phone instead. */}
+        <table className="w-full min-w-[46rem]">
           <thead>
             <tr className="border-b border-ink/5 text-left">
               <th className="px-6 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">

@@ -158,7 +158,7 @@ function AttendanceRowView({ row }: { row: AttendanceSnapshotRow }) {
             aria-label={`Mark ${row.name} (${row.registrationCode}) present`}
             onClick={() => apply(!row.attendance)}
             className={cn(
-              "flex h-6 w-11 shrink-0 items-center rounded-full border border-admin-line px-1 transition-colors",
+              "flex h-7 w-12 shrink-0 items-center rounded-full border border-admin-line px-1 transition-colors",
               row.attendance ? "bg-admin-positive-ink" : "bg-admin-sunken",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-admin-accent",
             )}
@@ -167,7 +167,7 @@ function AttendanceRowView({ row }: { row: AttendanceSnapshotRow }) {
               aria-hidden="true"
               className={cn(
                 "block size-4 rounded-full bg-admin-surface shadow-admin-hover transition-transform",
-                row.attendance && "translate-x-5",
+                row.attendance && "translate-x-6",
               )}
             />
           </button>

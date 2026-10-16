@@ -22,7 +22,8 @@ import {
 import { chartToneVar, formatDayLabel } from "@/lib/admin/dashboard";
 import AutoPrint from "@/components/admin/auto-print";
 import ReportPrintButton from "@/components/admin/report-print-button";
-import { adminLabel, adminTag, adminTh } from "@/components/admin/styles";
+import { adminLabel, adminReportScroller, adminTag, adminTh } from "@/components/admin/styles";
+import { cn } from "@/lib/utils";
 
 /** Fixed timezone so the stamp matches the windows the brief measures. */
 const generatedFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -105,7 +106,7 @@ export default async function RegistrationBriefPage({
         <div className="flex flex-wrap items-center gap-3">
           <Link
             href="/admin/reports/stemfest"
-            className="inline-flex items-center gap-2 rounded-[6px] border border-admin-line bg-admin-surface px-3 py-1.5 font-space-body text-xs font-medium text-admin-ink-soft transition-colors hover:border-admin-ink/35 hover:text-admin-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-admin-ink"
+            className="inline-flex min-h-10 items-center gap-2 rounded-[6px] border border-admin-line bg-admin-surface px-3 py-2 font-space-body text-xs font-medium text-admin-ink-soft transition-colors hover:border-admin-ink/35 hover:text-admin-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-admin-ink"
           >
             <Table2 className="size-3.5" aria-hidden="true" />
             Full registrations table
@@ -119,12 +120,14 @@ export default async function RegistrationBriefPage({
           style both documents and a saved brief carries the club's rule and
           eyebrow exactly as a saved report does. */}
       <header className="border-b-4 border-manara-teal pb-5">
-        <div className="flex items-start justify-between gap-6">
-          <div>
+        {/* Same masthead contract as the row-level report: stacked on a phone, side
+            by side from `md`, and ruled by the unlayered `@media print` block on A4. */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6 print:flex-row">
+          <div className="min-w-0">
             <p className="font-space-body text-2xs font-semibold tracking-[0.16em] text-manara-teal uppercase">
               {siteConfig.name} · Admin brief
             </p>
-            <h1 className="mt-2 font-space-display text-4xl leading-tight font-medium tracking-[-0.02em] text-admin-ink">
+            <h1 className="mt-2 font-space-display text-2xl leading-tight font-medium tracking-[-0.02em] text-admin-ink md:text-4xl">
               Registration Brief
             </h1>
             <p className="mt-2 max-w-xl font-space-body text-sm leading-relaxed text-admin-muted">
@@ -133,7 +136,7 @@ export default async function RegistrationBriefPage({
               referrers behind the entries, and what tomorrow is likely to bring.
             </p>
           </div>
-          <div className="shrink-0 border-l border-admin-line pl-5 text-right">
+          <div className="border-t border-admin-line pt-3 text-left md:shrink-0 md:border-t-0 md:border-l md:pt-0 md:pl-5 md:text-right print:border-l print:border-t-0 print:pl-5 print:pt-0 print:text-right">
             <p className={briefEyebrow}>Generated</p>
             <p className="mt-1 font-mono text-sm text-admin-ink">{generated}</p>
           </div>
@@ -218,51 +221,56 @@ export default async function RegistrationBriefPage({
         title="What is booming and what is down"
         question="Each segment's entries in the window, against the same number of days before it."
       >
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-b border-admin-line">
-              <th scope="col" className={`${adminTh} px-2`}>
-                Segment
-              </th>
-              <th scope="col" className={`${adminTh} px-2 text-right`}>
-                Last {windowDays}
-              </th>
-              <th scope="col" className={`${adminTh} px-2 text-right`}>
-                Previous {windowDays}
-              </th>
-              <th scope="col" className={`${adminTh} px-2 text-right`}>
-                Change
-              </th>
-              <th scope="col" className={`${adminTh} px-2`}>
-                Reading
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {brief.segments.map((row) => (
-              <tr
-                key={row.id}
-                className="border-b border-admin-line align-middle"
-              >
-                <td className="px-2 py-2 font-space-body text-sm font-medium text-admin-ink">
-                  {row.label}
-                </td>
-                <td className="px-2 py-2 text-right font-mono text-sm text-admin-ink-soft tabular-nums">
-                  {row.current}
-                </td>
-                <td className="px-2 py-2 text-right font-mono text-sm text-admin-muted tabular-nums">
-                  {row.previous}
-                </td>
-                <td className="px-2 py-2 text-right font-mono text-sm text-admin-ink-soft tabular-nums">
-                  {formatChange(row)}
-                </td>
-                <td className="px-2 py-2">
-                  <DirectionTag movement={row} />
-                </td>
+        {/* Uppercase column heads over five measures need more than a phone gives
+            them; below `min-w` the table scrolls inside its own box rather than
+            widening the document, and A4 unwinds both. */}
+        <div className={adminReportScroller}>
+          <table className="w-full min-w-[26rem] border-collapse text-left print:min-w-0">
+            <thead>
+              <tr className="border-b border-admin-line">
+                <th scope="col" className={cn(adminTh, "px-2")}>
+                  Segment
+                </th>
+                <th scope="col" className={cn(adminTh, "px-2 text-right")}>
+                  Last {windowDays}
+                </th>
+                <th scope="col" className={cn(adminTh, "px-2 text-right")}>
+                  Previous {windowDays}
+                </th>
+                <th scope="col" className={cn(adminTh, "px-2 text-right")}>
+                  Change
+                </th>
+                <th scope="col" className={cn(adminTh, "px-2")}>
+                  Reading
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {brief.segments.map((row) => (
+                <tr
+                  key={row.id}
+                  className="border-b border-admin-line align-middle"
+                >
+                  <td className="px-2 py-2 font-space-body text-sm font-medium text-admin-ink">
+                    {row.label}
+                  </td>
+                  <td className="px-2 py-2 text-right font-mono text-sm text-admin-ink-soft tabular-nums">
+                    {row.current}
+                  </td>
+                  <td className="px-2 py-2 text-right font-mono text-sm text-admin-muted tabular-nums">
+                    {row.previous}
+                  </td>
+                  <td className="px-2 py-2 text-right font-mono text-sm text-admin-ink-soft tabular-nums">
+                    {formatChange(row)}
+                  </td>
+                  <td className="px-2 py-2">
+                    <DirectionTag movement={row} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         <p className="brief-body mt-4 font-space-body text-sm leading-relaxed text-admin-ink-soft">
           {rising === null && falling === null
@@ -368,47 +376,49 @@ export default async function RegistrationBriefPage({
             No entry names a referrer yet, so there is nothing to rank.
           </p>
         ) : (
-          <table className="mt-4 w-full border-collapse text-left">
-            <thead>
-              <tr className="border-b border-admin-line">
-                <th scope="col" className={`${adminTh} px-2`}>
-                  Referrer
-                </th>
-                <th scope="col" className={`${adminTh} px-2 text-right`}>
-                  Referrals
-                </th>
-                <th scope="col" className={`${adminTh} px-2 text-right`}>
-                  Last {windowDays}
-                </th>
-                <th scope="col" className={`${adminTh} px-2`}>
-                  Through
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {brief.referrers.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-b border-admin-line align-middle"
-                >
-                  <td className="px-2 py-2 font-space-body text-sm font-medium text-admin-ink">
-                    {row.name}
-                  </td>
-                  <td className="px-2 py-2 text-right font-mono text-sm text-admin-ink-soft tabular-nums">
-                    {row.total}
-                  </td>
-                  <td className="px-2 py-2 text-right font-mono text-sm text-admin-muted tabular-nums">
-                    {row.recent}
-                  </td>
-                  <td className="px-2 py-2">
-                    <span className="font-space-body text-xs text-admin-ink-soft">
-                      {referrerKindLabels[row.kind]}
-                    </span>
-                  </td>
+          <div className={cn(adminReportScroller, "mt-4")}>
+            <table className="w-full min-w-[24rem] border-collapse text-left print:min-w-0">
+              <thead>
+                <tr className="border-b border-admin-line">
+                  <th scope="col" className={cn(adminTh, "px-2")}>
+                    Referrer
+                  </th>
+                  <th scope="col" className={cn(adminTh, "px-2 text-right")}>
+                    Referrals
+                  </th>
+                  <th scope="col" className={cn(adminTh, "px-2 text-right")}>
+                    Last {windowDays}
+                  </th>
+                  <th scope="col" className={cn(adminTh, "px-2")}>
+                    Through
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {brief.referrers.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="border-b border-admin-line align-middle"
+                  >
+                    <td className="px-2 py-2 font-space-body text-sm font-medium text-admin-ink">
+                      {row.name}
+                    </td>
+                    <td className="px-2 py-2 text-right font-mono text-sm text-admin-ink-soft tabular-nums">
+                      {row.total}
+                    </td>
+                    <td className="px-2 py-2 text-right font-mono text-sm text-admin-muted tabular-nums">
+                      {row.recent}
+                    </td>
+                    <td className="px-2 py-2">
+                      <span className="font-space-body text-xs text-admin-ink-soft">
+                        {referrerKindLabels[row.kind]}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         <p className="brief-note mt-4 max-w-xl font-space-body text-xs leading-relaxed text-admin-muted">
@@ -664,7 +674,7 @@ function KindTally({ brief }: { brief: RegistrationBrief }) {
                 ((campus > batch ? campus : batch) / brief.referredTotal) * 100,
               )} %).`}
       </p>
-      <dl className="brief-tally mt-3 grid grid-cols-2 gap-x-8 gap-y-2 sm:grid-cols-4">
+      <dl className="brief-tally mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4 sm:gap-x-8">
         {[
           { label: referrerKindLabels.campus, value: campus },
           { label: referrerKindLabels.batch, value: batch },

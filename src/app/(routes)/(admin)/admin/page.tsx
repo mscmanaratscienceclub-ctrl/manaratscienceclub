@@ -209,7 +209,7 @@ export default async function AdminDashboardPage({
             </span>
             <Link
               href="/admin/reports/brief"
-              className="inline-flex items-center gap-2 rounded-[6px] border border-admin-line bg-admin-surface px-3 py-1.5 font-space-body text-xs font-medium text-admin-ink-soft transition-colors hover:border-admin-ink/35 hover:text-admin-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-admin-ink"
+              className="inline-flex min-h-10 items-center gap-2 rounded-[6px] border border-admin-line bg-admin-surface px-3 py-2 font-space-body text-xs font-medium text-admin-ink-soft transition-colors hover:border-admin-ink/35 hover:text-admin-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-admin-ink"
             >
               <Printer className="size-3.5" aria-hidden="true" />
               Print a report

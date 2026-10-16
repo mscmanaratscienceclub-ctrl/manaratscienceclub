@@ -50,7 +50,7 @@ export default function FilterBar({
   const active = activeFilterList(source, state);
 
   return (
-    <div className="border-b border-admin-line px-6 py-4">
+    <div className="border-b border-admin-line px-4 py-4 sm:px-6">
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-56 flex-1">
           <label htmlFor="admin-search" className="sr-only">
@@ -129,7 +129,7 @@ export default function FilterBar({
             type="button"
             onClick={() => setMoreOpen((open) => !open)}
             aria-expanded={showSecondary}
-            className={cn(adminButton, "py-1.5 text-xs")}
+            className={cn(adminButton, "min-h-10 py-2.5 text-xs")}
           >
             <SlidersHorizontal className="size-3.5" aria-hidden="true" />
             {showSecondary ? "Fewer filters" : `More filters (${secondary.length})`}
@@ -142,10 +142,12 @@ export default function FilterBar({
             type="button"
             onClick={() => controls.clearFilter(filter.id)}
             aria-label={`Remove filter: ${filter.label} ${filter.display}`}
-            className="inline-flex items-center gap-1.5 rounded-full border border-admin-accent-soft bg-admin-accent-soft py-1.5 pr-2.5 pl-3 font-space-body text-xs text-admin-accent-ink transition-colors hover:border-admin-accent"
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-admin-accent-soft bg-admin-accent-soft py-2 pr-2.5 pl-3 font-space-body text-xs text-admin-accent-ink transition-colors hover:border-admin-accent"
           >
             <span className="opacity-70">{filter.label}</span>
-            <span className="max-w-48 truncate">{filter.display}</span>
+            <span className="max-w-48 truncate" title={filter.display}>
+              {filter.display}
+            </span>
             <X className="size-3.5 shrink-0 opacity-70" aria-hidden="true" />
           </button>
         ))}

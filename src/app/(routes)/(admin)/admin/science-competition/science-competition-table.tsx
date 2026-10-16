@@ -23,6 +23,7 @@ import {
   adminControl,
   adminDetailLabel,
   adminDetailValue,
+  adminDetailViewport,
   adminLabel,
   adminPanel,
   adminTableScroller,
@@ -235,7 +236,10 @@ function RegistrationRow({
         <td className="px-4 py-4 font-space-body text-sm text-admin-ink-soft">
           {row.school}
         </td>
-        <td className="max-w-xs truncate px-4 py-4 font-space-body text-sm text-admin-ink-soft">
+        <td
+          className="max-w-xs truncate px-4 py-4 font-space-body text-sm text-admin-ink-soft"
+          title={row.segments}
+        >
           {row.segments}
         </td>
         <td className="px-4 py-4 font-space-body text-sm text-admin-ink-soft">
@@ -261,29 +265,29 @@ function RegistrationRow({
       {expanded && (
         <tr id={`${row.id}-detail`} className="bg-admin-accent-soft/60">
           <td />
-          <td colSpan={11} className="px-4 pt-1 pb-6">
-            <section className="mt-4">
-              <h3 className={cn(adminLabel, "mb-3")}>
-                Registration Details
-              </h3>
-              <dl className="space-y-3">
-                {fields.map((field) => (
-                  <div
-                    key={field.label}
-                    className="grid gap-1 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-6"
-                  >
-                    <dt className={adminDetailLabel}>
-                      {field.label}
-                    </dt>
-                    <dd className={adminDetailValue}>
-                      {field.value ?? <Absent />}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
+          <td colSpan={11} className="p-0">
+            {/* The detail spans a 78rem table; bounded and pinned to the near edge
+                of the scroller it stays inside the slice a phone can see. */}
+            <div className={cn(adminDetailViewport, "px-4 pt-1 pb-6")}>
+              <section className="mt-4">
+                <h3 className={cn(adminLabel, "mb-3")}>Registration Details</h3>
+                <dl className="space-y-3">
+                  {fields.map((field) => (
+                    <div
+                      key={field.label}
+                      className="grid gap-1 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-6"
+                    >
+                      <dt className={adminDetailLabel}>{field.label}</dt>
+                      <dd className={adminDetailValue}>
+                        {field.value ?? <Absent />}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
 
-            <ConfirmationSettings row={row} />
+              <ConfirmationSettings row={row} />
+            </div>
           </td>
         </tr>
       )}
@@ -396,7 +400,7 @@ function PaymentStatusCell({ row }: { row: StemfestRow }) {
         id={`payment-status-${row.id}`}
         value={row.status}
         onChange={(event) => apply(event.target.value)}
-        className={cn(adminControl, "w-auto px-2 py-1 text-xs")}
+        className={cn(adminControl, "min-h-9 w-auto px-2 py-1.5 text-xs")}
       >
         {stemfestPaymentStatusOptions.map((entry) => (
           <option key={entry.value} value={entry.value}>

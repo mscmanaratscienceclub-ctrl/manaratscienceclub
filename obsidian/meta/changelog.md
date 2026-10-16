@@ -1,12 +1,47 @@
 ---
 tags: [meta, changelog]
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 # Changelog
 
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
+
+## 2026-10-16 — Admin panel and Studio made responsive for phones and tablets
+
+The panel's shell already collapsed to a drawer below `lg`, but everything mounted inside it
+had been built for a desk. Audited at 320/390/768/834/1024/1194/1440 against `/admin-preview`
+and fixed by severity. The contract is now written down in
+[[components/admin]] → "Responsive contract".
+
+- **Reports were the worst case** — `/admin/reports/[kind]` put a table of up to eleven
+  columns straight on the page with no scroller, so on a phone the *document* scrolled
+  sideways and took the masthead and the back link with it; the brief had two more. Both now
+  use `adminReportScroller`, which unwinds to `print:min-w-0` on A4 — the reports print
+  exactly as before. Their mastheads stack below `md` and pin `print:flex-row`.
+- **Expanded rows were unreadable** — a detail row spans a `78rem` table, so it wrapped to a
+  1200px measure 950px of which sat off-screen. `adminDetailViewport` pins it to the near
+  edge and caps it at the visible window; applied to all five tables that expand.
+- **The Studio was not responsive at all** — `CmsSidebar` was permanently in flow at `w-56`,
+  leaving ~166px of a phone for the whole CMS, inside an `h-screen` frame. New
+  `cms-shell.tsx` gives it the admin's drawer and `h-dvh`; its three tables gained the
+  `min-w-*` their scrollers were missing.
+- **Smaller fixes** — the loading skeleton's table row was 376px of fixed bones (wider than
+  any phone) and its donut bone contradicted the real chart; `stemfest-stat-cards` clipped the
+  ৳ figure at `xl:grid-cols-7` with the rail in flow, so the seventh step waits for `2xl`;
+  filter controls now wrap their operator picker; `60vh`/`50vh` became `dvh`; unbreakable
+  email addresses in the send-progress list now break; and the controls an admin taps
+  (pagination, filter chips, export field rows, the attendance switch, row status pickers,
+  the TipTap toolbar) reached ~40px.
+- **Also fixed in passing** — four `th` cells built their class with template-literal
+  concatenation (`` `${adminTh} px-2` ``), so `px-4` and `px-2` both landed in the class list
+  with nothing to resolve them. Now `cn()`.
+
+No dependency, schema or route changes. `verify.sh` 0 FAIL, `pnpm lint`, `tsc --noEmit` and
+`pnpm build` clean. Not verified in a signed-in browser: the report pages and the Studio need
+an admin session, and local `.env` points at the production database, so no test login was
+created — those two surfaces are build- and code-verified only.
 
 ## 2026-10-15 — Rubik self-hosted: the third face to break a restored-cache Vercel build
 

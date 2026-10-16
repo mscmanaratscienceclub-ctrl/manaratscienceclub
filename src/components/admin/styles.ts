@@ -80,6 +80,36 @@ export const adminTextButton =
  */
 export const adminTableScroller = "relative overflow-x-auto";
 
+/**
+ * The scroller a *printed* report lives in.
+ *
+ * A report table is the one table the panel puts on paper, and the two media want
+ * opposite things of it: a phone needs it to scroll sideways inside the panel, while
+ * A4 needs it to fill the stock and paginate. `print:` unwinds the scroller and the
+ * table's own `min-w-*` on paper, so the row-level report and the brief scroll on a
+ * phone without losing their columns to the edge of the sheet.
+ */
+export const adminReportScroller = "relative overflow-x-auto print:overflow-visible";
+
+/**
+ * The body of an expanded row, kept inside the slice of the table a visitor can
+ * actually see.
+ *
+ * A detail row spans a table deliberately set to `min-w-[46rem]`–`min-w-[78rem]` so
+ * its columns stop squashing. Left alone, the detail inherits that full width: every
+ * line wraps to a 1200-pixel measure and most of it sits outside the scroller's
+ * window, so on a phone you pan sideways to read one sentence.
+ *
+ * `sticky left-0` pins the box to the near edge of the scroller as the columns slide
+ * under it, and the `max-w-*` caps it at the visible window rather than the table —
+ * each step subtracts the chrome that window does not include: the page's own
+ * `px-6`/`md:px-10`, and from `lg` the 240px rail that comes back into flow.
+ * A block box fills its parent up to that cap, so a wide table still gives the detail
+ * its full measure while a phone gets one it can read without scrolling.
+ */
+export const adminDetailViewport =
+  "sticky left-0 max-w-[calc(100vw-3rem)] md:max-w-[calc(100vw-5rem)] lg:max-w-[calc(100vw-20rem)]";
+
 /** A table's heading cell: the same wash the panel head wears, so a table reads
  *  as part of its panel rather than a second surface inside it. */
 export const adminTh =

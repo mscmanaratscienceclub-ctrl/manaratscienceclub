@@ -8,7 +8,7 @@ import { signOut } from "@/lib/auth/client";
 import { trackEvent, resetAnalytics } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
-interface SidebarProps { user: { name: string; email: string; role: string } }
+interface SidebarProps { user: { name: string; email: string; role: string }; className?: string }
 
 const navItems = [
   { href: "/cms", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -20,7 +20,7 @@ const adminItems = [
   { href: "/admin", label: "Admin Panel", icon: ShieldCheck, exact: false },
 ];
 
-export default function CmsSidebar({ user }: SidebarProps) {
+export default function CmsSidebar({ user, className }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const isActive = (href: string, exact: boolean) => exact ? pathname === href : pathname.startsWith(href);
@@ -40,7 +40,12 @@ export default function CmsSidebar({ user }: SidebarProps) {
   const initials = user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-white/8 bg-ink">
+    <aside
+      className={cn(
+        "flex h-full w-56 shrink-0 flex-col border-r border-white/8 bg-ink",
+        className,
+      )}
+    >
       <div className="flex items-center gap-3 border-b border-white/8 px-4 py-4">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-manara-teal"><Image src="/stemmsc.png" alt="STEM Fest 2027" width={24} height={24} className="object-cover" /></div>
         <div>
@@ -91,7 +96,7 @@ export default function CmsSidebar({ user }: SidebarProps) {
         </div>
         <div className="flex items-center justify-between px-3 pb-1">
           <span className="rounded-full bg-manara-teal/20 px-2 py-0.5 text-xs font-bold capitalize text-manara-teal">{user.role}</span>
-          <button onClick={handleSignOut} className="flex items-center gap-1.5 text-xs text-white/35 transition-colors hover:text-red-400">
+          <button onClick={handleSignOut} className="flex min-h-10 items-center gap-1.5 rounded-xl px-2 text-xs text-white/35 transition-colors hover:text-red-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70">
             <LogOut className="size-3" />Sign out
           </button>
         </div>

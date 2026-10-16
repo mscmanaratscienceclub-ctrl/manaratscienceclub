@@ -136,7 +136,7 @@ function OperatorPicker({
       aria-label={`${field.label} comparison`}
       value={value}
       onChange={(event) => onChange(event.target.value as AdminFilterOperator)}
-      className={cn(adminControl, "w-auto shrink-0 py-1.5 text-xs")}
+      className={cn(adminControl, "w-auto max-w-full shrink-0 py-1.5 text-xs")}
     >
       {filterOperatorOptions(field).map((operator) => (
         <option key={operator} value={operator}>
@@ -184,13 +184,16 @@ function ChoiceField({
   const id = useId();
   return (
     <FieldShell id={id} label={field.label}>
-      <div className="flex items-stretch gap-1.5">
+      {/* The comparison and the value it compares are two controls under one label;
+          on a phone's `min-w-40` they cannot both keep the line, so the value drops
+          below the picker rather than pushing the filter bar past the screen. */}
+      <div className="flex flex-wrap items-stretch gap-1.5">
         {picker}
         <select
           id={id}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className={adminControl}
+          className={cn(adminControl, "min-w-0 flex-1")}
         >
           <option value="">Any</option>
           {groupedOptions(field.options).map((run) =>
@@ -321,7 +324,9 @@ function TypedField({
 
   return (
     <FieldShell id={id} label={field.label}>
-      <div className="flex items-stretch gap-1.5">
+      {/* Wrapped for the same reason as `ChoiceField`: a picker and a text box do
+          not share a phone-width label line. */}
+      <div className="flex flex-wrap items-stretch gap-1.5">
         {picker}
         <input
           id={id}
@@ -336,7 +341,7 @@ function TypedField({
           }}
           onBlur={commitNow}
           placeholder={field.placeholder}
-          className={adminControl}
+          className={cn(adminControl, "min-w-0 flex-1")}
         />
       </div>
     </FieldShell>

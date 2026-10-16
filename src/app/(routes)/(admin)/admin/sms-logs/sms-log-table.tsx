@@ -18,6 +18,7 @@ import SessionExpiredNotice from "@/components/admin/session-expired-notice";
 import {
   adminControl,
   adminDetailLabel,
+  adminDetailViewport,
   adminLabel,
   adminPanel,
   adminTableScroller,
@@ -212,7 +213,10 @@ function LogRow({
         <td className="px-4 py-4">
           <SmsStatusCell row={row} />
         </td>
-        <td className="max-w-xs truncate px-4 py-4 font-space-body text-sm text-admin-ink-soft">
+        <td
+          className="max-w-xs truncate px-4 py-4 font-space-body text-sm text-admin-ink-soft"
+          title={row.rawMessage}
+        >
           {row.rawMessage}
         </td>
       </tr>
@@ -220,32 +224,37 @@ function LogRow({
       {expanded && (
         <tr id={`${row.id}-detail`} className="bg-admin-accent-soft/60">
           <td />
-          <td colSpan={7} className="px-4 pt-1 pb-6">
-            <section className="mt-4">
-              <h3 className={cn(adminLabel, "mb-3 flex items-center gap-2")}>
-                <Mail className="h-3.5 w-3.5" aria-hidden="true" />
-                Full Message
-              </h3>
-              <dl className="space-y-3">
-                <div className="grid gap-1 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-6">
-                  <dt className={adminDetailLabel}>Raw SMS</dt>
-                  <dd className="max-w-3xl font-mono text-sm leading-relaxed break-words text-admin-ink-soft">
-                    {row.rawMessage}
-                  </dd>
-                </div>
-                {details.map((field) => (
-                  <div
-                    key={field.label}
-                    className="grid gap-1 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-6"
-                  >
-                    <dt className={adminDetailLabel}>{field.label}</dt>
-                    <dd className="font-mono text-sm text-admin-ink-soft">
-                      {field.value ?? <Absent />}
+          <td colSpan={7} className="p-0">
+            {/* Bounded and pinned to the near edge of the scroller: an SMS body is
+                the longest text in the panel, and at the full 64rem table width it
+                wraps to a measure you would have to pan sideways to finish. */}
+            <div className={cn(adminDetailViewport, "px-4 pt-1 pb-6")}>
+              <section className="mt-4">
+                <h3 className={cn(adminLabel, "mb-3 flex items-center gap-2")}>
+                  <Mail className="h-3.5 w-3.5" aria-hidden="true" />
+                  Full Message
+                </h3>
+                <dl className="space-y-3">
+                  <div className="grid gap-1 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-6">
+                    <dt className={adminDetailLabel}>Raw SMS</dt>
+                    <dd className="max-w-3xl font-mono text-sm leading-relaxed break-words text-admin-ink-soft">
+                      {row.rawMessage}
                     </dd>
                   </div>
-                ))}
-              </dl>
-            </section>
+                  {details.map((field) => (
+                    <div
+                      key={field.label}
+                      className="grid gap-1 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-6"
+                    >
+                      <dt className={adminDetailLabel}>{field.label}</dt>
+                      <dd className="font-mono text-sm text-admin-ink-soft">
+                        {field.value ?? <Absent />}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            </div>
           </td>
         </tr>
       )}
@@ -306,7 +315,7 @@ function SmsStatusCell({ row }: { row: SmsSnapshotRow }) {
         id={`sms-status-${row.id}`}
         value={row.status}
         onChange={(event) => apply(event.target.value)}
-        className={cn(adminControl, "w-auto px-2 py-1 text-xs")}
+        className={cn(adminControl, "min-h-9 w-auto px-2 py-1.5 text-xs")}
       >
         {smsLogStatusOptions.map((entry) => (
           <option key={entry.value} value={entry.value}>

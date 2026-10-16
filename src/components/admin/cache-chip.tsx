@@ -108,7 +108,7 @@ export default function CacheChip({
         // The chip's own text already says what it holds; the button is the one part
         // of it that does something, so it is the part that needs a name.
         aria-label={failed ? "Try downloading this list again" : "Download this list again"}
-        className="-mr-1 inline-flex size-4 items-center justify-center rounded-full text-current opacity-60 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-admin-ink disabled:pointer-events-none"
+        className="-mr-1.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full text-current opacity-60 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-admin-ink disabled:pointer-events-none"
       >
         <RefreshCw className="size-3" aria-hidden="true" />
       </button>

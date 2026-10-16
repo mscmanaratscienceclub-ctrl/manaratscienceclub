@@ -26,7 +26,7 @@ export default function AdminEmptyState({
   onClearAll?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+    <div className="flex flex-col items-center justify-center px-4 py-20 text-center sm:px-6">
       <span
         aria-hidden="true"
         className="flex size-11 items-center justify-center rounded-[10px] bg-admin-accent-soft text-admin-accent-ink"
@@ -37,7 +37,7 @@ export default function AdminEmptyState({
         {label}
       </p>
       {onClearAll && (
-        <button type="button" onClick={onClearAll} className={cn(adminButton, "mt-5 text-xs")}>
+        <button type="button" onClick={onClearAll} className={cn(adminButton, "mt-5 min-h-10 text-xs")}>
           <RotateCcw className="size-3.5" aria-hidden="true" />
           Clear all filters
         </button>

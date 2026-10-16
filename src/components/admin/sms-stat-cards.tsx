@@ -47,7 +47,7 @@ export default function SmsStatCards() {
   return (
     <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-admin-line border-t-2 border-t-admin-accent bg-admin-line lg:grid-cols-4">
       {cards.map((card) => (
-        <div key={card.label} className="bg-admin-surface p-5" title={card.note}>
+        <div key={card.label} className="bg-admin-surface p-4 sm:p-5" title={card.note}>
           <dt className="flex items-center gap-2 font-space-body text-2xs font-semibold tracking-[0.08em] text-admin-accent-ink uppercase">
             <card.icon className="size-3.5 shrink-0" aria-hidden="true" />
             {card.label}

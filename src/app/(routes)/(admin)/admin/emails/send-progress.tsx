@@ -65,10 +65,13 @@ export default function SendProgress({
           {progress.failures.slice(0, 12).map((failure, index) => (
             <li
               key={`${failure.email}-${index}`}
-              className="font-space-body text-xs text-admin-danger-ink"
+              className="font-space-body text-xs break-words text-admin-danger-ink"
             >
-              <span className="font-medium">{failure.name}</span> (
-              {failure.email}) — {failure.message}
+              <span className="font-medium">{failure.name}</span>{" "}
+              {/* An address has no space to break on, so a long domain would push the
+                  panel wider than the phone showing it. */}
+              <span className="break-all">({failure.email})</span> —{" "}
+              {failure.message}
             </li>
           ))}
           {progress.failures.length > 12 && (

@@ -97,7 +97,7 @@ export default async function SmsLogsAdminPage({
               { label: "Ignored", icon: Trash2 },
               { label: "Total messages", icon: MessageSquareText },
             ].map((card) => (
-              <div key={card.label} className="bg-admin-surface p-5">
+              <div key={card.label} className="bg-admin-surface p-4 sm:p-5">
                 <dt className="flex items-center gap-2 font-space-body text-2xs font-semibold tracking-[0.08em] text-admin-accent-ink uppercase">
                   <card.icon className="size-3.5 shrink-0" aria-hidden="true" />
                   {card.label}

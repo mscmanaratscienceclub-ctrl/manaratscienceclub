@@ -9,8 +9,8 @@ export default async function PostsPage() {
   return (
     <div className="flex flex-col gap-6 p-6 md:p-10">
       {/* Header */}
-      <div className="flex items-end justify-between">
-        <div>
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
           <h1 className="font-display text-3xl font-bold text-ink">Posts</h1>
           <p className="mt-1 font-body text-ink/60">
             Manage all your blog posts and articles.

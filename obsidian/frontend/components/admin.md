@@ -1,6 +1,6 @@
 ---
 tags: [frontend, admin, stable]
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 # Catalog — Admin Components
@@ -200,6 +200,56 @@ one server action, `data-print="report"` + `brief-document` on the document root
 { size: A4; margin: 0 }` with the document carrying its own 14mm sides, the type ladder
 restated in pt, and `?print=1` mounting `<AutoPrint />`. The per-source table reports are
 `/admin/reports/[kind]`. Both are documented in [[admin/filters-reports]] → "Printing".
+
+## Responsive contract
+
+The panel is one layout with two shapes, and the seam is Tailwind's `lg` (1024px) — the
+same breakpoint `AdminShell` already uses for the rail, so a phone, an iPad in portrait
+and an iPad in landscape are three widths of two shapes rather than three layouts.
+
+| Width | Rail | Content column |
+|-------|------|----------------|
+| < 1024 (phones, iPad portrait) | Off-canvas drawer behind a top bar (`Menu`, the title, the ⌘K trigger) | full viewport width |
+| ≥ 1024 (iPad landscape, desktop) | In flow, `w-60`, collapsible to `w-20` | viewport − 240px − the page's `px-6`/`md:px-10` |
+
+Four rules carry it, all of them in `src/components/admin/styles.ts` so a table cannot
+invent a fifth:
+
+- **`adminTableScroller`** — every data table lives in `relative overflow-x-auto`, and the
+  table itself carries a `min-w-*`. A `w-full` table shrinks to fit instead of overflowing,
+  so the `min-w` is what makes the box scroll at all; `relative` is what keeps an
+  `sr-only` label's scrollable overflow inside it instead of widening the page.
+- **`adminDetailViewport`** — an expanded row spans a table up to `78rem` wide, so its
+  detail would wrap to a measure no phone shows. The wrapper is `sticky left-0` and capped
+  at `calc(100vw − 3rem)`, `− 5rem` from `md` (the page's own padding) and `− 20rem` from
+  `lg` (the rail back in flow). Measured at 390px with the table scrolled 492px: the
+  columns sit at −467 while the detail stays pinned at 23px.
+- **`adminReportScroller`** — the printed reports scroll on a phone and unwind on paper:
+  `print:overflow-visible` on the wrapper, `print:min-w-0` on the table, so A4 keeps its
+  columns instead of losing them to the edge of the sheet. The mastheads stack below `md`
+  and pin to `print:flex-row`, because the unlayered `@media print` block already owns the
+  stamp's rule and alignment but says nothing about direction.
+- **Padding and touch** — the panel's own convention, `px-4 sm:px-6` on the filter bar and
+  the pagination row, and `min-h-10` on the controls an admin actually taps: pagination,
+  filter chips, the filters toggle, export field rows, the print/export links.
+
+`h-dvh`, never `h-screen`: the content scroller is the only scroller, and `100vh` is
+taller than the visible area while a phone's URL bar is showing, which buries the last row
+under the browser chrome. The same reason applies to `60dvh` in the email preview and the
+command palette's `50dvh` list.
+
+### The Studio (`/cms`)
+
+`src/components/cms/cms-shell.tsx` mirrors `AdminShell` — same `lg` seam, same drawer, same
+`h-dvh` — because the rail used to be permanently in flow at every width, which left ~166px
+of a phone for the whole CMS. `CmsSidebar` takes the caller's visibility classes exactly as
+`AdminSidebar` does (`hidden lg:flex` in flow, bare in the drawer), and the CMS tables gained
+the `min-w-*` their scrollers were missing. It is a second implementation rather than a
+shared one on purpose: the two panels have different chrome, tokens and print rules, and
+merging them would put the public site's Studio behind the admin's accent system.
+
+Verified at 320/390/768/834/1024/1194/1440 against `/admin-preview` (fixture data, real
+components): zero elements overflow the viewport outside a deliberate scroller at any width.
 
 ## Related
 

@@ -15,6 +15,7 @@ import FilterBar from "@/components/admin/filter-bar";
 import Pagination from "@/components/admin/pagination";
 import {
   adminDetailValue,
+  adminDetailViewport,
   adminLabel,
   adminPanel,
   adminTableScroller,
@@ -199,21 +200,26 @@ function FragmentRow({
       {expanded && (
         <tr id={`${row.id}-detail`} className="bg-admin-accent-soft/60">
           <td />
-          <td colSpan={6} className="px-4 pt-1 pb-5">
-            <dl className="mb-5 grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-              {details.map((item) => (
-                <div key={item.label}>
-                  <dt className={adminLabel}>{item.label}</dt>
-                  <dd className={cn(adminDetailValue, "mt-0.5 capitalize")}>
-                    {item.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <p className={cn(adminLabel, "mb-1.5")}>Experience</p>
-            <p className="max-w-3xl font-space-body text-sm leading-relaxed whitespace-pre-wrap text-admin-ink-soft">
-              {row.experience}
-            </p>
+          <td colSpan={6} className="p-0">
+            {/* Bounded and pinned to the near edge of the scroller: the detail of a
+                52rem table otherwise wraps to a measure wider than any phone shows
+                you, and its third column sits past the edge you are looking at. */}
+            <div className={cn(adminDetailViewport, "px-4 pt-1 pb-5")}>
+              <dl className="mb-5 grid gap-x-4 gap-y-3 sm:grid-cols-2 sm:gap-x-8 lg:grid-cols-3">
+                {details.map((item) => (
+                  <div key={item.label}>
+                    <dt className={adminLabel}>{item.label}</dt>
+                    <dd className={cn(adminDetailValue, "mt-0.5 capitalize")}>
+                      {item.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <p className={cn(adminLabel, "mb-1.5")}>Experience</p>
+              <p className="max-w-3xl font-space-body text-sm leading-relaxed whitespace-pre-wrap text-admin-ink-soft">
+                {row.experience}
+              </p>
+            </div>
           </td>
         </tr>
       )}

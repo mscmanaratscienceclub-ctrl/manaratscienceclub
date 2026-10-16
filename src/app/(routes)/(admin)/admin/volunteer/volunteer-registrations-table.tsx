@@ -16,6 +16,7 @@ import Pagination from "@/components/admin/pagination";
 import {
   adminDetailLabel,
   adminDetailValue,
+  adminDetailViewport,
   adminLabel,
   adminPanel,
   adminTableScroller,
@@ -231,25 +232,29 @@ function VolunteerRowView({
       {expanded && (
         <tr id={`${row.id}-detail`} className="bg-admin-accent-soft/60">
           <td />
-          <td colSpan={7} className="px-4 pt-1 pb-6">
-            {detailGroups.map((group) => (
-              <section key={group.title} className="mt-4">
-                <h3 className={cn(adminLabel, "mb-3")}>{group.title}</h3>
-                <dl className="space-y-3">
-                  {group.fields.map((field) => (
-                    <div
-                      key={field.label}
-                      className="grid gap-1 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-6"
-                    >
-                      <dt className={adminDetailLabel}>{field.label}</dt>
-                      <dd className={cn(adminDetailValue, "whitespace-pre-wrap")}>
-                        {row[field.key]}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </section>
-            ))}
+          <td colSpan={7} className="p-0">
+            {/* Bounded and pinned to the near edge of the scroller, so the detail of
+                a 56rem-wide table stays inside the slice a phone can see. */}
+            <div className={cn(adminDetailViewport, "px-4 pt-1 pb-6")}>
+              {detailGroups.map((group) => (
+                <section key={group.title} className="mt-4">
+                  <h3 className={cn(adminLabel, "mb-3")}>{group.title}</h3>
+                  <dl className="space-y-3">
+                    {group.fields.map((field) => (
+                      <div
+                        key={field.label}
+                        className="grid gap-1 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-6"
+                      >
+                        <dt className={adminDetailLabel}>{field.label}</dt>
+                        <dd className={cn(adminDetailValue, "whitespace-pre-wrap")}>
+                          {row[field.key]}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              ))}
+            </div>
           </td>
         </tr>
       )}

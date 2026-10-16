@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/auth/get-session";
-import CmsSidebar from "@/components/cms/sidebar";
+import CmsShell from "@/components/cms/cms-shell";
 
 export default async function CmsLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession();
@@ -8,10 +8,10 @@ export default async function CmsLayout({ children }: { children: React.ReactNod
   const role = (session.user as { role: string }).role ?? "member";
   if (!["admin", "writer"].includes(role)) redirect("/");
 
+  // The shell is a client leaf, so the pages below it stay Server Components.
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
-      <CmsSidebar user={{ name: session.user.name, email: session.user.email, role }} />
-      <div className="flex flex-1 flex-col overflow-auto">{children}</div>
-    </div>
+    <CmsShell user={{ name: session.user.name, email: session.user.email, role }}>
+      {children}
+    </CmsShell>
   );
 }

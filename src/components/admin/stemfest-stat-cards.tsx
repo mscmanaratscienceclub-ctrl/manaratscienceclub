@@ -105,14 +105,18 @@ export default function StemfestStatCards() {
   ];
 
   return (
-    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-admin-line border-t-2 border-t-admin-accent bg-admin-line sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+    // Seven across needs a wide screen *and* a wide content column: from `xl` the
+    // 240px rail is in flow, so seven cells would cost the ৳ figure more than it
+    // has and `overflow-hidden` would clip the amount. The seventh step waits for
+    // `2xl`, and the amount drops a size below `sm` for the same reason.
+    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-admin-line border-t-2 border-t-admin-accent bg-admin-line sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-7">
       {cards.map((card) => (
-        <div key={card.label} className="bg-admin-surface p-5" title={card.title}>
+        <div key={card.label} className="bg-admin-surface p-4 sm:p-5" title={card.title}>
           <dt className="flex items-center gap-2 font-space-body text-2xs font-semibold tracking-[0.08em] text-admin-accent-ink uppercase">
             <card.icon className="size-3.5 shrink-0" aria-hidden="true" />
             {card.label}
           </dt>
-          <dd className="mt-2.5 font-space-body text-2xl leading-none font-medium text-admin-ink tabular-nums">
+          <dd className="mt-2.5 font-space-body text-xl leading-none font-medium text-admin-ink tabular-nums sm:text-2xl">
             {card.value}
           </dd>
         </div>

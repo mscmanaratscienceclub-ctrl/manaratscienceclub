@@ -50,8 +50,8 @@ export default async function CmsDashboardPage() {
   return (
     <div className="flex flex-col gap-8 p-6 md:p-10">
       {/* Header */}
-      <div className="flex items-end justify-between">
-        <div>
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
           <h1 className="font-display text-3xl font-bold text-ink">
             Dashboard
           </h1>
@@ -110,8 +110,10 @@ export default async function CmsDashboardPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="relative overflow-x-auto">
+            {/* `min-w` is what makes the box above scroll at all: a bare `w-full`
+                table squashes its four columns into the width of a phone instead. */}
+            <table className="w-full min-w-[38rem]">
               <thead>
                 <tr className="border-b border-ink/5 text-left">
                   <th className="px-6 py-3 font-body text-xs font-semibold uppercase tracking-wider text-ink/40">

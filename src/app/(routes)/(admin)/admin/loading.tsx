@@ -72,9 +72,11 @@ export default function AdminLoading() {
         <div className="rounded-[10px] border border-admin-line bg-admin-surface p-6">
           <div className="h-5 w-36 rounded bg-admin-line" />
           <div className="mt-2 h-3 w-44 rounded bg-admin-sunken" />
-          <div className="mt-6 flex items-center gap-6">
+          {/* Stacks for the same reason the real ring does (`donut-chart.tsx`): a
+              144px disc plus a legend is not a phone-width row. */}
+          <div className="mt-6 flex flex-col items-center gap-6 sm:flex-row">
             <div className="size-36 shrink-0 rounded-full bg-admin-line motion-safe:animate-pulse" />
-            <div className="flex-1 space-y-4 motion-safe:animate-pulse">
+            <div className="w-full flex-1 space-y-4 motion-safe:animate-pulse sm:w-auto">
               {Array.from({ length: 3 }, (_, index) => (
                 <div key={index} className="h-8 rounded bg-admin-sunken" />
               ))}
@@ -104,19 +106,22 @@ export default function AdminLoading() {
       </div>
 
       <div className="rounded-[10px] border border-admin-line admin-edge-top bg-admin-surface">
-        <div className="border-b border-admin-line admin-wash-head px-6 py-4">
+        <div className="border-b border-admin-line admin-wash-head px-4 py-4 sm:px-6">
           <div className="h-5 w-44 rounded bg-admin-surface" />
         </div>
         <div className="divide-y divide-admin-line">
           {Array.from({ length: TABLE_ROWS }, (_, index) => (
             <div
               key={index}
-              className="flex items-center gap-6 px-6 py-4 motion-safe:animate-pulse"
+              className="flex items-center gap-3 px-4 py-4 sm:gap-6 sm:px-6 motion-safe:animate-pulse"
             >
-              <div className="h-4 flex-1 rounded bg-admin-line" />
-              <div className="h-4 w-20 rounded bg-admin-sunken" />
-              <div className="h-4 w-32 rounded bg-admin-sunken" />
-              <div className="h-4 w-24 rounded bg-admin-sunken" />
+              <div className="h-4 min-w-0 flex-1 rounded bg-admin-line" />
+              <div className="h-4 w-20 shrink-0 rounded bg-admin-sunken" />
+              {/* Two of the five columns are for a screen with room for five; the
+                  real table scrolls instead of squeezing them, and a bone that
+                  widened the page would reflow it the moment data arrives. */}
+              <div className="hidden h-4 w-32 shrink-0 rounded bg-admin-sunken sm:block" />
+              <div className="hidden h-4 w-24 shrink-0 rounded bg-admin-sunken sm:block" />
             </div>
           ))}
         </div>

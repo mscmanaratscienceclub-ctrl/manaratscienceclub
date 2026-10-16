@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 function ToolBtn({ onClick, active, disabled, title, children }: { onClick: () => void; active?: boolean; disabled?: boolean; title: string; children: React.ReactNode }) {
   return (
     <button type="button" onMouseDown={(e) => { e.preventDefault(); onClick(); }} disabled={disabled} title={title}
-      className={cn("flex h-8 w-8 items-center justify-center rounded-lg text-sm transition-colors", active ? "bg-ink text-white" : "text-ink/50 hover:bg-gray-200 hover:text-ink", disabled && "pointer-events-none opacity-30")}>
+      className={cn("flex h-10 w-10 items-center justify-center rounded-lg text-sm transition-colors", active ? "bg-ink text-white" : "text-ink/50 hover:bg-gray-200 hover:text-ink", disabled && "pointer-events-none opacity-30")}>
       {children}
     </button>
   );
