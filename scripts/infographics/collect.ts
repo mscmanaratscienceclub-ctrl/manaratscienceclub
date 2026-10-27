@@ -467,7 +467,7 @@ async function readAll(): Promise<Snapshot> {
           count(distinct "userId")::int as "distinctUsers",
           count(*) filter (where "expiresAt" > now())::int as live
         from session`)
-    )[0] as Snapshot["sessions"];
+    )[0] as unknown as Snapshot["sessions"];
     const providers = (await db.unsafe(
       `select "providerId" as label, count(*)::int as count from account group by 1 order by 2 desc`,
     )) as CountRow[];
