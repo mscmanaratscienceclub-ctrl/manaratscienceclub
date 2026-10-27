@@ -53,3 +53,8 @@ next-env.d.ts
 # Generated bracket reports — participants' names, phone numbers and bKash
 # references. Written by `pnpm reports:brackets`; artefacts, not a commit.
 /reports/
+
+# Generated infographics: the aggregate dump, the 1600×2000 sheets and their PNGs.
+# Aggregates only, but still derived from the live database and re-runnable with
+# `pnpm reports:infographics` + `pnpm reports:infographics:pngs`.
+/infographics/

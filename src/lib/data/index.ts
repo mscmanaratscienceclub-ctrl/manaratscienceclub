@@ -538,16 +538,6 @@ export const currentMembers: Member[] = [
     socials: {},
   },
   {
-    id: "current-ehsas",
-    name: "Ehsas Mostafa",
-    get image() {
-      return contentImage("adminimages/ehsas.webp");
-    },
-    batch: "2026–2027",
-    role: "Vice President",
-    socials: {},
-  },
-  {
     id: "current-nafisa",
     name: "Nafisa Nawar",
     get image() {

@@ -1,0 +1,83 @@
+{
+  "takenAt": "2026-10-17T14:30:21.387Z",
+  "before": [
+    {
+      "id": "DQW31nmkhxY7pfib4TNWjTu8PPZz8Ls1",
+      "username": "abrar32",
+      "email": "abrarjawad661@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "FgTBmkVZeEsxSrocCR9RrEFGC0uEoNzv",
+      "username": "m4jmainzzz",
+      "email": "mohammadajmainfaieq@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "S3rMvb2M61wXElr5o1UC6Rw7C1SI7lXH",
+      "username": "thegreatuse3",
+      "email": "abrarff333@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "wsHjni2wxD3QKBkDp7p7D4AVGt8wzqmd",
+      "username": "borobhaiyasa",
+      "email": "yasarahman83@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "upC7O6h8WW2NMUQN0KMQaKpb4ejQ2X2z",
+      "username": "safwan",
+      "email": "somewanmsc@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "kvG9rAYJjqFuknQGVTpEdjmLkTcivMeU",
+      "username": "omama",
+      "email": "greensideom@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "sAmGPEfTLCEPBSOE7VYpKsaEdSiBHGst",
+      "username": "mscdesk3",
+      "email": "mscdesk3@manaratscience.club",
+      "role": "admin"
+    },
+    {
+      "id": "RDS9kdvIvBrR0fx10AMakaijSERVrM8r",
+      "username": "mscdesk1",
+      "email": "mscdesk1@manaratscience.club",
+      "role": "admin"
+    },
+    {
+      "id": "QEaG0lZzXifFCSM5GKyT4UdoDorTgSZ4",
+      "username": "mscdesk2",
+      "email": "mscdesk2@manaratscience.club",
+      "role": "admin"
+    },
+    {
+      "id": "sHFgrSRoKJ2OwLQyN5ZhCZXwIqEJPwfx",
+      "username": "mscdesk4",
+      "email": "mscdesk4@manaratscience.club",
+      "role": "admin"
+    },
+    {
+      "id": "MEV0rnUDAGvCBhl5IYppnXzMx7N9J50R",
+      "username": "msccc",
+      "email": "msc.manaratscienceclub@gmail.com",
+      "role": "user"
+    },
+    {
+      "id": "sVYu5jubLxeTckshFDutYgMEP4ZHCf4i",
+      "username": "nuraianoha",
+      "email": "nuraiatasneem.3g@gmail.com",
+      "role": "user"
+    },
+    {
+      "id": "jT5DIr5WGNHMj0xAwvpMC3rB3RmKH09a",
+      "username": "azizul",
+      "email": "ah0934102@gmail.com",
+      "role": "writer"
+    }
+  ]
+}

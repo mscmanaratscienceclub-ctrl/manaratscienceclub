@@ -40,7 +40,9 @@
     "export:verify": "node scripts/verify-excel-export.run.mjs",
     "pdf:verify": "node scripts/verify-pdf-export.run.mjs",
     "reports:brackets": "node scripts/bracket-reports.run.mjs",
-    "reports:schools": "node scripts/schools-report.run.mjs"
+    "reports:schools": "node scripts/schools-report.run.mjs",
+    "reports:infographics": "node scripts/infographics.run.mjs",
+    "reports:infographics:pngs": "node scripts/infographics.render.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

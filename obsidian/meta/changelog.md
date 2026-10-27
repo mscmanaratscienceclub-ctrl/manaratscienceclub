@@ -1,12 +1,27 @@
 ---
 tags: [meta, changelog]
-updated: 2026-10-16
+updated: 2026-10-17
 ---
 
 # Changelog
 
 Chronological log of notable changes to **this project**. Newest first.
 Human-curated — not a mirror of `git log`.
+
+## 2026-10-17 — Infographic set generated from the live forms data
+
+| Area | Change |
+|------|--------|
+| `scripts/infographics/collect.ts` | One read-only pass over `stem_fest_registrations`, `stem_fest_payment_sms`, `volunteer_registrations`, `campus_ambassador_registrations`, `user`/`account`/`session` and the ID counters → `infographics/data/stats.json`. Run with `pnpm reports:infographics`. It reuses `scripts/bracket-reports/{parse,fees,analysis,brackets}`, so the effective payment status, the fee attribution and the ten-character TrxID rule are the panel's own definitions restated once rather than re-invented. |
+| `scripts/infographics/sheets.mjs` | 22 poster sheets at 1600×2000, drawn as inline SVG from that JSON: overview, payment funnel, fees, intake curve, time of day, inter-arrival gaps, class, gender, events, brackets, teams, schools, referrers, SMS ledger, latency, TrxID hygiene, wallets, attendance, admin workload, volunteer form, ambassador form, data quality. `style.mjs` inlines the project's own Unbounded / Rubik / Geist Mono files so a sheet renders from `file://` with no network. |
+| `scripts/infographics.render.mjs` | `pnpm reports:infographics:pngs` rasterises every sheet with headless Chrome into `infographics/png/`. `scripts/infographics/contact.mjs` builds a review grid of all of them at once. |
+| Privacy | The JSON is aggregate by construction — counts, shares, rates, latencies, ranks. No participant name, school name, referrer name, email, phone, bKash number or TrxID is ever written, so no sheet can print one: admins appear as *Admin A/B/C*, referrers as ranks, schools as a size distribution. |
+| Verification | `pnpm lint` clean over the new files; every PNG checked at exactly 1600×2000; a gate grepping the outputs for emails, BD mobile shapes and ten-character TrxID tokens returned only SVG coordinates. |
+
+Two facts confirmed while collecting, both worth knowing: `stem_fest_registrations.attendance_marked_at`
+**is** present in production now (the half-applied migration is finished — 586 rows carry a
+cursor, 579 rows are marked present), and every `user` row reads `member`, which is the
+2026-10-17 lockdown rather than drift.
 
 ## 2026-10-16 — Admin panel and Studio made responsive for phones and tablets
 
